@@ -1541,7 +1541,6 @@ Where practical, recommendation results shall be explainable through the structu
 Core question solving, official answer-key handling, entitlement decisions and payment decisions shall not depend on generative AI.
 
 ---
----
 
 ## 2.19 Baseline Coverage Completion
 
@@ -1601,3 +1600,277 @@ When a requirement enters an implementation phase, completion shall require the 
 - documented acceptance criteria.
 
 Implementation details shall be defined in later sections of this specification and in the approved technical roadmap.
+
+---
+
+# 3. Non-Functional Requirements
+
+## 3.1 Requirement Conventions
+
+Non-functional requirements define the quality attributes, operational constraints and engineering characteristics that Sou Bizurado shall preserve while implementing its functional capabilities.
+
+Each non-functional requirement receives a permanent identifier using the format:
+
+**NFR-XXX**
+
+These identifiers shall remain stable whenever reasonably possible so that architecture decisions, implementation tasks, automated tests, infrastructure configuration and operational procedures may reference them.
+
+Non-functional requirements may apply globally or only when the relevant capability exists.
+
+The presence of a non-functional requirement does not authorize premature implementation of infrastructure that is not yet required.
+
+The system shall favor the simplest implementation that satisfies the applicable quality requirement while preserving the approved architectural boundaries.
+
+---
+
+## 3.2 Security
+
+### NFR-001 — Server-Side Authorization
+
+Protected business operations shall enforce authorization in trusted server-side code.
+
+Client-provided role, permission, subscription, entitlement, price or payment-state information shall not be considered authoritative.
+
+### NFR-002 — Least Privilege
+
+Application components, users, service integrations and database access mechanisms shall receive only the permissions required to perform their responsibilities.
+
+### NFR-003 — Default Denial
+
+Access to protected capabilities shall be denied unless the requesting identity is explicitly authorized.
+
+### NFR-004 — Input Validation
+
+Untrusted application input shall be validated by trusted backend logic before it is used in business operations or persistence.
+
+Runtime validation shall use an approved schema-validation mechanism where appropriate.
+
+### NFR-005 — Output Safety
+
+User-controlled or externally sourced content shall be handled in a manner that prevents unintended executable content or unsafe rendering.
+
+### NFR-006 — SQL Injection Resistance
+
+Database access shall use parameterized queries, ORM-generated queries or equivalent mechanisms that prevent untrusted input from becoming executable SQL.
+
+### NFR-007 — Cross-Site Scripting Resistance
+
+Application rendering and content-processing mechanisms shall prevent untrusted content from introducing unauthorized executable browser code.
+
+### NFR-008 — Cross-Site Request Forgery Protection
+
+State-changing operations that rely on browser-authenticated sessions shall use appropriate protections against unauthorized cross-origin requests.
+
+### NFR-009 — Authentication Secret Protection
+
+Authentication secrets, service credentials, API keys and other confidential configuration shall not be committed to the source repository.
+
+### NFR-010 — Environment Separation
+
+Development, test and production environments shall use appropriately separated configuration and credentials.
+
+### NFR-011 — Secure Transport
+
+Production user traffic and sensitive service-to-service communication shall use encrypted transport where supported and applicable.
+
+The public production application shall be served through HTTPS.
+
+### NFR-012 — Secure Session Handling
+
+Authentication sessions shall use secure lifecycle, expiration and invalidation behavior appropriate to the selected authentication provider and application architecture.
+
+### NFR-013 — Rate Limiting
+
+Security-sensitive and abuse-prone operations shall support rate limiting where justified.
+
+Examples include:
+
+- authentication-related operations;
+- account recovery;
+- comment creation;
+- expensive searches;
+- import submission;
+- payment-related endpoints;
+- webhook endpoints where appropriate.
+
+### NFR-014 — Webhook Authenticity
+
+External webhook events that influence trusted business state shall be cryptographically verified or otherwise authenticated according to the provider's supported verification mechanism.
+
+### NFR-015 — Webhook Replay Safety
+
+Webhook processing shall protect against duplicate business effects caused by repeated or replayed deliveries.
+
+### NFR-016 — OWASP-Oriented Engineering
+
+Application security design and implementation shall consider relevant classes of vulnerabilities described by current OWASP web application security guidance.
+
+Security controls shall be applied according to actual risk rather than through indiscriminate complexity.
+
+---
+
+## 3.3 Privacy and LGPD
+
+### NFR-017 — Data Minimization
+
+The system shall collect and persist only personal information reasonably required for defined product, security, billing, legal or operational purposes.
+
+### NFR-018 — Purpose Limitation
+
+Personal data shall be used according to the legitimate product or operational purpose for which it is processed.
+
+### NFR-019 — Personal Data Classification
+
+The architecture shall allow relevant stored information to be identified according to its privacy and operational sensitivity where necessary.
+
+### NFR-020 — Privacy-Aware Logging
+
+Application logs and monitoring systems shall avoid recording passwords, authentication secrets, payment credentials or unnecessary personal data.
+
+### NFR-021 — User Data Access Support
+
+The data model and operational architecture shall not prevent the platform from supporting legitimate requests for access to applicable personal data.
+
+### NFR-022 — User Data Correction Support
+
+The architecture shall support correction of applicable personal information where legally and operationally appropriate.
+
+### NFR-023 — User Data Deletion or Anonymization Support
+
+The architecture shall allow applicable personal data to be deleted, anonymized or otherwise processed according to legal obligations and legitimate retention requirements.
+
+Historical records that must remain for security, accounting, fraud prevention or other legitimate purposes may require controlled retention rather than destructive deletion.
+
+### NFR-024 — Retention Awareness
+
+Personal and operational data shall not be retained indefinitely without purpose.
+
+Retention rules shall be defined for data categories where lifecycle requirements become relevant.
+
+### NFR-025 — Third-Party Data Responsibility
+
+External service providers that process application data shall be integrated deliberately, with awareness of what data is transmitted and why.
+
+---
+
+## 3.4 Data Integrity and Reliability
+
+### NFR-026 — PostgreSQL System of Record
+
+PostgreSQL shall be the authoritative persistent system of record for core application business data.
+
+Caches, object storage, temporary queues and analytics helpers shall not become hidden authoritative sources of truth.
+
+### NFR-027 — Transactional Integrity
+
+Business operations that require multiple persistent changes to succeed or fail together shall use database transactions or an equivalent consistency mechanism.
+
+### NFR-028 — Referential Integrity
+
+Persistent relationships between core domain records shall use appropriate database constraints or equivalent integrity mechanisms where practical.
+
+### NFR-029 — Uniqueness Integrity
+
+Business identifiers and relationships that must be unique shall be protected by appropriate persistent uniqueness constraints where practical.
+
+### NFR-030 — Historical Preservation
+
+Important student-answer, billing, audit and other historical information shall not be silently overwritten when historical preservation is required by the corresponding domain.
+
+### NFR-031 — Non-Destructive Deactivation
+
+Where historical or referential integrity would be harmed by deletion, entities shall support controlled deactivation, archival or publication-state changes instead of destructive removal.
+
+### NFR-032 — Idempotent External Event Processing
+
+Processing of external events such as payment notifications shall support idempotency where duplicate delivery is possible.
+
+### NFR-033 — Persistent Job State
+
+Long-running or asynchronous business processes whose state must survive application restarts shall maintain their authoritative job state in persistent storage.
+
+### NFR-034 — Restart Tolerance
+
+The architecture shall not assume that a single application process remains continuously alive.
+
+Recoverable operations shall tolerate application restart or redeployment according to their business importance.
+
+### NFR-035 — Failure Visibility
+
+Failures in important background, import, payment or integration processes shall become observable rather than being silently discarded.
+
+---
+
+## 3.5 Performance
+
+### NFR-036 — Efficient Common Study Operations
+
+Common study operations shall be implemented so that question retrieval, answer submission, favorites and history queries do not require unnecessary full-table processing.
+
+### NFR-037 — Indexed Access Paths
+
+Database indexes shall be introduced for demonstrated or predictable high-value query patterns.
+
+Indexes shall not be created indiscriminately.
+
+### NFR-038 — Pagination
+
+Potentially large collections shall use bounded pagination.
+
+The application shall not return arbitrarily large datasets in a single request.
+
+### NFR-039 — Keyset Pagination
+
+High-volume or frequently traversed datasets shall prefer keyset or cursor-based pagination where offset pagination would become inefficient or inconsistent.
+
+### NFR-040 — Query Selectivity
+
+Application queries shall retrieve only the data required for the applicable use case whenever practical.
+
+### NFR-041 — Avoidance of N+1 Queries
+
+Data-access implementations shall avoid uncontrolled N+1 query patterns in frequently executed operations.
+
+### NFR-042 — External Dependency Isolation
+
+Slow or unavailable external services shall not unnecessarily block unrelated core application capabilities.
+
+### NFR-043 — Cache Appropriateness
+
+Caching may be introduced for read-heavy or expensive operations when it produces measurable benefit.
+
+Cache invalidation and expiration behavior shall preserve correctness.
+
+### NFR-044 — Performance Measurement
+
+Performance optimization shall be based on profiling, metrics or demonstrated query behavior whenever practical rather than speculation alone.
+
+---
+
+## 3.6 Scalability
+
+### NFR-045 — Dataset Growth
+
+The application architecture and relational model shall support progressive growth from an initially small dataset toward:
+
+- hundreds of examinations;
+- hundreds of thousands or millions of questions;
+- large volumes of student-answer history.
+
+This growth shall not require replacement of the core domain architecture.
+
+### NFR-046 — Horizontal Portability
+
+Application business logic shall not depend on local process memory in a manner that prevents future execution across multiple application instances.
+
+Temporary process-local optimization may be used only when loss of that data does not affect authoritative business correctness.
+
+### NFR-047 — Stateless Web Processing
+
+Normal web-request processing shall remain stateless wherever practical.
+
+Authoritative state required across requests shall reside in appropriate persistent or shared systems.
+
+### NFR-048 — No Premature Distributed Architecture
+
+Expected future scale shall not justify premature introduction of microservices, Kafka, Kubernetes or other distributed infrastructure before demonstrated product or operational requirements make such complexity necessary.
