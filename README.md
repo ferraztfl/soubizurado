@@ -1,34 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# Sou Bizurado
 
-## Getting Started
+Plataforma de preparação para concursos públicos, centrada em resolução de questões, histórico de desempenho e evolução do candidato.
 
-First, run the development server:
+## Status
 
-```bash
+Projeto em desenvolvimento.
+
+A arquitetura inicial utiliza um **Modular Monolith** com Next.js, React e TypeScript.
+
+## Requisitos de desenvolvimento
+
+- Node.js
+- npm
+- Git
+
+## Desenvolvimento local
+
+```powershell
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A aplicação ficará disponível em:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-## Learn More
+## Validação
 
-To learn more about Next.js, take a look at the following resources:
+Antes de considerar uma alteração pronta:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+npm run typecheck
+npm run lint
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Documentação
 
-## Deploy on Vercel
+A especificação técnica está em:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```text
+docs/technical-specification.md
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Produção
+
+O ambiente inicial de produção previsto é **Hostinger Business Web Hosting**.
+
+A aplicação deverá permanecer portável e não possuir regras de negócio dependentes do provedor de hospedagem.
+
+## Branches
+
+```text
+main
+develop
+feature/*
+```

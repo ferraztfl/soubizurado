@@ -1,7 +1,8 @@
-export default function Home() {
+﻿export default function Home() {
   return (
     <main>
-      <div>Hello world!</div>
+      <h1>Sou Bizurado</h1>
+      <p>Plataforma de preparação para concursos públicos.</p>
     </main>
   );
 }
