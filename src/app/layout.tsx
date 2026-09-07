@@ -1,5 +1,10 @@
-﻿import type { Metadata } from "next";
+import type {
+  Metadata,
+  Viewport,
+} from "next";
 import type { ReactNode } from "react";
+
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
@@ -10,11 +15,20 @@ export const metadata: Metadata = {
     "Plataforma de preparação para concursos públicos com banco de questões e acompanhamento de desempenho.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#111113",
+};
+
 type RootLayoutProps = Readonly<{
   children: ReactNode;
 }>;
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({
+  children,
+}: RootLayoutProps) {
   return (
     <html lang="pt-BR">
       <body>{children}</body>
