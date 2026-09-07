@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { ensureProfileForAuthUser } from "@/modules/identity/application/ensure-profile";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
 import { StudentAppShell } from "./_components/student-app-shell";
@@ -29,13 +28,8 @@ export default async function StudentAppLayout({
       ? user.user_metadata.display_name
       : null;
 
-  const profile = await ensureProfileForAuthUser({
-    authUserId: user.id,
-    displayName: metadataDisplayName,
-  });
-
   const displayName =
-    profile.displayName ??
+    metadataDisplayName ??
     user.email ??
     "Aluno";
 
