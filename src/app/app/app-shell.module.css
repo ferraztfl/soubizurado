@@ -1,0 +1,62 @@
+.shell {
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--sb-page);
+}
+
+.desktopSidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  width: var(--sb-sidebar-width);
+  height: 100dvh;
+  padding: 18px 14px 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(17, 17, 19, 0.985) 0%,
+      rgba(24, 24, 27, 0.995) 100%
+    ),
+    url("/brand/brand-texture.png");
+  background-size: cover;
+  background-position: center;
+  box-shadow: 8px 0 32px rgba(17, 17, 19, 0.08);
+}
+
+.workspace {
+  min-width: 0;
+  min-height: 100dvh;
+  margin-left: var(--sb-sidebar-width);
+}
+
+.content {
+  width: 100%;
+  max-width: var(--sb-content-max);
+  margin: 0 auto;
+  padding: 28px 28px 56px;
+}
+
+@media (max-width: 1099px) {
+  .desktopSidebar {
+    display: none;
+  }
+
+  .workspace {
+    margin-left: 0;
+  }
+
+  .content {
+    padding: 22px 20px 48px;
+  }
+}
+
+@media (max-width: 767px) {
+  .content {
+    padding:
+      16px
+      14px
+      calc(36px + env(safe-area-inset-bottom));
+  }
+}

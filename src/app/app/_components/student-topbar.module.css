@@ -1,0 +1,330 @@
+﻿.topbar {
+  position: sticky;
+  top: 0;
+
+  z-index: 60;
+
+  width: 100%;
+
+  border-bottom:
+    1px solid var(--sb-gray-200);
+
+  background:
+    rgba(255, 255, 255, 0.97);
+
+  backdrop-filter: blur(14px);
+
+  box-shadow:
+    0 1px 0
+    rgba(17, 17, 19, 0.015);
+}
+
+.inner {
+  width: 100%;
+  max-width: var(--sb-content-max);
+
+  margin: 0 auto;
+
+  padding:
+    0
+    28px;
+}
+
+
+/* ==========================================================
+   DESKTOP
+   ========================================================== */
+
+.desktopContent {
+  width: 100%;
+  min-height: 76px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+
+  align-items: center;
+
+  column-gap: 32px;
+}
+
+.mobileContent {
+  display: none;
+}
+
+
+/* ==========================================================
+   SAUDACAO
+   ========================================================== */
+
+.greeting {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+
+  gap: 5px;
+}
+
+.eyebrow {
+  display: block;
+
+  margin: 0;
+
+  color: var(--sb-gray-500);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  line-height: 1;
+
+  letter-spacing: 0.15em;
+
+  text-transform: uppercase;
+}
+
+.title {
+  display: block;
+
+  max-width: 100%;
+
+  margin: 0;
+
+  overflow: hidden;
+
+  color: var(--sb-ink-800);
+
+  font-size: 14px;
+  font-weight: 750;
+
+  line-height: 1.2;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ==========================================================
+   STATUS DESKTOP
+   ========================================================== */
+
+.accountStatus {
+  justify-self: end;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+
+  color: var(--sb-gray-700);
+
+  font-size: 10px;
+  font-weight: 650;
+
+  line-height: 1;
+
+  white-space: nowrap;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+
+  flex: 0 0 7px;
+
+  border-radius: 50%;
+
+  background: var(--sb-success);
+
+  box-shadow:
+    0 0 0 4px
+    rgba(28, 139, 91, 0.1);
+}
+
+
+/* ==========================================================
+   BOTAO MOBILE
+   ========================================================== */
+
+.menuButton {
+  width: 40px;
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  gap: 4px;
+
+  padding: 0;
+
+  border:
+    1px solid var(--sb-gray-300);
+
+  border-radius: 11px;
+
+  background: var(--sb-surface);
+
+  box-shadow:
+    0 3px 10px
+    rgba(17, 17, 19, 0.045);
+
+  cursor: pointer;
+
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.menuButton span {
+  width: 17px;
+  height: 2px;
+
+  display: block;
+
+  border-radius: 999px;
+
+  background: var(--sb-ink-800);
+}
+
+.menuButton:hover {
+  border-color: var(--sb-gray-400);
+
+  background: var(--sb-gray-50);
+}
+
+.menuButton:active {
+  transform: scale(0.96);
+}
+
+.menuButton:focus-visible {
+  outline:
+    2px solid var(--sb-red);
+
+  outline-offset: 2px;
+}
+
+
+/* ==========================================================
+   TABLET / MOBILE
+   MESMO BREAKPOINT DO APP SHELL
+   ========================================================== */
+
+@media (max-width: 1099px) {
+  .inner {
+    padding:
+      0
+      18px;
+  }
+
+  .desktopContent {
+    display: none;
+  }
+
+  .mobileContent {
+    width: 100%;
+    min-height: 72px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding:
+      max(8px, env(safe-area-inset-top))
+      0
+      8px;
+  }
+
+  .menuButton {
+    display: flex;
+  }
+
+  .greeting {
+    flex: 1 1 auto;
+
+    gap: 5px;
+  }
+
+  .eyebrow {
+    font-size: 7px;
+  }
+
+  .title {
+    max-width:
+      calc(100vw - 110px);
+
+    font-size: 13px;
+  }
+}
+
+
+/* ==========================================================
+   CELULAR
+   ========================================================== */
+
+@media (max-width: 767px) {
+  .inner {
+    padding:
+      0
+      14px;
+  }
+
+  .mobileContent {
+    min-height: 70px;
+
+    gap: 11px;
+
+    padding:
+      max(9px, env(safe-area-inset-top))
+      0
+      9px;
+  }
+
+  .title {
+    max-width:
+      calc(100vw - 94px);
+
+    font-size: 12px;
+  }
+}
+
+
+/* ==========================================================
+   CELULAR PEQUENO
+   ========================================================== */
+
+@media (max-width: 380px) {
+  .inner {
+    padding:
+      0
+      12px;
+  }
+
+  .mobileContent {
+    gap: 10px;
+  }
+
+  .title {
+    max-width:
+      calc(100vw - 88px);
+  }
+}
+
+
+/* ==========================================================
+   ACESSIBILIDADE
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .menuButton {
+    transition: none;
+  }
+}

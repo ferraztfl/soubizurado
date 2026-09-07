@@ -1,0 +1,125 @@
+.card {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--sb-gray-200);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.header > div {
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--sb-red);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  margin: 8px 0 0;
+  color: var(--sb-ink-800);
+  font-size: 17px;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+.period {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--sb-gray-200);
+  border-radius: 8px;
+  color: var(--sb-gray-600);
+  font-size: 9px;
+}
+
+.chart {
+  position: relative;
+  height: 250px;
+  overflow: hidden;
+  border-top: 1px solid var(--sb-gray-100);
+  border-radius: 0 0 12px 12px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 49px,
+      var(--sb-gray-100) 50px
+    );
+}
+
+.bars {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 20px;
+  padding: 24px 32px 0;
+  opacity: 0.16;
+}
+
+.bars span {
+  width: 21px;
+  border-radius: 6px 6px 0 0;
+  background: var(--sb-red);
+}
+
+.emptyState {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  text-align: center;
+}
+
+.emptyState strong {
+  color: #4b5562;
+  font-size: 13px;
+}
+
+.emptyState p {
+  max-width: 300px;
+  margin: 8px 0 0;
+  color: var(--sb-gray-500);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 767px) {
+  .card {
+    padding: 18px;
+    border-radius: 15px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .period {
+    align-self: flex-start;
+  }
+
+  .chart {
+    height: 220px;
+  }
+
+  .bars {
+    padding-inline: 16px;
+  }
+}

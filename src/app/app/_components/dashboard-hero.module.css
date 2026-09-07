@@ -1,0 +1,256 @@
+.hero {
+  position: relative;
+  min-height: 310px;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.5fr)
+    minmax(260px, 0.5fr);
+  overflow: hidden;
+  border-radius: var(--sb-radius-xl);
+  background:
+    linear-gradient(
+      102deg,
+      rgba(15, 15, 17, 0.99) 0%,
+      rgba(28, 28, 31, 0.97) 58%,
+      rgba(62, 62, 67, 0.93) 100%
+    ),
+    url("/brand/brand-texture.png");
+  background-size: cover;
+  background-position: center;
+  color: #ffffff;
+  box-shadow: var(--sb-shadow-md);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  width: 330px;
+  height: 330px;
+  top: -120px;
+  right: -90px;
+  border-radius: 50%;
+  background: rgba(212, 18, 0, 0.09);
+  pointer-events: none;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: clamp(34px, 4vw, 48px);
+}
+
+.eyebrow {
+  margin-bottom: 16px;
+  color: #f04433;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.content h1 {
+  max-width: 720px;
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(38px, 4vw, 56px);
+  font-weight: 820;
+  line-height: 1.02;
+  letter-spacing: -0.048em;
+}
+
+.content p {
+  max-width: 720px;
+  margin: 20px 0 0;
+  color: #c9ccd2;
+  font-size: 14px;
+  line-height: 1.72;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.primaryAction,
+.secondaryAction {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.primaryAction {
+  border: 0;
+  background: var(--sb-red);
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(212, 18, 0, 0.24);
+}
+
+.primaryAction span {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.14);
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.secondaryAction {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.055);
+  color: #f2f2f4;
+}
+
+.primaryAction:disabled,
+.secondaryAction:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.objectiveArea {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 34px 38px 34px 16px;
+}
+
+.objectiveCard {
+  width: 100%;
+  max-width: 250px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--sb-radius-lg);
+  background: rgba(255, 255, 255, 0.065);
+  backdrop-filter: blur(10px);
+}
+
+.objectiveLabel {
+  display: block;
+  margin-bottom: 14px;
+  color: #9aa7b3;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.objectiveCard strong {
+  display: block;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.progress {
+  width: 100%;
+  height: 7px;
+  margin-top: 20px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.progress span {
+  display: block;
+  width: 4%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sb-red);
+}
+
+.objectiveCard small {
+  display: block;
+  margin-top: 10px;
+  color: #919ca7;
+  font-size: 9px;
+}
+
+@media (max-width: 1199px) {
+  .hero {
+    grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.75fr);
+  }
+}
+
+@media (max-width: 899px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .objectiveArea {
+    justify-content: flex-start;
+    padding: 0 28px 28px;
+  }
+
+  .objectiveCard {
+    max-width: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero {
+    min-height: auto;
+    border-radius: 18px;
+  }
+
+  .hero::after {
+    width: 230px;
+    height: 230px;
+    top: -85px;
+    right: -105px;
+  }
+
+  .content {
+    padding: 26px 20px 22px;
+  }
+
+  .eyebrow {
+    margin-bottom: 12px;
+    font-size: 8px;
+  }
+
+  .content h1 {
+    max-width: 100%;
+    font-size: clamp(31px, 9vw, 40px);
+    line-height: 1.04;
+  }
+
+  .content p {
+    margin-top: 16px;
+    font-size: 13px;
+    line-height: 1.62;
+  }
+
+  .actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .primaryAction,
+  .secondaryAction {
+    width: 100%;
+  }
+
+  .objectiveArea {
+    padding: 0 20px 22px;
+  }
+
+  .objectiveCard {
+    padding: 18px;
+  }
+}
