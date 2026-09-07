@@ -47,12 +47,12 @@ export async function signUpAction(formData: FormData) {
     redirect("/cadastro?error=signup_failed");
   }
 
-  await ensureProfileForAuthUser({
-    authUserId: data.user.id,
-    displayName: parsed.data.displayName,
-  });
-
   if (data.session) {
+    await ensureProfileForAuthUser({
+      authUserId: data.user.id,
+      displayName: parsed.data.displayName,
+    });
+
     redirect("/app");
   }
 
