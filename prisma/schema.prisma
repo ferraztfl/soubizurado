@@ -6,3 +6,36 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum AppRole {
+  STUDENT
+  EDITOR
+  MODERATOR
+  ADMIN
+}
+
+model Profile {
+  id          String   @id @default(uuid()) @db.Uuid
+  authUserId  String   @unique @map("auth_user_id") @db.Uuid
+  displayName String?  @map("display_name") @db.VarChar(120)
+  avatarUrl   String?  @map("avatar_url") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  roles UserRole[]
+
+  @@map("profiles")
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Uuid
+  profileId String   @map("profile_id") @db.Uuid
+  role      AppRole
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, role])
+  @@index([role])
+  @@map("user_roles")
+}

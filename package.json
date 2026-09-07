@@ -9,7 +9,13 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:validate": "prisma validate",
+    "db:format": "prisma format",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:status": "prisma migrate status"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
