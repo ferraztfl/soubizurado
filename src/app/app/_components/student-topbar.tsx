@@ -13,36 +13,53 @@ export function StudentTopbar({
 }: StudentTopbarProps) {
   return (
     <header className={styles.topbar}>
-      <div className={styles.left}>
-        <button
-          type="button"
-          className={styles.menuButton}
-          aria-label="Abrir menu principal"
-          aria-controls="student-mobile-navigation"
-          onClick={onMenuClick}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+      <div className={styles.inner}>
+        <div className={styles.desktopContent}>
+          <div className={styles.greeting}>
+            <span className={styles.eyebrow}>
+              ÁREA DO ALUNO
+            </span>
 
-        <div className={styles.greeting}>
-          <span className={styles.eyebrow}>
-            ÁREA DO ALUNO
-          </span>
+            <strong className={styles.title}>
+              Olá, {firstName}
+            </strong>
+          </div>
 
-          <strong className={styles.title}>
-            Olá, {firstName}
-          </strong>
+          <div className={styles.accountStatus}>
+            <span
+              className={styles.statusDot}
+              aria-hidden="true"
+            />
+
+            <span>
+              Conta ativa
+            </span>
+          </div>
         </div>
-      </div>
 
-      <div className={styles.accountStatus}>
-        <span className={styles.statusDot} />
+        <div className={styles.mobileContent}>
+          <button
+            type="button"
+            className={styles.menuButton}
+            aria-label="Abrir menu principal"
+            aria-controls="student-mobile-navigation"
+            onClick={onMenuClick}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
 
-        <span>
-          Conta ativa
-        </span>
+          <div className={styles.greeting}>
+            <span className={styles.eyebrow}>
+              ÁREA DO ALUNO
+            </span>
+
+            <strong className={styles.title}>
+              Olá, {firstName}
+            </strong>
+          </div>
+        </div>
       </div>
     </header>
   );
