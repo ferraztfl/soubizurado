@@ -91,6 +91,12 @@ class FakeQuestionRepository
 
     return this.result;
   }
+
+  public async findPublishedById(
+    _questionId: string,
+  ): Promise<PublishedQuestionRecord | null> {
+    return null;
+  }
 }
 
 describe("ListPublishedQuestionsUseCase", () => {
