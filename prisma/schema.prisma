@@ -1,4 +1,4 @@
-﻿generator client {
+generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
@@ -231,7 +231,7 @@ model Examination {
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  board          ExaminingBoard?    @relation(fields: [boardId], references: [id], onDelete: Restrict)
+  board          ExaminingBoard?     @relation(fields: [boardId], references: [id], onDelete: Restrict)
   organization   PublicOrganization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   careerPosition CareerPosition?     @relation(fields: [careerPositionId], references: [id], onDelete: Restrict)
 
@@ -263,22 +263,22 @@ model QuestionSource {
 }
 
 model Question {
-  id                 String                  @id @default(uuid()) @db.Uuid
-  type               QuestionType
-  status             QuestionStatus          @default(DRAFT)
-  answerKeyStatus    QuestionAnswerKeyStatus @default(MISSING) @map("answer_key_status")
-  statement          String                  @db.Text
-  contentHash        String?                 @map("content_hash") @db.Char(64)
-  correctTrueFalse   Boolean?                @map("correct_true_false")
-  sourceId           String?                 @map("source_id") @db.Uuid
-  examinationId      String?                 @map("examination_id") @db.Uuid
-  disciplineId       String?                 @map("discipline_id") @db.Uuid
-  areaId             String?                 @map("area_id") @db.Uuid
-  topicId            String?                 @map("topic_id") @db.Uuid
-  subtopicId         String?                 @map("subtopic_id") @db.Uuid
-  publishedAt        DateTime?               @map("published_at") @db.Timestamptz(6)
-  createdAt          DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id               String                  @id @default(uuid()) @db.Uuid
+  type             QuestionType
+  status           QuestionStatus          @default(DRAFT)
+  answerKeyStatus  QuestionAnswerKeyStatus @default(MISSING) @map("answer_key_status")
+  statement        String                  @db.Text
+  contentHash      String?                 @map("content_hash") @db.Char(64)
+  correctTrueFalse Boolean?                @map("correct_true_false")
+  sourceId         String?                 @map("source_id") @db.Uuid
+  examinationId    String?                 @map("examination_id") @db.Uuid
+  disciplineId     String?                 @map("discipline_id") @db.Uuid
+  areaId           String?                 @map("area_id") @db.Uuid
+  topicId          String?                 @map("topic_id") @db.Uuid
+  subtopicId       String?                 @map("subtopic_id") @db.Uuid
+  publishedAt      DateTime?               @map("published_at") @db.Timestamptz(6)
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   source      QuestionSource? @relation(fields: [sourceId], references: [id], onDelete: Restrict)
   examination Examination?    @relation(fields: [examinationId], references: [id], onDelete: Restrict)
