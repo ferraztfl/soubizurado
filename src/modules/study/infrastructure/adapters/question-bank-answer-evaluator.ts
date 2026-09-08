@@ -20,10 +20,21 @@ export class QuestionBankAnswerEvaluator
     input: EvaluateStudyQuestionAnswerInput,
   ): Promise<StudyQuestionAnswerEvaluation> {
     const result =
-      await this.submitPublishedQuestionAnswer.execute({
-        questionId: input.questionId,
-        answer: input.answer,
-      });
+      input.answer.type === "MULTIPLE_CHOICE"
+        ? await this.submitPublishedQuestionAnswer.execute({
+            questionId: input.questionId,
+            answer: {
+              type: "MULTIPLE_CHOICE",
+              alternativeId: input.answer.alternativeId,
+            },
+          })
+        : await this.submitPublishedQuestionAnswer.execute({
+            questionId: input.questionId,
+            answer: {
+              type: "TRUE_FALSE",
+              value: input.answer.value,
+            },
+          });
 
     return {
       questionId: result.questionId,
