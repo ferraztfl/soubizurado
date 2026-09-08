@@ -76,4 +76,8 @@ export interface QuestionRepository {
   listPublished(
     input: ListPublishedQuestionsRepositoryInput,
   ): Promise<ListPublishedQuestionsRepositoryResult>;
+
+  findPublishedById(
+    questionId: string,
+  ): Promise<PublishedQuestionRecord | null>;
 }
