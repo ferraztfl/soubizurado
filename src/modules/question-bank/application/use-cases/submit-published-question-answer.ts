@@ -31,6 +31,19 @@ export type SubmitPublishedQuestionAnswerInput =
       }>;
     }>;
 
+type SubmittedAnswer =
+  SubmitPublishedQuestionAnswerInput["answer"];
+
+type MultipleChoiceAnswer = Extract<
+  SubmittedAnswer,
+  { type: "MULTIPLE_CHOICE" }
+>;
+
+type TrueFalseAnswer = Extract<
+  SubmittedAnswer,
+  { type: "TRUE_FALSE" }
+>;
+
 function normalizeQuestionId(questionId: string): string {
   const normalized = questionId.trim();
 
@@ -46,9 +59,9 @@ function normalizeQuestionId(questionId: string): string {
 
 function requireMatchingAnswerType(
   question: PublishedQuestionRecord,
-  input: SubmitPublishedQuestionAnswerInput,
+  answer: SubmittedAnswer,
 ): void {
-  if (question.type !== input.answer.type) {
+  if (question.type !== answer.type) {
     throw new ApplicationError(
       ERROR_CODES.VALIDATION_ERROR,
       "Submitted answer type does not match question type.",
@@ -58,13 +71,10 @@ function requireMatchingAnswerType(
 
 function evaluateMultipleChoiceAnswer(
   question: PublishedQuestionRecord,
-  input: Extract<
-    SubmitPublishedQuestionAnswerInput,
-    { answer: { type: "MULTIPLE_CHOICE" } }
-  >,
+  answer: MultipleChoiceAnswer,
 ): QuestionAnswerResultDto {
   const selectedAlternativeId =
-    input.answer.alternativeId.trim();
+    answer.alternativeId.trim();
 
   if (selectedAlternativeId.length === 0) {
     throw new ApplicationError(
@@ -122,12 +132,9 @@ function evaluateMultipleChoiceAnswer(
 
 function evaluateTrueFalseAnswer(
   question: PublishedQuestionRecord,
-  input: Extract<
-    SubmitPublishedQuestionAnswerInput,
-    { answer: { type: "TRUE_FALSE" } }
-  >,
+  answer: TrueFalseAnswer,
 ): QuestionAnswerResultDto {
-  if (typeof input.answer.value !== "boolean") {
+  if (typeof answer.value !== "boolean") {
     throw new ApplicationError(
       ERROR_CODES.VALIDATION_ERROR,
       "True/False answer must be a boolean.",
@@ -144,10 +151,10 @@ function evaluateTrueFalseAnswer(
   return {
     questionId: question.id,
     isCorrect:
-      input.answer.value === question.correctTrueFalse,
+      answer.value === question.correctTrueFalse,
     selectedAnswer: {
       type: "TRUE_FALSE",
-      value: input.answer.value,
+      value: answer.value,
     },
     correctAnswer: {
       type: "TRUE_FALSE",
@@ -181,7 +188,10 @@ export class SubmitPublishedQuestionAnswerUseCase {
       );
     }
 
-    requireMatchingAnswerType(question, input);
+    requireMatchingAnswerType(
+      question,
+      input.answer,
+    );
 
     if (
       question.type === "MULTIPLE_CHOICE" &&
@@ -189,7 +199,7 @@ export class SubmitPublishedQuestionAnswerUseCase {
     ) {
       return evaluateMultipleChoiceAnswer(
         question,
-        input,
+        input.answer,
       );
     }
 
@@ -199,7 +209,7 @@ export class SubmitPublishedQuestionAnswerUseCase {
     ) {
       return evaluateTrueFalseAnswer(
         question,
-        input,
+        input.answer,
       );
     }
 
