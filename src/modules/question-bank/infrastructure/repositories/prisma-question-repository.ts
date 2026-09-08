@@ -194,4 +194,21 @@ export class PrismaQuestionRepository
       total,
     };
   }
+
+  public async findPublishedById(
+    questionId: string,
+  ): Promise<PublishedQuestionRecord | null> {
+    const question =
+      await this.prisma.question.findFirst({
+        where: {
+          id: questionId,
+          status: "PUBLISHED",
+        },
+        select: publishedQuestionSelect,
+      });
+
+    return question
+      ? toPublishedQuestionRecord(question)
+      : null;
+  }
 }
