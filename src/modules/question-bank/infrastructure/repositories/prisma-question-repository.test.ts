@@ -18,17 +18,22 @@ import {
 function createPrismaMock(
   rows: readonly Record<string, unknown>[],
   total: number,
+  found: Record<string, unknown> | null =
+    rows.at(0) ?? null,
 ): {
   prisma: PrismaClient;
   findMany: ReturnType<typeof vi.fn>;
+  findFirst: ReturnType<typeof vi.fn>;
   count: ReturnType<typeof vi.fn>;
 } {
   const findMany = vi.fn().mockResolvedValue(rows);
+  const findFirst = vi.fn().mockResolvedValue(found);
   const count = vi.fn().mockResolvedValue(total);
 
   const prisma = {
     question: {
       findMany,
+      findFirst,
       count,
     },
   } as unknown as PrismaClient;
@@ -36,6 +41,7 @@ function createPrismaMock(
   return {
     prisma,
     findMany,
+    findFirst,
     count,
   };
 }
@@ -236,5 +242,49 @@ describe("PrismaQuestionRepository", () => {
     ).rejects.toThrow(
       "Published question question-1 is missing required taxonomy.",
     );
+  });
+
+  it("restricts lookup by id to published questions", async () => {
+    const {
+      prisma,
+      findFirst,
+    } = createPrismaMock(
+      [validPublishedRow],
+      1,
+    );
+
+    const repository =
+      new PrismaQuestionRepository(prisma);
+
+    const result =
+      await repository.findPublishedById(
+        "question-1",
+      );
+
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: "question-1",
+          status: "PUBLISHED",
+        },
+      }),
+    );
+
+    expect(result?.id).toBe("question-1");
+  });
+
+  it("returns null when no published question matches the id", async () => {
+    const {
+      prisma,
+    } = createPrismaMock([], 0, null);
+
+    const repository =
+      new PrismaQuestionRepository(prisma);
+
+    await expect(
+      repository.findPublishedById(
+        "missing-question",
+      ),
+    ).resolves.toBeNull();
   });
 });
