@@ -54,7 +54,10 @@ function requirePositiveSafeInteger(
 
 export class ListPublishedQuestionsUseCase {
   public constructor(
-    private readonly questionRepository: QuestionRepository,
+    private readonly questionRepository: Pick<
+      QuestionRepository,
+      "listPublished"
+    >,
   ) {}
 
   public async execute(
