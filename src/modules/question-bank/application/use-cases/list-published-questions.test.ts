@@ -93,8 +93,10 @@ class FakeQuestionRepository
   }
 
   public async findPublishedById(
-    _questionId: string,
+    questionId: string,
   ): Promise<PublishedQuestionRecord | null> {
+    void questionId;
+
     return null;
   }
 }
