@@ -64,8 +64,10 @@ class FakeQuestionRepository
   public lastQuestionId: string | null = null;
 
   public async listPublished(
-    _input: ListPublishedQuestionsRepositoryInput,
+    input: ListPublishedQuestionsRepositoryInput,
   ): Promise<ListPublishedQuestionsRepositoryResult> {
+    void input;
+
     return {
       items: [],
       total: 0,
