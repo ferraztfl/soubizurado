@@ -14,6 +14,39 @@ enum AppRole {
   ADMIN
 }
 
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+enum QuestionStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuestionAnswerKeyStatus {
+  MISSING
+  DEFINED
+  VERIFIED
+}
+
+enum QuestionSourceType {
+  OFFICIAL_EXAM
+  ORIGINAL
+  LICENSED
+  OTHER
+}
+
+enum QuestionLicenseStatus {
+  UNKNOWN
+  PUBLIC_DOMAIN
+  AUTHORIZED
+  LICENSED
+  RESTRICTED
+}
+
 model Profile {
   id          String   @id @default(uuid()) @db.Uuid
   authUserId  String   @unique @map("auth_user_id") @db.Uuid
@@ -38,4 +71,275 @@ model UserRole {
   @@unique([profileId, role])
   @@index([role])
   @@map("user_roles")
+}
+
+model Discipline {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(160)
+  slug        String   @unique @db.VarChar(180)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  areas     Area[]
+  topics    Topic[]
+  questions Question[]
+
+  @@index([isActive, sortOrder])
+  @@map("disciplines")
+}
+
+model Area {
+  id           String   @id @default(uuid()) @db.Uuid
+  disciplineId String   @map("discipline_id") @db.Uuid
+  name         String   @db.VarChar(160)
+  slug         String   @db.VarChar(180)
+  description  String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+
+  topics    Topic[]
+  questions Question[]
+
+  @@unique([disciplineId, slug])
+  @@index([disciplineId, isActive, sortOrder])
+  @@map("areas")
+}
+
+model Topic {
+  id           String   @id @default(uuid()) @db.Uuid
+  disciplineId String   @map("discipline_id") @db.Uuid
+  areaId       String?  @map("area_id") @db.Uuid
+  name         String   @db.VarChar(180)
+  slug         String   @db.VarChar(200)
+  description  String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  area       Area?      @relation(fields: [areaId], references: [id], onDelete: Restrict)
+
+  subtopics Subtopic[]
+  questions Question[]
+
+  @@unique([disciplineId, slug])
+  @@index([disciplineId, isActive, sortOrder])
+  @@index([areaId, isActive, sortOrder])
+  @@map("topics")
+}
+
+model Subtopic {
+  id          String   @id @default(uuid()) @db.Uuid
+  topicId     String   @map("topic_id") @db.Uuid
+  name        String   @db.VarChar(180)
+  slug        String   @db.VarChar(200)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  questions Question[]
+
+  @@unique([topicId, slug])
+  @@index([topicId, isActive, sortOrder])
+  @@map("subtopics")
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(120)
+  slug      String   @unique @db.VarChar(140)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  questionTags QuestionTag[]
+
+  @@index([isActive])
+  @@map("tags")
+}
+
+model ExaminingBoard {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @db.VarChar(180)
+  acronym    String?  @db.VarChar(40)
+  slug       String   @unique @db.VarChar(200)
+  websiteUrl String?  @map("website_url") @db.Text
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  examinations Examination[]
+
+  @@index([isActive, name])
+  @@map("examining_boards")
+}
+
+model PublicOrganization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(200)
+  acronym   String?  @db.VarChar(40)
+  slug      String   @unique @db.VarChar(220)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  examinations Examination[]
+
+  @@index([isActive, name])
+  @@map("public_organizations")
+}
+
+model CareerPosition {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(180)
+  slug        String   @unique @db.VarChar(200)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  examinations Examination[]
+
+  @@index([isActive, name])
+  @@map("career_positions")
+}
+
+model Examination {
+  id               String    @id @default(uuid()) @db.Uuid
+  boardId          String?   @map("board_id") @db.Uuid
+  organizationId   String?   @map("organization_id") @db.Uuid
+  careerPositionId String?   @map("career_position_id") @db.Uuid
+  title            String    @db.VarChar(240)
+  slug             String    @unique @db.VarChar(260)
+  year             Int?      @db.SmallInt
+  stateCode        String?   @map("state_code") @db.Char(2)
+  noticeNumber     String?   @map("notice_number") @db.VarChar(80)
+  examDate         DateTime? @map("exam_date") @db.Date
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  board          ExaminingBoard?     @relation(fields: [boardId], references: [id], onDelete: Restrict)
+  organization   PublicOrganization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  careerPosition CareerPosition?     @relation(fields: [careerPositionId], references: [id], onDelete: Restrict)
+
+  questions Question[]
+
+  @@index([boardId, year])
+  @@index([organizationId, year])
+  @@index([careerPositionId, year])
+  @@index([isActive, year])
+  @@map("examinations")
+}
+
+model QuestionSource {
+  id            String                @id @default(uuid()) @db.Uuid
+  sourceType    QuestionSourceType    @map("source_type")
+  name          String                @db.VarChar(200)
+  reference     String?               @db.VarChar(250)
+  url           String?               @db.Text
+  licenseStatus QuestionLicenseStatus @default(UNKNOWN) @map("license_status")
+  licenseName   String?               @map("license_name") @db.VarChar(160)
+  licenseNotes  String?               @map("license_notes") @db.Text
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  questions Question[]
+
+  @@index([sourceType, licenseStatus])
+  @@map("question_sources")
+}
+
+model Question {
+  id               String                  @id @default(uuid()) @db.Uuid
+  type             QuestionType
+  status           QuestionStatus          @default(DRAFT)
+  answerKeyStatus  QuestionAnswerKeyStatus @default(MISSING) @map("answer_key_status")
+  statement        String                  @db.Text
+  contentHash      String?                 @map("content_hash") @db.Char(64)
+  correctTrueFalse Boolean?                @map("correct_true_false")
+  sourceId         String?                 @map("source_id") @db.Uuid
+  examinationId    String?                 @map("examination_id") @db.Uuid
+  disciplineId     String?                 @map("discipline_id") @db.Uuid
+  areaId           String?                 @map("area_id") @db.Uuid
+  topicId          String?                 @map("topic_id") @db.Uuid
+  subtopicId       String?                 @map("subtopic_id") @db.Uuid
+  publishedAt      DateTime?               @map("published_at") @db.Timestamptz(6)
+  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  source      QuestionSource? @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  examination Examination?    @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  discipline  Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  area        Area?           @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  topic       Topic?          @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  subtopic    Subtopic?       @relation(fields: [subtopicId], references: [id], onDelete: Restrict)
+
+  alternatives QuestionAlternative[]
+  explanation  QuestionExplanation?
+  questionTags QuestionTag[]
+
+  @@index([status, type])
+  @@index([status, disciplineId])
+  @@index([status, topicId])
+  @@index([status, subtopicId])
+  @@index([status, examinationId])
+  @@index([sourceId])
+  @@index([contentHash])
+  @@map("questions")
+}
+
+model QuestionAlternative {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @map("question_id") @db.Uuid
+  label      String   @db.VarChar(8)
+  content    String   @db.Text
+  position   Int
+  isCorrect  Boolean  @default(false) @map("is_correct")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, label])
+  @@unique([questionId, position])
+  @@index([questionId, isCorrect])
+  @@map("question_alternatives")
+}
+
+model QuestionExplanation {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @unique @map("question_id") @db.Uuid
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_explanations")
+}
+
+model QuestionTag {
+  questionId String   @map("question_id") @db.Uuid
+  tagId      String   @map("tag_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+  @@index([tagId, questionId])
+  @@map("question_tags")
 }
