@@ -55,7 +55,9 @@ model Profile {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  roles UserRole[]
+  roles               UserRole[]
+  studyAnswerAttempts StudyAnswerAttempt[]
+  studyFavorites      StudyFavorite[]
 
   @@map("profiles")
 }
@@ -287,9 +289,11 @@ model Question {
   topic       Topic?          @relation(fields: [topicId], references: [id], onDelete: Restrict)
   subtopic    Subtopic?       @relation(fields: [subtopicId], references: [id], onDelete: Restrict)
 
-  alternatives QuestionAlternative[]
-  explanation  QuestionExplanation?
-  questionTags QuestionTag[]
+  alternatives       QuestionAlternative[]
+  explanation        QuestionExplanation?
+  questionTags       QuestionTag[]
+  studyAnswerAttempts StudyAnswerAttempt[]
+  studyFavorites      StudyFavorite[]
 
   @@index([status, type])
   @@index([status, disciplineId])
@@ -312,6 +316,8 @@ model QuestionAlternative {
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  studyAnswerAttempts StudyAnswerAttempt[] @relation("StudyAttemptSelectedAlternative")
 
   @@unique([questionId, label])
   @@unique([questionId, position])
@@ -342,4 +348,41 @@ model QuestionTag {
   @@id([questionId, tagId])
   @@index([tagId, questionId])
   @@map("question_tags")
+}
+
+model StudyAnswerAttempt {
+  id                    String       @id @default(uuid()) @db.Uuid
+  profileId             String       @map("profile_id") @db.Uuid
+  questionId            String       @map("question_id") @db.Uuid
+  questionType          QuestionType @map("question_type")
+  selectedAlternativeId String?      @map("selected_alternative_id") @db.Uuid
+  selectedTrueFalse     Boolean?     @map("selected_true_false")
+  isCorrect             Boolean      @map("is_correct")
+  responseTimeMs        Int?         @map("response_time_ms")
+  answeredAt            DateTime     @default(now()) @map("answered_at") @db.Timestamptz(6)
+
+  profile             Profile              @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  question            Question             @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  selectedAlternative QuestionAlternative? @relation("StudyAttemptSelectedAlternative", fields: [selectedAlternativeId], references: [id], onDelete: Restrict)
+
+  @@index([profileId, answeredAt])
+  @@index([profileId, questionId, answeredAt])
+  @@index([profileId, isCorrect, answeredAt])
+  @@index([questionId, answeredAt])
+  @@index([selectedAlternativeId])
+  @@map("study_answer_attempts")
+}
+
+model StudyFavorite {
+  profileId String   @map("profile_id") @db.Uuid
+  questionId String  @map("question_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile  Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, questionId])
+  @@index([profileId, createdAt])
+  @@index([questionId, profileId])
+  @@map("study_favorites")
 }
