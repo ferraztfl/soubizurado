@@ -3,6 +3,15 @@ import {
 } from "../../../question-bank/infrastructure/composition/question-bank-application";
 
 import {
+  ListStudyAnswerHistoryUseCase,
+} from "../../application/use-cases/list-study-answer-history";
+import {
+  ListStudyFavoritesUseCase,
+} from "../../application/use-cases/list-study-favorites";
+import {
+  SetStudyQuestionFavoriteUseCase,
+} from "../../application/use-cases/set-study-question-favorite";
+import {
   SubmitStudyQuestionAnswerUseCase,
 } from "../../application/use-cases/submit-study-question-answer";
 
@@ -18,6 +27,24 @@ export function createSubmitStudyQuestionAnswerUseCase(): SubmitStudyQuestionAns
     new QuestionBankAnswerEvaluator(
       createSubmitPublishedQuestionAnswerUseCase(),
     ),
+    new PrismaStudyRepository(),
+  );
+}
+
+export function createListStudyAnswerHistoryUseCase(): ListStudyAnswerHistoryUseCase {
+  return new ListStudyAnswerHistoryUseCase(
+    new PrismaStudyRepository(),
+  );
+}
+
+export function createSetStudyQuestionFavoriteUseCase(): SetStudyQuestionFavoriteUseCase {
+  return new SetStudyQuestionFavoriteUseCase(
+    new PrismaStudyRepository(),
+  );
+}
+
+export function createListStudyFavoritesUseCase(): ListStudyFavoritesUseCase {
+  return new ListStudyFavoritesUseCase(
     new PrismaStudyRepository(),
   );
 }
