@@ -105,13 +105,14 @@ export function StudentSidebar({
                         key={item.label}
                         className={`${styles.navItem} ${styles.disabled}`}
                         aria-disabled="true"
+                        aria-label={`${item.label}, disponível em breve`}
+                        title="Disponível em breve"
                       >
                         <span
                           className={styles.navMarker}
                           aria-hidden="true"
                         />
                         <span>{item.label}</span>
-                        <small>Em breve</small>
                       </div>
                     );
                   }
@@ -159,14 +160,14 @@ export function StudentSidebar({
             </span>
           </div>
 
-          <strong>Continue construindo sua evolução.</strong>
+          <strong>Plano gratuito</strong>
 
           <p>
-            Resolva questões, revise seus erros e acompanhe seu desempenho.
+            Recursos essenciais para começar sua preparação.
           </p>
 
           <span className={styles.planFooter}>
-            Premium será ativado em uma etapa futura.
+            Premium em breve
           </span>
         </section>
 
