@@ -5,7 +5,6 @@ import {
 } from "vitest";
 
 import type {
-  ListPublicQuestionsRepositoryInput,
   ListPublicQuestionsRepositoryResult,
   PublicQuestionReadRecord,
   PublicQuestionReadRepository,
