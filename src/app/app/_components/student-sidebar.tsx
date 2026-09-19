@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { signOutAction } from "@/modules/identity/presentation/actions/auth-actions";
 
@@ -14,31 +15,43 @@ type StudentSidebarProps = Readonly<{
   onNavigate?: () => void;
 }>;
 
-const navigationItems = [
+type NavigationItem = Readonly<{
+  label: string;
+  href: string | null;
+}>;
+
+type NavigationGroup = Readonly<{
+  label: string;
+  items: readonly NavigationItem[];
+}>;
+
+const navigationGroups: readonly NavigationGroup[] = [
   {
-    label: "Início",
-    href: "/app",
-    active: true,
+    label: "Estudos",
+    items: [
+      { label: "Início", href: "/app" },
+      { label: "Explorar questões", href: null },
+      { label: "Estudar", href: null },
+      { label: "Revisar", href: null },
+      { label: "Desempenho", href: null },
+    ],
   },
   {
-    label: "Questões",
-    href: "#",
-    active: false,
+    label: "Evolução",
+    items: [
+      { label: "Simulados", href: null },
+      { label: "Missões", href: null },
+      { label: "Ranking", href: null },
+    ],
   },
   {
-    label: "Simulados",
-    href: "#",
-    active: false,
-  },
-  {
-    label: "Desempenho",
-    href: "#",
-    active: false,
-  },
-  {
-    label: "Favoritas",
-    href: "#",
-    active: false,
+    label: "Conta",
+    items: [
+      { label: "Comunidade", href: null },
+      { label: "Loja", href: null },
+      { label: "Perfil", href: null },
+      { label: "Configurações", href: null },
+    ],
   },
 ] as const;
 
@@ -48,6 +61,8 @@ export function StudentSidebar({
   firstName,
   onNavigate,
 }: StudentSidebarProps) {
+  const pathname = usePathname();
+
   return (
     <div className={styles.sidebar}>
       <div>
@@ -73,34 +88,60 @@ export function StudentSidebar({
           className={styles.navigation}
           aria-label="Navegação principal"
         >
-          {navigationItems.map((item) => {
-            if (item.active) {
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`${styles.navItem} ${styles.active}`}
-                  aria-current="page"
-                  onClick={onNavigate}
-                >
-                  <span className={styles.navDot} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            }
+          {navigationGroups.map((group) => (
+            <section
+              key={group.label}
+              className={styles.navigationGroup}
+            >
+              <span className={styles.groupLabel}>
+                {group.label}
+              </span>
 
-            return (
-              <div
-                key={item.label}
-                className={`${styles.navItem} ${styles.disabled}`}
-                aria-disabled="true"
-              >
-                <span className={styles.navDot} />
-                <span>{item.label}</span>
-                <small>Em breve</small>
+              <div className={styles.groupItems}>
+                {group.items.map((item) => {
+                  if (!item.href) {
+                    return (
+                      <div
+                        key={item.label}
+                        className={`${styles.navItem} ${styles.disabled}`}
+                        aria-disabled="true"
+                      >
+                        <span
+                          className={styles.navMarker}
+                          aria-hidden="true"
+                        />
+                        <span>{item.label}</span>
+                        <small>Em breve</small>
+                      </div>
+                    );
+                  }
+
+                  const active =
+                    pathname === item.href;
+
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`${styles.navItem} ${
+                        active ? styles.active : ""
+                      }`}
+                      aria-current={
+                        active ? "page" : undefined
+                      }
+                      onClick={onNavigate}
+                    >
+                      <span
+                        className={styles.navMarker}
+                        aria-hidden="true"
+                      />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
-            );
-          })}
+            </section>
+          ))}
         </nav>
       </div>
 
@@ -109,18 +150,23 @@ export function StudentSidebar({
           className={styles.planCard}
           aria-label="Plano atual"
         >
-          <span className={styles.planLabel}>
-            Seu plano
-          </span>
+          <div className={styles.planHeading}>
+            <span className={styles.planLabel}>
+              Plano atual
+            </span>
+            <span className={styles.planBadge}>
+              Grátis
+            </span>
+          </div>
 
-          <strong>Gratuito</strong>
+          <strong>Continue construindo sua evolução.</strong>
 
           <p>
-            Continue estudando e acompanhe sua evolução.
+            Resolva questões, revise seus erros e acompanhe seu desempenho.
           </p>
 
           <span className={styles.planFooter}>
-            Premium em breve
+            Premium será ativado em uma etapa futura.
           </span>
         </section>
 
