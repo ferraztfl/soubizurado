@@ -5,6 +5,9 @@ import { ErrorState } from "@/shared/ui/error-state";
 import styles from "./question-explorer.module.css";
 
 type QuestionExplorerErrorProps = Readonly<{
+  error: Error & {
+    digest?: string;
+  };
   reset: () => void;
 }>;
 
