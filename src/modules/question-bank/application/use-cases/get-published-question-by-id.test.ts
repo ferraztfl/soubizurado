@@ -9,37 +9,33 @@ import {
 } from "../../domain/question-type";
 
 import type {
-  ListPublishedQuestionsRepositoryInput,
-  ListPublishedQuestionsRepositoryResult,
-  PublishedQuestionRecord,
-  QuestionRepository,
-} from "../ports/question-repository";
+  ListPublicQuestionsRepositoryInput,
+  ListPublicQuestionsRepositoryResult,
+  PublicQuestionReadRecord,
+  PublicQuestionReadRepository,
+  QuestionExplorerFacets,
+} from "../ports/public-question-read-repository";
 
 import {
   GetPublishedQuestionByIdUseCase,
 } from "./get-published-question-by-id";
 
-const publishedQuestion: PublishedQuestionRecord = {
+const publishedQuestion: PublicQuestionReadRecord = {
   id: "question-1",
   type: QUESTION_TYPES.MULTIPLE_CHOICE,
   statement: "Qual alternativa esta correta?",
-  answerKeyStatus: "VERIFIED",
-  correctTrueFalse: null,
-  explanation: "A alternativa A esta correta.",
   alternatives: [
     {
       id: "alternative-b",
       label: "B",
       content: "Alternativa B",
       position: 2,
-      isCorrect: false,
     },
     {
       id: "alternative-a",
       label: "A",
       content: "Alternativa A",
       position: 1,
-      isCorrect: true,
     },
   ],
   discipline: {
@@ -55,19 +51,17 @@ const publishedQuestion: PublishedQuestionRecord = {
   examination: null,
 };
 
-class FakeQuestionRepository
-  implements QuestionRepository
+class FakePublicQuestionReadRepository
+  implements PublicQuestionReadRepository
 {
-  public found: PublishedQuestionRecord | null =
+  public found: PublicQuestionReadRecord | null =
     publishedQuestion;
 
   public lastQuestionId: string | null = null;
 
   public async listPublished(
-    input: ListPublishedQuestionsRepositoryInput,
-  ): Promise<ListPublishedQuestionsRepositoryResult> {
-    void input;
-
+    _input: ListPublicQuestionsRepositoryInput,
+  ): Promise<ListPublicQuestionsRepositoryResult> {
     return {
       items: [],
       total: 0,
@@ -76,17 +70,26 @@ class FakeQuestionRepository
 
   public async findPublishedById(
     questionId: string,
-  ): Promise<PublishedQuestionRecord | null> {
+  ): Promise<PublicQuestionReadRecord | null> {
     this.lastQuestionId = questionId;
 
     return this.found;
   }
+
+  public async listExplorerFacets(): Promise<QuestionExplorerFacets> {
+    return {
+      disciplines: [],
+      boards: [],
+      years: [],
+      types: [],
+    };
+  }
 }
 
 describe("GetPublishedQuestionByIdUseCase", () => {
-  it("returns a public DTO without answer data", async () => {
+  it("returns a public DTO", async () => {
     const repository =
-      new FakeQuestionRepository();
+      new FakePublicQuestionReadRepository();
 
     const useCase =
       new GetPublishedQuestionByIdUseCase(
@@ -125,7 +128,7 @@ describe("GetPublishedQuestionByIdUseCase", () => {
 
   it("normalizes the question id before repository lookup", async () => {
     const repository =
-      new FakeQuestionRepository();
+      new FakePublicQuestionReadRepository();
 
     const useCase =
       new GetPublishedQuestionByIdUseCase(
@@ -141,7 +144,7 @@ describe("GetPublishedQuestionByIdUseCase", () => {
 
   it("rejects an empty question id", async () => {
     const repository =
-      new FakeQuestionRepository();
+      new FakePublicQuestionReadRepository();
 
     const useCase =
       new GetPublishedQuestionByIdUseCase(
@@ -157,7 +160,7 @@ describe("GetPublishedQuestionByIdUseCase", () => {
 
   it("returns not found when the published question does not exist", async () => {
     const repository =
-      new FakeQuestionRepository();
+      new FakePublicQuestionReadRepository();
     repository.found = null;
 
     const useCase =
