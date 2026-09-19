@@ -24,60 +24,53 @@
   letter-spacing: -0.02em;
 }
 
-.steps {
-  display: flex;
-  flex-direction: column;
-  gap: 17px;
-  margin-top: 22px;
+.description {
+  margin: 10px 0 0;
+  color: var(--sb-text-muted);
+  font-size: 9px;
+  line-height: 1.55;
 }
 
-.step {
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.item {
   display: flex;
   align-items: flex-start;
-  gap: 11px;
-}
-
-.number,
-.activeNumber {
-  width: 29px;
-  height: 29px;
-  flex: 0 0 29px;
-  display: grid;
-  place-items: center;
+  gap: 10px;
+  padding: 12px;
   border: 1px solid var(--sb-border);
-  border-radius: 50%;
+  border-radius: 12px;
   background: var(--sb-surface-muted);
-  color: var(--sb-text-subtle);
-  font-size: 9px;
-  font-weight: 800;
 }
 
-.activeNumber {
-  border-color: #efc0bc;
-  background: var(--sb-brand-soft);
-  color: var(--sb-brand);
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--sb-warning);
+  box-shadow: 0 0 0 4px var(--sb-warning-soft);
 }
 
-.step > div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.item > div {
+  min-width: 0;
 }
 
-.step strong {
+.item strong {
+  display: block;
   color: var(--sb-text);
   font-size: 10px;
 }
 
-.step small {
+.item small {
+  display: block;
+  margin-top: 4px;
   color: var(--sb-text-subtle);
   font-size: 8px;
-  line-height: 1.5;
-}
-
-@media (max-width: 767px) {
-  .card {
-    padding: 18px;
-    border-radius: 15px;
-  }
 }

@@ -1,11 +1,11 @@
 .sidebar {
   width: 100%;
-  height: 100%;
   min-height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  color: #ffffff;
+  gap: 20px;
+  color: var(--sb-text);
 }
 
 .brand {
@@ -16,20 +16,16 @@
 
 .brandCard {
   width: 100%;
-  min-height: 68px;
+  min-height: 60px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 10px;
+  padding: 4px 6px;
   overflow: hidden;
-  border: 1px solid rgba(17, 17, 19, 0.05);
-  border-radius: 13px;
-  background: #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
 }
 
 .logo {
-  width: 178px;
+  width: 154px;
   height: auto;
   object-fit: contain;
 }
@@ -37,102 +33,152 @@
 .navigation {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 24px;
+  gap: 15px;
+  margin-top: 19px;
+}
+
+.navigationGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groupLabel {
+  padding: 0 12px;
+  color: var(--sb-text-subtle);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.groupItems {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .navItem {
-  min-height: 42px;
+  min-height: 39px;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 11px;
+  border: 1px solid transparent;
   border-radius: 10px;
-  color: #a5a5ab;
+  color: var(--sb-text-muted);
   text-decoration: none;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 680;
+  transition:
+    background var(--sb-motion-fast) var(--sb-ease),
+    border-color var(--sb-motion-fast) var(--sb-ease),
+    color var(--sb-motion-fast) var(--sb-ease);
+}
+
+.navItem:not(.disabled):hover {
+  background: var(--sb-surface-muted);
+  color: var(--sb-text-strong);
 }
 
 .active {
-  background: rgba(255, 255, 255, 0.085);
-  color: #ffffff;
+  border-color: #f4d0cc;
+  background: var(--sb-sidebar-active);
+  color: var(--sb-brand-strong);
 }
 
-.navDot {
+.navMarker {
   width: 7px;
   height: 7px;
   flex: 0 0 7px;
-  border-radius: 999px;
-  background: #5e5e65;
+  border: 2px solid #c4c8d0;
+  border-radius: 50%;
+  background: transparent;
 }
 
-.active .navDot {
-  background: var(--sb-red);
-  box-shadow: 0 0 0 4px rgba(212, 18, 0, 0.12);
+.active .navMarker {
+  border-color: var(--sb-brand);
+  background: var(--sb-brand);
+  box-shadow: 0 0 0 4px rgba(212, 18, 0, 0.09);
 }
 
 .disabled {
   cursor: default;
-  opacity: 0.7;
-}
-
-.navItem small {
-  margin-left: auto;
-  color: #77777d;
-  font-size: 8px;
-  font-weight: 750;
-  text-transform: uppercase;
+  opacity: 0.58;
 }
 
 .bottom {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .planCard {
-  padding: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 12px;
+  border: 1px solid var(--sb-border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.045);
+  background:
+    linear-gradient(
+      150deg,
+      var(--sb-brand-subtle) 0%,
+      #ffffff 76%
+    );
+}
+
+.planHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
 }
 
 .planLabel {
-  display: block;
-  margin-bottom: 7px;
-  color: #f04433;
-  font-size: 8px;
+  color: var(--sb-brand);
+  font-size: 7px;
   font-weight: 850;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.planBadge {
+  padding: 3px 6px;
+  border: 1px solid #f0cbc7;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--sb-brand-strong);
+  font-size: 7px;
+  font-weight: 850;
   text-transform: uppercase;
 }
 
 .planCard strong {
   display: block;
-  color: #ffffff;
-  font-size: 14px;
+  color: var(--sb-text-strong);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .planCard p {
-  margin: 8px 0 11px;
-  color: #9f9fa6;
-  font-size: 10px;
-  line-height: 1.5;
+  margin: 6px 0 7px;
+  color: var(--sb-text-muted);
+  font-size: 8px;
+  line-height: 1.45;
 }
 
 .planFooter {
-  color: #d0d0d4;
-  font-size: 9px;
-  font-weight: 700;
+  color: var(--sb-text-subtle);
+  font-size: 7px;
+  line-height: 1.4;
+  text-transform: uppercase;
 }
 
 .user {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 12px;
+  border-top: 1px solid var(--sb-border);
 }
 
 .avatar {
@@ -141,10 +187,11 @@
   flex: 0 0 34px;
   display: grid;
   place-items: center;
+  border: 1px solid #f0cbc7;
   border-radius: 50%;
-  background: #f1f1f2;
-  color: #3c3c42;
-  font-size: 12px;
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand-strong);
+  font-size: 11px;
   font-weight: 900;
 }
 
@@ -163,55 +210,56 @@
 }
 
 .userData strong {
-  color: #ffffff;
-  font-size: 10px;
+  color: var(--sb-text-strong);
+  font-size: 9px;
 }
 
 .userData span {
   margin-top: 2px;
-  color: #85858b;
-  font-size: 8px;
+  color: var(--sb-text-subtle);
+  font-size: 7px;
 }
 
 .logout {
   flex: 0 0 auto;
-  padding: 5px;
+  padding: 6px 7px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #8a8a90;
+  color: var(--sb-text-muted);
   cursor: pointer;
-  font-size: 9px;
+  font-size: 8px;
+  font-weight: 700;
 }
 
 .logout:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--sb-surface-muted);
+  color: var(--sb-brand-strong);
 }
 
 @media (max-width: 1099px) {
+  .sidebar {
+    gap: 24px;
+  }
+
+  .brandCard {
+    min-height: 64px;
+  }
+
+  .logo {
+    width: 164px;
+  }
+
+  .navigation {
+    gap: 18px;
+  }
+
   .navItem {
-    min-height: 46px;
+    min-height: 44px;
     font-size: 13px;
   }
 
-  .navItem small {
-    font-size: 8px;
-  }
-
   .planCard {
-    padding: 16px;
-  }
-
-  .planCard strong {
-    font-size: 15px;
-  }
-
-  .planCard p {
-    font-size: 10px;
-  }
-
-  .userData strong {
-    font-size: 10px;
+    padding: 14px;
   }
 }

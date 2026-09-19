@@ -1,0 +1,70 @@
+.card {
+  min-width: 0;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--metric-accent, var(--sb-brand));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--metric-accent, var(--sb-brand)) 12%, transparent);
+}
+
+.label {
+  color: var(--sb-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.card strong {
+  margin-top: auto;
+  color: var(--sb-text-strong);
+  font-size: 27px;
+  font-weight: 820;
+  letter-spacing: -0.04em;
+}
+
+.detail {
+  margin-top: 5px;
+  color: var(--sb-text-subtle);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.card[data-accent="success"] {
+  --metric-accent: var(--sb-success);
+}
+
+.card[data-accent="warning"] {
+  --metric-accent: var(--sb-warning);
+}
+
+.card[data-accent="info"] {
+  --metric-accent: var(--sb-info);
+}
+
+@media (max-width: 767px) {
+  .card {
+    min-height: 112px;
+    padding: 16px;
+  }
+
+  .card strong {
+    font-size: 24px;
+  }
+}

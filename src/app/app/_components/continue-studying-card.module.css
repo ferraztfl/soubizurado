@@ -1,0 +1,132 @@
+.card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.eyebrow {
+  display: block;
+  color: var(--sb-brand);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  margin: 7px 0 0;
+  color: var(--sb-text-strong);
+  font-size: 17px;
+  font-weight: 770;
+  letter-spacing: -0.02em;
+}
+
+.status {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--sb-border);
+  border-radius: 999px;
+  background: var(--sb-surface-muted);
+  color: var(--sb-text-muted);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--sb-border);
+  border-radius: 14px;
+  background: var(--sb-surface-muted);
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand-strong);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.copy {
+  min-width: 0;
+}
+
+.copy strong {
+  display: block;
+  color: var(--sb-text-strong);
+  font-size: 12px;
+}
+
+.copy p {
+  max-width: 680px;
+  margin: 6px 0 0;
+  color: var(--sb-text-muted);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.action {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid #f0cbc7;
+  border-radius: 10px;
+  background: var(--sb-brand-subtle);
+  color: var(--sb-brand-strong);
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.action span {
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: #ffffff;
+  color: var(--sb-text-subtle);
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.action:disabled {
+  cursor: default;
+}
+
+@media (max-width: 767px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .status {
+    align-self: flex-start;
+  }
+
+  .body {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .action {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
+}

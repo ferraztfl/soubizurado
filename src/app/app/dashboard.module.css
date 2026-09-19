@@ -2,21 +2,40 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 22px;
 }
 
-.lowerGrid {
+.contentGrid {
   display: grid;
   grid-template-columns:
-    minmax(0, 1.65fr)
-    minmax(300px, 0.55fr);
-  align-items: stretch;
+    minmax(0, 1.7fr)
+    minmax(280px, 0.58fr);
+  align-items: start;
   gap: 18px;
 }
 
+.mainColumn,
+.rightRail {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rightRail {
+  position: sticky;
+  top: calc(var(--sb-topbar-height) + 18px);
+}
+
 @media (max-width: 1199px) {
-  .lowerGrid {
+  .contentGrid {
     grid-template-columns: 1fr;
+  }
+
+  .rightRail {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -25,7 +44,13 @@
     gap: 18px;
   }
 
-  .lowerGrid {
+  .contentGrid,
+  .mainColumn,
+  .rightRail {
     gap: 14px;
+  }
+
+  .rightRail {
+    display: flex;
   }
 }
