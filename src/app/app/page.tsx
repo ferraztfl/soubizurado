@@ -1,5 +1,7 @@
 import { PageHeader } from "@/shared/ui/page-header";
 
+import { AttentionCard } from "./_components/attention-card";
+import { ContinueStudyingCard } from "./_components/continue-studying-card";
 import { DashboardHero } from "./_components/dashboard-hero";
 import { DashboardMetrics } from "./_components/dashboard-metrics";
 import { GettingStartedCard } from "./_components/getting-started-card";
@@ -20,9 +22,16 @@ export default function StudentHomePage() {
 
       <DashboardMetrics />
 
-      <section className={styles.lowerGrid}>
-        <PerformanceCard />
-        <GettingStartedCard />
+      <section className={styles.contentGrid}>
+        <div className={styles.mainColumn}>
+          <ContinueStudyingCard />
+          <PerformanceCard />
+        </div>
+
+        <aside className={styles.rightRail}>
+          <AttentionCard />
+          <GettingStartedCard />
+        </aside>
       </section>
     </div>
   );
