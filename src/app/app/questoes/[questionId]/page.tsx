@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import type {
+  PublicQuestionDto,
+} from "@/modules/question-bank/application/dto/public-question";
 import {
   createGetPublishedQuestionByIdUseCase,
 } from "@/modules/question-bank/infrastructure/composition/question-bank-application";
@@ -23,7 +26,7 @@ export default async function QuestionDetailPage({
   const getQuestion =
     createGetPublishedQuestionByIdUseCase();
 
-  let question;
+  let question: PublicQuestionDto;
 
   try {
     question = await getQuestion.execute(
