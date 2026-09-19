@@ -87,7 +87,9 @@ export function QuestionAnswerPanel({
     useState<string | null>(null);
   const [isPending, startTransition] =
     useTransition();
-  const startedAt = useRef(Date.now());
+  const startedAt = useRef<number | null>(
+    null,
+  );
 
   const submitted = result?.ok === true;
 
@@ -103,7 +105,9 @@ export function QuestionAnswerPanel({
 
     const responseTimeMs = Math.min(
       Math.max(
-        Date.now() - startedAt.current,
+        startedAt.current === null
+          ? 0
+          : Date.now() - startedAt.current,
         0,
       ),
       86_400_000,
@@ -125,7 +129,7 @@ export function QuestionAnswerPanel({
     setSelection(null);
     setResult(null);
     setLocalError(null);
-    startedAt.current = Date.now();
+    startedAt.current = null;
   }
 
   return (
@@ -175,6 +179,7 @@ export function QuestionAnswerPanel({
                     isPending || submitted
                   }
                   onClick={() => {
+                    startedAt.current ??= Date.now();
                     setSelection({
                       type: "MULTIPLE_CHOICE",
                       alternativeId:
@@ -258,6 +263,7 @@ export function QuestionAnswerPanel({
                   isPending || submitted
                 }
                 onClick={() => {
+                  startedAt.current ??= Date.now();
                   setSelection({
                     type: "TRUE_FALSE",
                     value,
