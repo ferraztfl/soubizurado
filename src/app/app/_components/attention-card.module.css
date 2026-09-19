@@ -1,0 +1,76 @@
+.card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.eyebrow {
+  display: block;
+  color: var(--sb-brand);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card h2 {
+  margin: 7px 0 0;
+  color: var(--sb-text-strong);
+  font-size: 17px;
+  font-weight: 770;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  margin: 10px 0 0;
+  color: var(--sb-text-muted);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--sb-border);
+  border-radius: 12px;
+  background: var(--sb-surface-muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--sb-warning);
+  box-shadow: 0 0 0 4px var(--sb-warning-soft);
+}
+
+.item > div {
+  min-width: 0;
+}
+
+.item strong {
+  display: block;
+  color: var(--sb-text);
+  font-size: 10px;
+}
+
+.item small {
+  display: block;
+  margin-top: 4px;
+  color: var(--sb-text-subtle);
+  font-size: 8px;
+}
