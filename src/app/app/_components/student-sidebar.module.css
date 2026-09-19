@@ -1,217 +1,32 @@
-.sidebar {
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: #ffffff;
-}
-
-.brand {
-  display: block;
-  width: 100%;
-  text-decoration: none;
-}
-
-.brandCard {
-  width: 100%;
-  min-height: 68px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 10px;
-  overflow: hidden;
-  border: 1px solid rgba(17, 17, 19, 0.05);
-  border-radius: 13px;
-  background: #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-.logo {
-  width: 178px;
-  height: auto;
-  object-fit: contain;
-}
-
-.navigation {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 24px;
-}
-
-.navItem {
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 11px;
-  border-radius: 10px;
-  color: #a5a5ab;
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.active {
-  background: rgba(255, 255, 255, 0.085);
-  color: #ffffff;
-}
-
-.navDot {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
-  border-radius: 999px;
-  background: #5e5e65;
-}
-
-.active .navDot {
-  background: var(--sb-red);
-  box-shadow: 0 0 0 4px rgba(212, 18, 0, 0.12);
-}
-
-.disabled {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.navItem small {
-  margin-left: auto;
-  color: #77777d;
-  font-size: 8px;
-  font-weight: 750;
-  text-transform: uppercase;
-}
-
-.bottom {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.planCard {
-  padding: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.045);
-}
-
-.planLabel {
-  display: block;
-  margin-bottom: 7px;
-  color: #f04433;
-  font-size: 8px;
-  font-weight: 850;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.planCard strong {
-  display: block;
-  color: #ffffff;
-  font-size: 14px;
-}
-
-.planCard p {
-  margin: 8px 0 11px;
-  color: #9f9fa6;
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.planFooter {
-  color: #d0d0d4;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.user {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.avatar {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #f1f1f2;
-  color: #3c3c42;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.userData {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.userData strong,
-.userData span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.userData strong {
-  color: #ffffff;
-  font-size: 10px;
-}
-
-.userData span {
-  margin-top: 2px;
-  color: #85858b;
-  font-size: 8px;
-}
-
-.logout {
-  flex: 0 0 auto;
-  padding: 5px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #8a8a90;
-  cursor: pointer;
-  font-size: 9px;
-}
-
-.logout:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-@media (max-width: 1099px) {
-  .navItem {
-    min-height: 46px;
-    font-size: 13px;
-  }
-
-  .navItem small {
-    font-size: 8px;
-  }
-
-  .planCard {
-    padding: 16px;
-  }
-
-  .planCard strong {
-    font-size: 15px;
-  }
-
-  .planCard p {
-    font-size: 10px;
-  }
-
-  .userData strong {
-    font-size: 10px;
-  }
-}
+.sidebar{width:100%;min-height:100%;display:flex;flex-direction:column;justify-content:space-between;color:var(--sb-text)}
+.brand{display:block;width:100%;text-decoration:none}
+.brandCard{width:100%;min-height:68px;display:flex;align-items:center;padding:7px 8px;overflow:hidden;border-radius:12px}
+.logo{width:168px;height:auto;object-fit:contain}
+.navigation{display:flex;flex-direction:column;gap:22px;margin-top:24px}
+.navigationGroup{display:flex;flex-direction:column;gap:7px}
+.groupLabel{padding:0 12px;color:var(--sb-text-subtle);font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.groupItems{display:flex;flex-direction:column;gap:3px}
+.navItem{min-height:43px;display:flex;align-items:center;gap:10px;padding:0 11px;border:1px solid transparent;border-radius:11px;color:var(--sb-text-muted);text-decoration:none;font-size:12px;font-weight:680;transition:background var(--sb-motion-fast) var(--sb-ease),border-color var(--sb-motion-fast) var(--sb-ease),color var(--sb-motion-fast) var(--sb-ease)}
+.navItem:not(.disabled):hover{background:var(--sb-surface-muted);color:var(--sb-text-strong)}
+.active{border-color:#f4d0cc;background:var(--sb-sidebar-active);color:var(--sb-brand-strong)}
+.navMarker{width:8px;height:8px;flex:0 0 8px;border:2px solid #c4c8d0;border-radius:50%;background:transparent}
+.active .navMarker{border-color:var(--sb-brand);background:var(--sb-brand);box-shadow:0 0 0 4px rgba(212,18,0,.09)}
+.disabled{cursor:default;opacity:.58}
+.navItem small{margin-left:auto;color:var(--sb-text-subtle);font-size:7px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.bottom{display:flex;flex-direction:column;gap:15px}
+.planCard{padding:15px;border:1px solid var(--sb-border);border-radius:15px;background:linear-gradient(150deg,var(--sb-brand-subtle) 0%,#fff 76%)}
+.planHeading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.planLabel{color:var(--sb-brand);font-size:8px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}
+.planBadge{padding:4px 7px;border:1px solid #f0cbc7;border-radius:999px;background:#fff;color:var(--sb-brand-strong);font-size:7px;font-weight:850;text-transform:uppercase}
+.planCard strong{display:block;color:var(--sb-text-strong);font-size:12px;line-height:1.45}
+.planCard p{margin:8px 0 10px;color:var(--sb-text-muted);font-size:9px;line-height:1.55}
+.planFooter{color:var(--sb-text-subtle);font-size:8px;line-height:1.4}
+.user{display:flex;align-items:center;gap:9px;padding-top:14px;border-top:1px solid var(--sb-border)}
+.avatar{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border:1px solid #f0cbc7;border-radius:50%;background:var(--sb-brand-soft);color:var(--sb-brand-strong);font-size:12px;font-weight:900}
+.userData{min-width:0;flex:1;display:flex;flex-direction:column}
+.userData strong,.userData span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.userData strong{color:var(--sb-text-strong);font-size:10px}
+.userData span{margin-top:2px;color:var(--sb-text-subtle);font-size:8px}
+.logout{flex:0 0 auto;padding:7px 8px;border:0;border-radius:8px;background:transparent;color:var(--sb-text-muted);cursor:pointer;font-size:9px;font-weight:700}
+.logout:hover{background:var(--sb-surface-muted);color:var(--sb-brand-strong)}
+@media (max-width:1099px){.navItem{min-height:46px;font-size:13px}.planCard{padding:16px}}
