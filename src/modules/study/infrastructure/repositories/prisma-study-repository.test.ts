@@ -22,8 +22,10 @@ function createPrismaMock() {
   const favoriteDeleteMany = vi.fn();
   const favoriteFindMany = vi.fn();
   const favoriteCount = vi.fn();
+  const rawQuery = vi.fn();
 
   const prisma = {
+    $queryRaw: rawQuery,
     studyAnswerAttempt: {
       create,
       findMany,
@@ -46,6 +48,7 @@ function createPrismaMock() {
     favoriteDeleteMany,
     favoriteFindMany,
     favoriteCount,
+    rawQuery,
   };
 }
 
@@ -218,6 +221,64 @@ describe("PrismaStudyRepository", () => {
     expect(result).toEqual({
       items: [],
       total: 0,
+    });
+  });
+
+  it("derives unique incorrect questions from answer history", async () => {
+    const lastIncorrectAt = new Date(
+      "2026-09-19T18:30:00.000Z",
+    );
+    const { prisma, rawQuery } =
+      createPrismaMock();
+
+    rawQuery
+      .mockResolvedValueOnce([
+        {
+          question_id: "question-1",
+          last_incorrect_at: lastIncorrectAt,
+          incorrect_attempts: 3,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          total: 1,
+        },
+      ]);
+
+    const repository = new PrismaStudyRepository(
+      prisma,
+    );
+
+    const result =
+      await repository.listIncorrectQuestions({
+        profileId: "profile-1",
+        offset: 0,
+        limit: 20,
+      });
+
+    expect(rawQuery).toHaveBeenCalledTimes(2);
+
+    const firstTemplate =
+      rawQuery.mock.calls[0]?.[0] as TemplateStringsArray;
+
+    expect(
+      Array.from(firstTemplate).join("?"),
+    ).toContain('GROUP BY "question_id"');
+    expect(rawQuery.mock.calls[0]?.slice(1)).toEqual([
+      "profile-1",
+      0,
+      20,
+    ]);
+
+    expect(result).toEqual({
+      items: [
+        {
+          questionId: "question-1",
+          lastIncorrectAt,
+          incorrectAttempts: 3,
+        },
+      ],
+      total: 1,
     });
   });
 
