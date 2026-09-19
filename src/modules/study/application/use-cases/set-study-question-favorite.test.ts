@@ -5,7 +5,6 @@ import {
 } from "vitest";
 
 import type {
-  ListStudyFavoritesRepositoryInput,
   ListStudyFavoritesRepositoryResult,
   SetStudyFavoriteRepositoryInput,
   StudyFavoriteRecord,
@@ -37,9 +36,7 @@ class FakeStudyFavoriteRepository
     return input.favorite ? this.setResult : null;
   }
 
-  public async listFavorites(
-    _input: ListStudyFavoritesRepositoryInput,
-  ): Promise<ListStudyFavoritesRepositoryResult> {
+  public async listFavorites(): Promise<ListStudyFavoritesRepositoryResult> {
     return {
       items: [],
       total: 0,
