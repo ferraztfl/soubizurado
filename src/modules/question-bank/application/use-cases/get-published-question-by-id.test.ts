@@ -59,9 +59,7 @@ class FakePublicQuestionReadRepository
 
   public lastQuestionId: string | null = null;
 
-  public async listPublished(
-    _input: ListPublicQuestionsRepositoryInput,
-  ): Promise<ListPublicQuestionsRepositoryResult> {
+  public async listPublished(): Promise<ListPublicQuestionsRepositoryResult> {
     return {
       items: [],
       total: 0,
