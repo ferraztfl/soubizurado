@@ -6,9 +6,6 @@ import type {
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import type {
-  ListPublishedQuestionsRepositoryInput,
-  ListPublishedQuestionsRepositoryResult,
-  PublishedQuestionFilters,
   PublishedQuestionRecord,
   QuestionRepository,
 } from "../../application/ports/question-repository";
@@ -80,52 +77,6 @@ type PublishedQuestionRow = Prisma.QuestionGetPayload<{
   select: typeof publishedQuestionSelect;
 }>;
 
-function buildPublishedQuestionWhere(
-  filters: PublishedQuestionFilters,
-): Prisma.QuestionWhereInput {
-  const examinationFilters: Prisma.ExaminationWhereInput = {
-    ...(filters.boardId
-      ? { boardId: filters.boardId }
-      : {}),
-    ...(filters.year !== undefined
-      ? { year: filters.year }
-      : {}),
-  };
-
-  const hasExaminationFilters =
-    filters.boardId !== undefined ||
-    filters.year !== undefined;
-
-  return {
-    status: "PUBLISHED",
-    ...(filters.disciplineId
-      ? { disciplineId: filters.disciplineId }
-      : {}),
-    ...(filters.areaId
-      ? { areaId: filters.areaId }
-      : {}),
-    ...(filters.topicId
-      ? { topicId: filters.topicId }
-      : {}),
-    ...(filters.subtopicId
-      ? { subtopicId: filters.subtopicId }
-      : {}),
-    ...(filters.examinationId
-      ? { examinationId: filters.examinationId }
-      : {}),
-    ...(filters.type
-      ? { type: filters.type }
-      : {}),
-    ...(hasExaminationFilters
-      ? {
-          examination: {
-            is: examinationFilters,
-          },
-        }
-      : {}),
-  };
-}
-
 function toPublishedQuestionRecord(
   question: PublishedQuestionRow,
 ): PublishedQuestionRecord {
@@ -141,7 +92,8 @@ function toPublishedQuestionRecord(
     statement: question.statement,
     answerKeyStatus: question.answerKeyStatus,
     correctTrueFalse: question.correctTrueFalse,
-    explanation: question.explanation?.content ?? null,
+    explanation:
+      question.explanation?.content ?? null,
     alternatives: question.alternatives.map(
       (alternative) => ({
         id: alternative.id,
@@ -165,35 +117,6 @@ export class PrismaQuestionRepository
   public constructor(
     private readonly prisma: PrismaClient = getPrismaClient(),
   ) {}
-
-  public async listPublished(
-    input: ListPublishedQuestionsRepositoryInput,
-  ): Promise<ListPublishedQuestionsRepositoryResult> {
-    const where = buildPublishedQuestionWhere(
-      input.filters,
-    );
-
-    const [items, total] = await Promise.all([
-      this.prisma.question.findMany({
-        where,
-        skip: input.offset,
-        take: input.limit,
-        orderBy: [
-          { publishedAt: "desc" },
-          { id: "asc" },
-        ],
-        select: publishedQuestionSelect,
-      }),
-      this.prisma.question.count({
-        where,
-      }),
-    ]);
-
-    return {
-      items: items.map(toPublishedQuestionRecord),
-      total,
-    };
-  }
 
   public async findPublishedById(
     questionId: string,
