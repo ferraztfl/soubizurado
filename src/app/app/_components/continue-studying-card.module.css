@@ -96,6 +96,7 @@
   color: var(--sb-brand-strong);
   font-size: 10px;
   font-weight: 760;
+  text-decoration: none;
 }
 
 .action span {
