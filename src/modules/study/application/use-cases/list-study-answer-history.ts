@@ -63,6 +63,21 @@ function requirePositiveSafeInteger(
   }
 }
 
+function requireCorrectness(
+  correctness: StudyAnswerHistoryCorrectness,
+): void {
+  if (
+    correctness !== "ALL" &&
+    correctness !== "CORRECT" &&
+    correctness !== "INCORRECT"
+  ) {
+    throw new ApplicationError(
+      ERROR_CODES.VALIDATION_ERROR,
+      "correctness is invalid.",
+    );
+  }
+}
+
 function toCorrectnessFilter(
   correctness: StudyAnswerHistoryCorrectness,
 ): boolean | undefined {
@@ -96,6 +111,7 @@ export class ListStudyAnswerHistoryUseCase {
     const correctness = input.correctness ?? "ALL";
 
     requirePositiveSafeInteger(page, "page");
+    requireCorrectness(correctness);
     requirePositiveSafeInteger(pageSize, "pageSize");
 
     if (pageSize > MAX_PAGE_SIZE) {
