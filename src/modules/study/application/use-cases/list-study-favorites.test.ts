@@ -7,7 +7,6 @@ import {
 import type {
   ListStudyFavoritesRepositoryInput,
   ListStudyFavoritesRepositoryResult,
-  SetStudyFavoriteRepositoryInput,
   StudyFavoriteRecord,
   StudyFavoriteRepository,
 } from "../ports/study-favorite-repository";
@@ -36,9 +35,7 @@ class FakeStudyFavoriteRepository
       total: 1,
     };
 
-  public async setFavorite(
-    _input: SetStudyFavoriteRepositoryInput,
-  ): Promise<StudyFavoriteRecord | null> {
+  public async setFavorite(): Promise<StudyFavoriteRecord | null> {
     return null;
   }
 
