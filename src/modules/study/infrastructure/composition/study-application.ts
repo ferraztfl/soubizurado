@@ -9,6 +9,9 @@ import {
   ListStudyFavoritesUseCase,
 } from "../../application/use-cases/list-study-favorites";
 import {
+  ListStudyIncorrectQuestionsUseCase,
+} from "../../application/use-cases/list-study-incorrect-questions";
+import {
   SetStudyQuestionFavoriteUseCase,
 } from "../../application/use-cases/set-study-question-favorite";
 import {
@@ -45,6 +48,12 @@ export function createSetStudyQuestionFavoriteUseCase(): SetStudyQuestionFavorit
 
 export function createListStudyFavoritesUseCase(): ListStudyFavoritesUseCase {
   return new ListStudyFavoritesUseCase(
+    new PrismaStudyRepository(),
+  );
+}
+
+export function createListStudyIncorrectQuestionsUseCase(): ListStudyIncorrectQuestionsUseCase {
+  return new ListStudyIncorrectQuestionsUseCase(
     new PrismaStudyRepository(),
   );
 }
