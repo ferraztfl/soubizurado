@@ -1,3 +1,5 @@
+import { EmptyState } from "@/shared/ui/empty-state";
+
 import styles from "./performance-card.module.css";
 
 const placeholderBars = [
@@ -45,14 +47,11 @@ export function PerformanceCard() {
         </div>
 
         <div className={styles.emptyState}>
-          <strong>
-            Seus dados aparecerão aqui
-          </strong>
-
-          <p>
-            Resolva questões para começar
-            a acompanhar seu desempenho.
-          </p>
+          <EmptyState
+            icon="↗"
+            title="Seus dados aparecerão aqui"
+            description="Resolva questões para começar a acompanhar sua evolução, precisão e ritmo de estudo."
+          />
         </div>
       </div>
     </article>
