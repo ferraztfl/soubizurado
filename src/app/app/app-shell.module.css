@@ -1,7 +1,7 @@
 .shell {
   width: 100%;
   min-height: 100dvh;
-  background: var(--sb-page);
+  background: var(--sb-background);
 }
 
 .desktopSidebar {
@@ -13,16 +13,8 @@
   padding: 18px 14px 16px;
   overflow-x: hidden;
   overflow-y: auto;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(17, 17, 19, 0.985) 0%,
-      rgba(24, 24, 27, 0.995) 100%
-    ),
-    url("/brand/brand-texture.png");
-  background-size: cover;
-  background-position: center;
-  box-shadow: 8px 0 32px rgba(17, 17, 19, 0.08);
+  border-right: 1px solid var(--sb-border);
+  background: var(--sb-sidebar);
 }
 
 .workspace {
