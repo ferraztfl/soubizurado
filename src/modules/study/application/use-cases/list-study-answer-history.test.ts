@@ -11,6 +11,7 @@ import type {
 } from "../ports/study-history-repository";
 import {
   ListStudyAnswerHistoryUseCase,
+  type StudyAnswerHistoryCorrectness,
 } from "./list-study-answer-history";
 
 class FakeStudyHistoryRepository
@@ -118,6 +119,16 @@ describe("ListStudyAnswerHistoryUseCase", () => {
       useCase.execute({
         profileId: "profile-1",
         pageSize: 51,
+      }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+    });
+
+    await expect(
+      useCase.execute({
+        profileId: "profile-1",
+        correctness:
+          "UNKNOWN" as StudyAnswerHistoryCorrectness,
       }),
     ).rejects.toMatchObject({
       code: "VALIDATION_ERROR",
