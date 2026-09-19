@@ -9,7 +9,6 @@ import {
 } from "../../domain/question-type";
 
 import type {
-  ListPublicQuestionsRepositoryInput,
   ListPublicQuestionsRepositoryResult,
   PublicQuestionReadRecord,
   PublicQuestionReadRepository,
