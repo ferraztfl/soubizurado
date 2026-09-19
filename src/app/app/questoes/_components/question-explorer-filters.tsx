@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type {
   QuestionExplorerFacets,
 } from "@/modules/question-bank/application/ports/public-question-read-repository";
@@ -123,12 +125,16 @@ export function QuestionExplorerFilters({
           defaultValue={filters.type ?? ""}
         >
           <option value="">Todos os tipos</option>
-          <option value="MULTIPLE_CHOICE">
-            Múltipla escolha
-          </option>
-          <option value="TRUE_FALSE">
-            Certo / Errado
-          </option>
+          {facets.types.map((type) => (
+            <option
+              key={type}
+              value={type}
+            >
+              {type === "MULTIPLE_CHOICE"
+                ? "Múltipla escolha"
+                : "Certo / Errado"}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -140,12 +146,12 @@ export function QuestionExplorerFilters({
           Aplicar filtros
         </button>
 
-        <a
+        <Link
           href="/app/questoes"
           className={styles.clear}
         >
           Limpar
-        </a>
+        </Link>
       </div>
     </form>
   );
