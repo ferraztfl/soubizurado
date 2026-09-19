@@ -35,11 +35,11 @@ export type QuestionExplorerHrefInput = Readonly<{
 function firstValue(
   value: RawSearchParamValue,
 ): string | undefined {
-  if (Array.isArray(value)) {
-    return value[0];
+  if (typeof value === "string") {
+    return value;
   }
 
-  return value;
+  return value?.[0];
 }
 
 function normalizeText(
