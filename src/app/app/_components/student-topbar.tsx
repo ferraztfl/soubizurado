@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import styles from "./student-topbar.module.css";
 
@@ -17,7 +17,7 @@ export function StudentTopbar({
         <div className={styles.desktopContent}>
           <div className={styles.greeting}>
             <span className={styles.eyebrow}>
-              ÁREA DO ALUNO
+              Área do aluno
             </span>
 
             <strong className={styles.title}>
@@ -25,15 +25,18 @@ export function StudentTopbar({
             </strong>
           </div>
 
-          <div className={styles.accountStatus}>
-            <span
-              className={styles.statusDot}
-              aria-hidden="true"
-            />
-
-            <span>
-              Conta ativa
+          <div className={styles.statusGroup}>
+            <span className={styles.planStatus}>
+              Plano gratuito
             </span>
+
+            <div className={styles.accountStatus}>
+              <span
+                className={styles.statusDot}
+                aria-hidden="true"
+              />
+              <span>Conta ativa</span>
+            </div>
           </div>
         </div>
 
@@ -52,7 +55,7 @@ export function StudentTopbar({
 
           <div className={styles.greeting}>
             <span className={styles.eyebrow}>
-              ÁREA DO ALUNO
+              Área do aluno
             </span>
 
             <strong className={styles.title}>
