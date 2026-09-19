@@ -112,6 +112,24 @@
    STATUS DESKTOP
    ========================================================== */
 
+.statusGroup {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.planStatus {
+  padding: 7px 10px;
+  border: 1px solid var(--sb-border);
+  border-radius: 999px;
+  background: var(--sb-surface-muted);
+  color: var(--sb-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .accountStatus {
   justify-self: end;
 
@@ -128,6 +146,10 @@
   line-height: 1;
 
   white-space: nowrap;
+  padding: 7px 10px;
+  border: 1px solid var(--sb-border);
+  border-radius: 999px;
+  background: var(--sb-surface);
 }
 
 .statusDot {
