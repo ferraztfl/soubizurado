@@ -99,19 +99,19 @@ export async function submitStudyAnswerAction(
     };
   }
 
-  const displayName =
-    typeof user.user_metadata.display_name ===
-    "string"
-      ? user.user_metadata.display_name
-      : null;
-
-  const profile =
-    await ensureProfileForAuthUser({
-      authUserId: user.id,
-      displayName,
-    });
-
   try {
+    const displayName =
+      typeof user.user_metadata.display_name ===
+      "string"
+        ? user.user_metadata.display_name
+        : null;
+
+    const profile =
+      await ensureProfileForAuthUser({
+        authUserId: user.id,
+        displayName,
+      });
+
     const useCase =
       createSubmitStudyQuestionAnswerUseCase();
 
