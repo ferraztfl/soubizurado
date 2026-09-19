@@ -19,18 +19,14 @@ import {
 class FakePublicQuestionReadRepository
   implements PublicQuestionReadRepository
 {
-  public async listPublished(
-    _input: ListPublicQuestionsRepositoryInput,
-  ): Promise<ListPublicQuestionsRepositoryResult> {
+  public async listPublished(): Promise<ListPublicQuestionsRepositoryResult> {
     return {
       items: [],
       total: 0,
     };
   }
 
-  public async findPublishedById(
-    _questionId: string,
-  ): Promise<PublicQuestionReadRecord | null> {
+  public async findPublishedById(): Promise<PublicQuestionReadRecord | null> {
     return null;
   }
 
