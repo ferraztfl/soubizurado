@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import styles from "./dashboard-hero.module.css";
 
 export function DashboardHero() {
@@ -19,15 +21,12 @@ export function DashboardHero() {
         </p>
 
         <div className={styles.actions}>
-          <button
-            type="button"
+          <Link
+            href="/app/questoes"
             className={styles.primaryAction}
-            disabled
           >
             Resolver questões
-
-            <span>Em breve</span>
-          </button>
+          </Link>
 
           <button
             type="button"
