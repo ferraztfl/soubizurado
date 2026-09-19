@@ -11,6 +11,8 @@ import { ApplicationError } from "@/shared/errors/application-error";
 import { ERROR_CODES } from "@/shared/errors/error-code";
 import { PageHeader } from "@/shared/ui/page-header";
 
+import { QuestionAnswerPanel } from "./_components/question-answer-panel";
+
 import styles from "./question-detail.module.css";
 
 type QuestionDetailPageProps = Readonly<{
@@ -90,68 +92,9 @@ export default async function QuestionDetailPage({
             {question.statement}
           </div>
 
-          {question.type === "MULTIPLE_CHOICE" ? (
-            <div
-              className={styles.alternatives}
-              aria-label="Alternativas"
-            >
-              {question.alternatives.map(
-                (alternative) => (
-                  <div
-                    key={alternative.id}
-                    className={styles.alternative}
-                  >
-                    <span
-                      className={styles.label}
-                      aria-hidden="true"
-                    >
-                      {alternative.label}
-                    </span>
-
-                    <span>
-                      {alternative.content}
-                    </span>
-                  </div>
-                ),
-              )}
-            </div>
-          ) : (
-            <div
-              className={styles.trueFalse}
-              aria-label="Opções de julgamento"
-            >
-              <div className={styles.alternative}>
-                <span
-                  className={styles.label}
-                  aria-hidden="true"
-                >
-                  C
-                </span>
-                <span>Certo</span>
-              </div>
-
-              <div className={styles.alternative}>
-                <span
-                  className={styles.label}
-                  aria-hidden="true"
-                >
-                  E
-                </span>
-                <span>Errado</span>
-              </div>
-            </div>
-          )}
-
-          <div className={styles.pendingAction}>
-            <strong>
-              Resposta interativa na próxima etapa
-            </strong>
-            <p>
-              A tela já usa somente os dados públicos da questão. O envio da
-              resposta será conectado ao módulo Study sem expor o gabarito no
-              navegador.
-            </p>
-          </div>
+          <QuestionAnswerPanel
+            question={question}
+          />
         </article>
 
         <aside className={styles.context}>
