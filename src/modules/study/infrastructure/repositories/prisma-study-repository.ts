@@ -120,38 +120,30 @@ export class PrismaStudyRepository
     };
 
     const [rows, countRows] = await Promise.all([
-      this.prisma.$queryRawUnsafe<IncorrectQuestionRow[]>(
-        `
-          SELECT
-            "question_id",
-            MAX("answered_at") AS "last_incorrect_at",
-            COUNT(*)::int AS "incorrect_attempts"
-          FROM "study_answer_attempts"
-          WHERE
-            "profile_id" = $1::uuid
-            AND "is_correct" = FALSE
-          GROUP BY "question_id"
-          ORDER BY
-            "last_incorrect_at" DESC,
-            "question_id" ASC
-          OFFSET $2
-          LIMIT $3
-        `,
-        input.profileId,
-        input.offset,
-        input.limit,
-      ),
-      this.prisma.$queryRawUnsafe<IncorrectQuestionCountRow[]>(
-        `
-          SELECT
-            COUNT(DISTINCT "question_id")::int AS "total"
-          FROM "study_answer_attempts"
-          WHERE
-            "profile_id" = $1::uuid
-            AND "is_correct" = FALSE
-        `,
-        input.profileId,
-      ),
+      this.prisma.$queryRaw<IncorrectQuestionRow[]>`
+        SELECT
+          "question_id",
+          MAX("answered_at") AS "last_incorrect_at",
+          COUNT(*)::int AS "incorrect_attempts"
+        FROM "study_answer_attempts"
+        WHERE
+          "profile_id" = ${input.profileId}::uuid
+          AND "is_correct" = FALSE
+        GROUP BY "question_id"
+        ORDER BY
+          "last_incorrect_at" DESC,
+          "question_id" ASC
+        OFFSET ${input.offset}
+        LIMIT ${input.limit}
+      `,
+      this.prisma.$queryRaw<IncorrectQuestionCountRow[]>`
+        SELECT
+          COUNT(DISTINCT "question_id")::int AS "total"
+        FROM "study_answer_attempts"
+        WHERE
+          "profile_id" = ${input.profileId}::uuid
+          AND "is_correct" = FALSE
+      `,
     ]);
 
     return {
