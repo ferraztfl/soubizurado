@@ -80,14 +80,38 @@ export class PrismaQuestionReviewRepository
               name: true,
             },
           },
-          examination: {
+          occurrences: {
+            orderBy: {
+              capturedAt: "asc",
+            },
             select: {
               id: true,
-              title: true,
-              year: true,
-              board: {
+              externalQuestionNumber: true,
+              source: {
                 select: {
                   name: true,
+                },
+              },
+              examination: {
+                select: {
+                  id: true,
+                  title: true,
+                  year: true,
+                  board: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                  organization: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                  careerPosition: {
+                    select: {
+                      name: true,
+                    },
+                  },
                 },
               },
             },
@@ -103,17 +127,38 @@ export class PrismaQuestionReviewRepository
         row.answerKeyStatus,
       discipline: row.discipline,
       topic: row.topic,
-      examination: row.examination
-        ? {
-            id: row.examination.id,
-            title:
-              row.examination.title,
-            year: row.examination.year,
-            board:
-              row.examination.board
-                ?.name ?? null,
-          }
-        : null,
+      occurrences:
+        row.occurrences.map(
+          (occurrence) => ({
+            id: occurrence.id,
+            sourceName:
+              occurrence.source.name,
+            externalQuestionNumber:
+              occurrence.externalQuestionNumber,
+            examination:
+              occurrence.examination
+                ? {
+                    id:
+                      occurrence.examination.id,
+                    title:
+                      occurrence.examination.title,
+                    year:
+                      occurrence.examination.year,
+                    board:
+                      occurrence.examination.board
+                        ?.name ?? null,
+                    organization:
+                      occurrence.examination
+                        .organization?.name ??
+                      null,
+                    careerPosition:
+                      occurrence.examination
+                        .careerPosition?.name ??
+                      null,
+                  }
+                : null,
+          }),
+        ),
       updatedAt: row.updatedAt,
     }));
   }
