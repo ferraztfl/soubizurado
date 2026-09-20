@@ -1,6 +1,9 @@
 -- EnableExtension
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- AlterEnum
+ALTER TYPE "QuestionSourceType" ADD VALUE 'PROVIDER_API';
+
 -- CreateEnum
 CREATE TYPE "ImportJobStatus" AS ENUM (
     'PENDING',
