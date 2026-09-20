@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   MediaBinary,
   MediaSourceReader,
 } from "../../application/ports/media-ingestion";
@@ -11,6 +11,7 @@ export type HttpMediaSourceReaderOptions =
     fetcher?: Fetcher;
     maxBytes?: number;
     timeoutMs?: number;
+    maxRedirects?: number;
   }>;
 
 const ALLOWED_MIME_PREFIXES = [
@@ -20,6 +21,15 @@ const ALLOWED_MIME_PREFIXES = [
 const ALLOWED_MIME_TYPES =
   new Set([
     "application/pdf",
+  ]);
+
+const REDIRECT_STATUSES =
+  new Set([
+    301,
+    302,
+    303,
+    307,
+    308,
   ]);
 
 function normalizedMimeType(
@@ -58,6 +68,21 @@ function validateMimeType(
   );
 }
 
+function validateProtocol(
+  url: URL,
+): void {
+  if (
+    url.protocol !==
+      "https:" &&
+    url.protocol !==
+      "http:"
+  ) {
+    throw new Error(
+      `Unsupported media protocol: ${url.protocol}`,
+    );
+  }
+}
+
 export class HttpMediaSourceReader
   implements MediaSourceReader
 {
@@ -68,6 +93,9 @@ export class HttpMediaSourceReader
     number;
 
   private readonly timeoutMs:
+    number;
+
+  private readonly maxRedirects:
     number;
 
   public constructor(
@@ -85,6 +113,10 @@ export class HttpMediaSourceReader
     this.timeoutMs =
       options.timeoutMs ??
       15_000;
+
+    this.maxRedirects =
+      options.maxRedirects ??
+      5;
 
     if (
       !Number.isSafeInteger(
@@ -107,15 +139,26 @@ export class HttpMediaSourceReader
         "Media timeoutMs must be a positive integer.",
       );
     }
+
+    if (
+      !Number.isSafeInteger(
+        this.maxRedirects,
+      ) ||
+      this.maxRedirects < 0
+    ) {
+      throw new Error(
+        "Media maxRedirects must be a non-negative integer.",
+      );
+    }
   }
 
   public async read(
     sourceUrl: string,
   ): Promise<MediaBinary> {
-    let url: URL;
+    let currentUrl: URL;
 
     try {
-      url =
+      currentUrl =
         new URL(
           sourceUrl,
         );
@@ -125,38 +168,77 @@ export class HttpMediaSourceReader
       );
     }
 
-    if (
-      url.protocol !==
-        "https:" &&
-      url.protocol !==
-        "http:"
-    ) {
-      throw new Error(
-        `Unsupported media protocol: ${url.protocol}`,
+    const signal =
+      AbortSignal.timeout(
+        this.timeoutMs,
       );
-    }
 
-    const response =
-      await this.fetcher(
-        url,
-        {
-          method: "GET",
-          redirect:
-            "follow",
-          signal:
-            AbortSignal.timeout(
-              this.timeoutMs,
-            ),
-          headers: {
-            Accept:
-              "image/*,application/pdf;q=0.9,*/*;q=0.1",
-          },
-        },
+    let redirectCount =
+      0;
+
+    let response:
+      Response;
+
+    while (true) {
+      validateProtocol(
+        currentUrl,
       );
+
+      response =
+        await this.fetcher(
+          currentUrl,
+          {
+            method: "GET",
+            redirect:
+              "manual",
+            signal,
+            headers: {
+              Accept:
+                "image/*,application/pdf;q=0.9,*/*;q=0.1",
+            },
+          },
+        );
+
+      if (
+        !REDIRECT_STATUSES.has(
+          response.status,
+        )
+      ) {
+        break;
+      }
+
+      if (
+        redirectCount >=
+        this.maxRedirects
+      ) {
+        throw new Error(
+          `Media redirect limit exceeded: ${sourceUrl}`,
+        );
+      }
+
+      const location =
+        response.headers.get(
+          "location",
+        );
+
+      if (!location) {
+        throw new Error(
+          `Media redirect response is missing Location header: ${currentUrl.toString()}`,
+        );
+      }
+
+      currentUrl =
+        new URL(
+          location,
+          currentUrl,
+        );
+
+      redirectCount += 1;
+    }
 
     if (!response.ok) {
       throw new Error(
-        `Media download failed with status ${response.status}: ${sourceUrl}`,
+        `Media download failed with status ${response.status}: ${currentUrl.toString()}`,
       );
     }
 
@@ -210,7 +292,7 @@ export class HttpMediaSourceReader
         ),
       mimeType,
       sourceUrl:
-        url.toString(),
+        currentUrl.toString(),
     };
   }
 }
