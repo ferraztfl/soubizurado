@@ -21,6 +21,7 @@ export type ImportProviderQuestionsInput =
   Readonly<{
     limit: number;
     externalId?: string;
+    examinationId?: string;
     afterId?: string;
     publish?: boolean;
     filters?: QuestionProviderListInput["filters"];
@@ -349,6 +350,8 @@ export class ImportProviderQuestionsUseCase {
         await this.provider.listQuestions({
           limit: input.limit,
           externalId: input.externalId,
+          examinationId:
+            input.examinationId,
           afterId: input.afterId,
           includeAnswerKey: true,
           requireAnswerKey: true,
