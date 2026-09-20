@@ -22,6 +22,7 @@ export type ProviderQuestionCandidate =
     hasImages: boolean;
     hasAnswerKey: boolean;
     hasSupportText: boolean;
+    sourceUrl?: string | null;
     rawPayload: unknown;
   }>;
 
@@ -57,6 +58,7 @@ export type QuestionProviderListResult =
 export type ProviderExaminationMetadata =
   Readonly<{
     externalId: string;
+    title?: string | null;
     organization: string | null;
     careerPosition: string | null;
     year: number | null;
