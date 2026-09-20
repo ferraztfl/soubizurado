@@ -128,6 +128,30 @@ function createFetcher() {
 
       if (
         url.endsWith(
+          "/exams.json",
+        )
+      ) {
+        return jsonResponse([
+          {
+            title: "ENEM 2023",
+            year: 2023,
+            disciplines:
+              examPayload.disciplines,
+            languages:
+              examPayload.languages,
+          },
+          {
+            title: "ENEM 2009",
+            year: 2009,
+            disciplines:
+              examPayload.disciplines,
+            languages: [],
+          },
+        ]);
+      }
+
+      if (
+        url.endsWith(
           "/2023/details.json",
         )
       ) {
@@ -167,6 +191,22 @@ function createFetcher() {
 }
 
 describe("EnemDataProvider", () => {
+  it("discovers all available ENEM years from the upstream exam index", async () => {
+    const provider =
+      new EnemDataProvider({
+        baseUrl:
+          "https://example.test/public",
+        fetcher: createFetcher(),
+      });
+
+    await expect(
+      provider.listAvailableYears(),
+    ).resolves.toEqual([
+      2009,
+      2023,
+    ]);
+  });
+
   it("maps a text-only ENEM question into the provider-neutral contract", async () => {
     const provider =
       new EnemDataProvider({
