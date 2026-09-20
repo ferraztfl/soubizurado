@@ -21,9 +21,16 @@ function questionTypeLabel(
 export function QuestionPreviewCard({
   question,
 }: QuestionPreviewCardProps) {
+  const primaryOccurrence =
+    question.occurrences[0] ?? null;
+
+  const primaryExamination =
+    primaryOccurrence?.examination ??
+    question.examination;
+
   const board =
-    question.examination?.board?.acronym ??
-    question.examination?.board?.name ??
+    primaryExamination?.board?.acronym ??
+    primaryExamination?.board?.name ??
     null;
 
   return (
@@ -37,11 +44,17 @@ export function QuestionPreviewCard({
           {question.classification.discipline.name}
         </span>
 
-        {question.examination?.year ? (
-          <span>{question.examination.year}</span>
+        {primaryExamination?.year ? (
+          <span>{primaryExamination.year}</span>
         ) : null}
 
         {board ? <span>{board}</span> : null}
+
+        {question.occurrences.length > 1 ? (
+          <span>
+            +{question.occurrences.length - 1} ocorrência(s)
+          </span>
+        ) : null}
       </div>
 
       <h2>{question.statement}</h2>
