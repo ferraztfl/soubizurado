@@ -122,6 +122,96 @@ const examinationSchema = z.object({
     .optional(),
 });
 
+const examinationHeaderSchema = z.object({
+  id: z.union([
+    z.string(),
+    z.number(),
+  ]),
+  orgao: z
+    .string()
+    .nullable()
+    .optional(),
+  cargo: z
+    .string()
+    .nullable()
+    .optional(),
+  ano: z
+    .union([
+      z.string(),
+      z.number(),
+    ])
+    .nullable()
+    .optional(),
+  banca: z
+    .string()
+    .nullable()
+    .optional(),
+  alternative_type: z
+    .enum([
+      "MULTIPLA_ESCOLHA",
+      "CERTO_ERRADO",
+    ])
+    .nullable()
+    .optional(),
+});
+
+const examinationContentResponseSchema = z.object({
+  data: z.object({
+    prova: examinationHeaderSchema,
+    total_questoes: z
+      .number()
+      .int()
+      .nonnegative(),
+    items: z.array(questionSchema),
+  }),
+  meta: z
+    .object({
+      correlationId: z
+        .string()
+        .nullable()
+        .optional(),
+      timestamp: z.string().optional(),
+    })
+    .optional(),
+});
+
+const examinationAnswerKeyResponseSchema = z.object({
+  data: z.object({
+    prova: examinationHeaderSchema,
+    gabaritos: z.array(
+      z.object({
+        questao_id: z.union([
+          z.string(),
+          z.number(),
+        ]),
+        numero: z
+          .union([
+            z.string(),
+            z.number(),
+          ])
+          .nullable()
+          .optional(),
+        gabarito: z
+          .union([
+            z.string(),
+            z.number(),
+          ])
+          .nullable()
+          .optional(),
+      }),
+    ),
+  }),
+  meta: z
+    .object({
+      correlationId: z
+        .string()
+        .nullable()
+        .optional(),
+      timestamp: z.string().optional(),
+    })
+    .optional(),
+});
+
 const examinationListResponseSchema = z.object({
   data: z.object({
     total: z.number().int().nonnegative(),
@@ -950,6 +1040,129 @@ export class QuestApiProvider
             directParsed.data.data,
           ),
         ],
+      };
+    }
+
+    if (input.examinationId) {
+      const normalizedExaminationId =
+        input.examinationId.trim();
+
+      if (!normalizedExaminationId) {
+        throw new Error(
+          "Quest API examination id is required.",
+        );
+      }
+
+      const contentUrl = new URL(
+        `/v1/provas/${encodeURIComponent(
+          normalizedExaminationId,
+        )}`,
+        this.baseUrl,
+      );
+
+      const contentResponse =
+        await this.request(contentUrl);
+
+      const contentParsed =
+        examinationContentResponseSchema.safeParse(
+          await contentResponse.json(),
+        );
+
+      if (!contentParsed.success) {
+        throw new Error(
+          "Quest API returned an unexpected examination content response shape.",
+        );
+      }
+
+      let answerKeyByQuestionId =
+        new Map<string, string>();
+
+      if (
+        input.includeAnswerKey ||
+        input.requireAnswerKey
+      ) {
+        const answerKeyUrl = new URL(
+          `/v1/provas/${encodeURIComponent(
+            normalizedExaminationId,
+          )}/gabarito`,
+          this.baseUrl,
+        );
+
+        const answerKeyResponse =
+          await this.request(answerKeyUrl);
+
+        const answerKeyParsed =
+          examinationAnswerKeyResponseSchema.safeParse(
+            await answerKeyResponse.json(),
+          );
+
+        if (!answerKeyParsed.success) {
+          throw new Error(
+            "Quest API returned an unexpected examination answer-key response shape.",
+          );
+        }
+
+        answerKeyByQuestionId =
+          new Map(
+            answerKeyParsed.data.data.gabaritos.flatMap(
+              (item) => {
+                if (
+                  item.gabarito === null ||
+                  item.gabarito === undefined
+                ) {
+                  return [];
+                }
+
+                return [[
+                  stringifyProviderId(
+                    item.questao_id,
+                  ),
+                  stringifyProviderId(
+                    item.gabarito,
+                  ),
+                ] as const];
+              },
+            ),
+          );
+      }
+
+      const items =
+        contentParsed.data.data.items
+          .slice(0, input.limit)
+          .map((raw) => {
+            const externalId =
+              stringifyProviderId(raw.id);
+            const answerKey =
+              answerKeyByQuestionId.get(
+                externalId,
+              ) ?? null;
+
+            return mapQuestion({
+              ...raw,
+              gabarito: answerKey,
+              provas:
+                raw.provas.length > 0
+                  ? raw.provas
+                  : [
+                      normalizedExaminationId,
+                    ],
+              sinalizadores: {
+                ...raw.sinalizadores,
+                tem_gabarito:
+                  answerKey !== null,
+              },
+            });
+          });
+
+      return {
+        total:
+          contentParsed.data.data
+            .total_questoes,
+        nextCursor: null,
+        correlationId:
+          contentParsed.data.meta
+            ?.correlationId ?? null,
+        items,
       };
     }
 
