@@ -109,6 +109,10 @@ export interface QuestionImportRepository {
     input: RecordImportReviewInput,
   ): Promise<void>;
 
+  recordFailure(
+    input: RecordImportReviewInput,
+  ): Promise<void>;
+
   completeJob(
     input: Readonly<{
       jobId: string;
