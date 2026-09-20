@@ -45,9 +45,16 @@ export default async function QuestionDetailPage({
     throw error;
   }
 
+  const primaryOccurrence =
+    question.occurrences[0] ?? null;
+
+  const primaryExamination =
+    primaryOccurrence?.examination ??
+    question.examination;
+
   const board =
-    question.examination?.board?.acronym ??
-    question.examination?.board?.name ??
+    primaryExamination?.board?.acronym ??
+    primaryExamination?.board?.name ??
     null;
 
   return (
@@ -79,9 +86,9 @@ export default async function QuestionDetailPage({
               {question.classification.discipline.name}
             </span>
 
-            {question.examination?.year ? (
+            {primaryExamination?.year ? (
               <span>
-                {question.examination.year}
+                {primaryExamination.year}
               </span>
             ) : null}
 
@@ -145,20 +152,65 @@ export default async function QuestionDetailPage({
               </div>
             ) : null}
 
-            {question.examination ? (
+            {question.occurrences.length > 0 ? (
               <div>
-                <dt>Prova</dt>
+                <dt>Ocorrências em provas</dt>
                 <dd>
-                  {question.examination.title}
+                  {question.occurrences.map(
+                    (occurrence, index) => {
+                      const occurrenceBoard =
+                        occurrence.examination
+                          ?.board?.acronym ??
+                        occurrence.examination
+                          ?.board?.name ??
+                        "Banca não informada";
+
+                      return (
+                        <span
+                          key={occurrence.id}
+                        >
+                          {index > 0 ? (
+                            <br />
+                          ) : null}
+                          {
+                            occurrence.source
+                              .name
+                          }
+                          {" · "}
+                          {occurrenceBoard}
+                          {occurrence.examination
+                            ?.year
+                            ? ` · ${occurrence.examination.year}`
+                            : ""}
+                          {occurrence
+                            .externalQuestionNumber
+                            ? ` · questão ${occurrence.externalQuestionNumber}`
+                            : ""}
+                          {occurrence.examination
+                            ?.title
+                            ? ` · ${occurrence.examination.title}`
+                            : ""}
+                        </span>
+                      );
+                    },
+                  )}
                 </dd>
               </div>
-            ) : null}
-
-            {board ? (
-              <div>
-                <dt>Banca</dt>
-                <dd>{board}</dd>
-              </div>
+            ) : question.examination ? (
+              <>
+                <div>
+                  <dt>Prova</dt>
+                  <dd>
+                    {question.examination.title}
+                  </dd>
+                </div>
+                {board ? (
+                  <div>
+                    <dt>Banca</dt>
+                    <dd>{board}</dd>
+                  </div>
+                ) : null}
+              </>
             ) : null}
           </dl>
         </aside>
