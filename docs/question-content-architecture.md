@@ -180,3 +180,41 @@ This is a defense-in-depth rule, not only a DTO-mapping convention.
 4. Add official answer-key outcome metadata when official ingestion begins.
 5. Build Comments as its own bounded context.
 6. Add scraper/parser adapters only for sources that are operationally and legally appropriate.
+
+
+## Provider APIs are ingestion sources, not runtime dependencies
+
+External question APIs are used only to acquire/import content into the Sou Bizurado canonical database.
+
+The student-facing Question Bank and Study flows must never require a provider request in order to list, open, answer or review a question.
+
+For the Quest API integration, the intended lifecycle is:
+
+Quest API -> ImportJob -> raw staging -> normalization -> deduplication -> local Question/QuestionOccurrence -> review/publication.
+
+After a question is materialized locally, runtime reads use PostgreSQL only.
+
+Provider IDs are preserved in QuestionOccurrence for provenance and idempotency, while Question.id remains a Sou Bizurado UUID.
+
+## Duplicate prevention
+
+The ingestion foundation uses layered duplicate controls:
+
+1. unique source occurrence: source + external question id;
+2. unique canonical fingerprint for exact normalized content;
+3. trigram similarity against existing question statements;
+4. review blocking for possible duplicates.
+
+A source occurrence or exact canonical duplicate does not create a second Question.
+
+A fuzzy match above the configured threshold is stored as an import duplicate candidate and remains REVIEW_REQUIRED instead of being auto-created.
+
+The raw provider payload is preserved in ImportItem for audit/reprocessing.
+
+## Current media gate
+
+Questions containing provider media are staged as REVIEW_REQUIRED until MediaAsset/R2 persistence is implemented.
+
+They are not discarded and they are not published with missing figures.
+
+Initial automated imports may deliberately request questions without attachments so that statement, support text, alternatives, answer key, taxonomy and examination metadata can be validated end-to-end first.
