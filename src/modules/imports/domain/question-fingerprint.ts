@@ -64,7 +64,7 @@ function decodeHtmlEntities(
   );
 }
 
-export function normalizeQuestionText(
+export function questionHtmlToPlainText(
   value: string,
 ): string {
   return decodeHtmlEntities(
@@ -76,9 +76,15 @@ export function normalizeQuestionText(
       .replace(/<[^>]+>/g, " "),
   )
     .normalize("NFKC")
-    .toLocaleLowerCase("pt-BR")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+export function normalizeQuestionText(
+  value: string,
+): string {
+  return questionHtmlToPlainText(value)
+    .toLocaleLowerCase("pt-BR");
 }
 
 export function buildCanonicalQuestionFingerprint(
