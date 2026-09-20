@@ -140,6 +140,48 @@ const examinationListResponseSchema = z.object({
     .optional(),
 });
 
+const quotaResponseSchema = z.object({
+  data: z.object({
+    planCode: z.string().nullable(),
+    periodStart: z.string().nullable(),
+    periodEnd: z.string().nullable(),
+    used: z.number().nonnegative(),
+    quotaPerCycle: z
+      .number()
+      .nonnegative()
+      .nullable(),
+    remaining: z.number().nonnegative(),
+    percentUsed: z
+      .number()
+      .nonnegative()
+      .nullable(),
+    unlimited: z.boolean(),
+  }),
+  meta: z
+    .object({
+      correlationId: z
+        .string()
+        .nullable()
+        .optional(),
+      timestamp: z.string().optional(),
+    })
+    .optional(),
+});
+
+const errorResponseSchema = z.object({
+  statusCode: z.number().optional(),
+  message: z
+    .union([
+      z.string(),
+      z.array(z.string()),
+    ])
+    .optional(),
+  error: z.string().optional(),
+  path: z.string().optional(),
+  timestamp: z.string().optional(),
+  correlationId: z.string().optional(),
+});
+
 const responseSchema = z.object({
   data: z.object({
     total: z.number().int().nonnegative(),
@@ -172,11 +214,29 @@ type Fetcher = (
   init?: RequestInit,
 ) => Promise<Response>;
 
+type Sleep = (
+  milliseconds: number,
+) => Promise<void>;
+
+export type QuestApiQuota = Readonly<{
+  planCode: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  used: number;
+  quotaPerCycle: number | null;
+  remaining: number;
+  percentUsed: number | null;
+  unlimited: boolean;
+  correlationId: string | null;
+}>;
+
 export type QuestApiProviderOptions =
   Readonly<{
     apiKey: string;
     baseUrl?: string;
     fetcher?: Fetcher;
+    sleep?: Sleep;
+    maxAttempts?: number;
   }>;
 
 function stringifyProviderId(
@@ -320,12 +380,106 @@ function mapQuestion(
   };
 }
 
+function defaultSleep(
+  milliseconds: number,
+): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+function isRetryableStatus(
+  status: number,
+): boolean {
+  return (
+    status === 429 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
+}
+
+function retryDelayMs(
+  response: Response,
+  attempt: number,
+): number {
+  if (response.status === 429) {
+    const retryAfter = Number.parseInt(
+      response.headers.get("retry-after") ?? "",
+      10,
+    );
+
+    if (
+      Number.isSafeInteger(retryAfter) &&
+      retryAfter > 0
+    ) {
+      return Math.min(
+        retryAfter * 1000,
+        30_000,
+      );
+    }
+  }
+
+  return Math.min(
+    500 * 2 ** (attempt - 1),
+    4_000,
+  );
+}
+
+async function buildRequestError(
+  response: Response,
+): Promise<Error> {
+  const body = await response.text();
+
+  if (body) {
+    try {
+      const parsed = errorResponseSchema.safeParse(
+        JSON.parse(body),
+      );
+
+      if (parsed.success) {
+        const messageValue =
+          parsed.data.message;
+        const message = Array.isArray(
+          messageValue,
+        )
+          ? messageValue.join("; ")
+          : messageValue;
+
+        const suffix = [
+          message,
+          parsed.data.correlationId
+            ? `correlationId=${parsed.data.correlationId}`
+            : null,
+        ]
+          .filter(
+            (value): value is string =>
+              Boolean(value),
+          )
+          .join(" | ");
+
+        return new Error(
+          `Quest API request failed with status ${response.status}${suffix ? `: ${suffix}` : "."}`,
+        );
+      }
+    } catch {
+      // Fall through to the generic provider error.
+    }
+  }
+
+  return new Error(
+    `Quest API request failed with status ${response.status}.`,
+  );
+}
+
 export class QuestApiProvider
   implements QuestionProvider
 {
   private readonly apiKey: string;
   private readonly baseUrl: string;
   private readonly fetcher: Fetcher;
+  private readonly sleep: Sleep;
+  private readonly maxAttempts: number;
 
   public constructor(
     options: QuestApiProviderOptions,
@@ -345,6 +499,131 @@ export class QuestApiProvider
     ).replace(/\/$/, "");
     this.fetcher =
       options.fetcher ?? fetch;
+    this.sleep =
+      options.sleep ?? defaultSleep;
+    this.maxAttempts =
+      options.maxAttempts ?? 3;
+
+    if (
+      !Number.isSafeInteger(this.maxAttempts) ||
+      this.maxAttempts < 1 ||
+      this.maxAttempts > 5
+    ) {
+      throw new Error(
+        "Quest API maxAttempts must be between 1 and 5.",
+      );
+    }
+  }
+
+  private async request(
+    url: URL,
+  ): Promise<Response> {
+    let lastError: unknown;
+
+    for (
+      let attempt = 1;
+      attempt <= this.maxAttempts;
+      attempt += 1
+    ) {
+      try {
+        const response =
+          await this.fetcher(
+            url,
+            {
+              method: "GET",
+              headers: {
+                Accept:
+                  "application/json",
+                "X-API-Key":
+                  this.apiKey,
+              },
+            },
+          );
+
+        if (response.ok) {
+          return response;
+        }
+
+        if (
+          isRetryableStatus(
+            response.status,
+          ) &&
+          attempt < this.maxAttempts
+        ) {
+          await this.sleep(
+            retryDelayMs(
+              response,
+              attempt,
+            ),
+          );
+
+          continue;
+        }
+
+        throw await buildRequestError(
+          response,
+        );
+      } catch (error) {
+        lastError = error;
+
+        if (
+          error instanceof Error &&
+          error.message.startsWith(
+            "Quest API request failed with status",
+          )
+        ) {
+          throw error;
+        }
+
+        if (
+          attempt < this.maxAttempts
+        ) {
+          await this.sleep(
+            Math.min(
+              500 *
+                2 ** (attempt - 1),
+              4_000,
+            ),
+          );
+
+          continue;
+        }
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(
+          "Quest API request failed after retries.",
+        );
+  }
+
+  public async getQuota(): Promise<QuestApiQuota> {
+    const url = new URL(
+      "/v2/quota",
+      this.baseUrl,
+    );
+
+    const response =
+      await this.request(url);
+
+    const parsed =
+      quotaResponseSchema.safeParse(
+        await response.json(),
+      );
+
+    if (!parsed.success) {
+      throw new Error(
+        "Quest API returned an unexpected quota response shape.",
+      );
+    }
+
+    return {
+      ...parsed.data.data,
+      correlationId:
+        parsed.data.meta
+          ?.correlationId ?? null,
+    };
   }
 
   public async getExamination(
@@ -372,22 +651,8 @@ export class QuestApiProvider
       "10",
     );
 
-    const response = await this.fetcher(
-      url,
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "X-API-Key": this.apiKey,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Quest API request failed with status ${response.status}.`,
-      );
-    }
+    const response =
+      await this.request(url);
 
     const parsed =
       examinationListResponseSchema.safeParse(
@@ -530,22 +795,8 @@ export class QuestApiProvider
       );
     }
 
-    const response = await this.fetcher(
-      url,
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "X-API-Key": this.apiKey,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Quest API request failed with status ${response.status}.`,
-      );
-    }
+    const response =
+      await this.request(url);
 
     const parsed = responseSchema.safeParse(
       await response.json(),
