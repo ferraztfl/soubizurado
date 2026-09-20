@@ -2,6 +2,7 @@ import type { QuestionType } from "../../domain/question-type";
 
 export type PublicQuestionMediaDto = Readonly<{
   id: string;
+  url: string;
   mimeType: string;
   width: number | null;
   height: number | null;

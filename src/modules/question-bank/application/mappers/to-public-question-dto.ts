@@ -1,20 +1,38 @@
 import type {
   PublicQuestionDto,
+  PublicQuestionMediaDto,
 } from "../dto/public-question";
 
 import type {
+  PublicQuestionMediaRecord,
   PublicQuestionReadRecord,
 } from "../ports/public-question-read-repository";
+
+function toPublicMediaDto(
+  media: PublicQuestionMediaRecord,
+): PublicQuestionMediaDto {
+  return {
+    ...media,
+    url:
+      `/api/media/${encodeURIComponent(
+        media.id,
+      )}`,
+  };
+}
 
 export function toPublicQuestionDto(
   question: PublicQuestionReadRecord,
 ): PublicQuestionDto {
   const media =
-    [...(question.media ?? [])].sort(
-      (first, second) =>
-        first.position -
-        second.position,
-    );
+    [...(question.media ?? [])]
+      .sort(
+        (first, second) =>
+          first.position -
+          second.position,
+      )
+      .map(
+        toPublicMediaDto,
+      );
 
   const alternatives =
     [...question.alternatives]
@@ -29,11 +47,15 @@ export function toPublicQuestionDto(
             [
               ...(alternative.media ??
                 []),
-            ].sort(
-              (first, second) =>
-                first.position -
-                second.position,
-            );
+            ]
+              .sort(
+                (first, second) =>
+                  first.position -
+                  second.position,
+              )
+              .map(
+                toPublicMediaDto,
+              );
 
           return {
             id:
