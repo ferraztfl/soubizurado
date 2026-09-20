@@ -555,6 +555,7 @@ export class EnemDataProvider
       externalId:
         `enem-${year}`,
       title: `ENEM ${year}`,
+      slugPrefix: "enem",
       organization: "INEP",
       careerPosition: null,
       year,
