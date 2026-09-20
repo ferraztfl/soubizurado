@@ -81,6 +81,46 @@ const publicQuestionSelect = {
       },
     },
   },
+  occurrences: {
+    orderBy: {
+      capturedAt: "asc",
+    },
+    select: {
+      id: true,
+      externalQuestionNumber: true,
+      source: {
+        select: {
+          name: true,
+        },
+      },
+      examination: {
+        select: {
+          id: true,
+          title: true,
+          year: true,
+          board: {
+            select: {
+              id: true,
+              name: true,
+              acronym: true,
+            },
+          },
+          organization: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          careerPosition: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  },
 } satisfies Prisma.QuestionSelect;
 
 type PublicQuestionRow = Prisma.QuestionGetPayload<{
@@ -91,6 +131,9 @@ function buildPublicQuestionWhere(
   filters: PublicQuestionReadFilters,
 ): Prisma.QuestionWhereInput {
   const examinationFilters: Prisma.ExaminationWhereInput = {
+    ...(filters.examinationId
+      ? { id: filters.examinationId }
+      : {}),
     ...(filters.boardId
       ? { boardId: filters.boardId }
       : {}),
@@ -100,6 +143,7 @@ function buildPublicQuestionWhere(
   };
 
   const hasExaminationFilters =
+    filters.examinationId !== undefined ||
     filters.boardId !== undefined ||
     filters.year !== undefined;
 
@@ -125,17 +169,27 @@ function buildPublicQuestionWhere(
     ...(filters.subtopicId
       ? { subtopicId: filters.subtopicId }
       : {}),
-    ...(filters.examinationId
-      ? { examinationId: filters.examinationId }
-      : {}),
     ...(filters.type
       ? { type: filters.type }
       : {}),
     ...(hasExaminationFilters
       ? {
-          examination: {
-            is: examinationFilters,
-          },
+          OR: [
+            {
+              examination: {
+                is: examinationFilters,
+              },
+            },
+            {
+              occurrences: {
+                some: {
+                  examination: {
+                    is: examinationFilters,
+                  },
+                },
+              },
+            },
+          ],
         }
       : {}),
   };
@@ -171,6 +225,7 @@ function toPublicQuestionReadRecord(
     topic: question.topic,
     subtopic: question.subtopic,
     examination: question.examination,
+    occurrences: question.occurrences,
   };
 }
 
@@ -239,11 +294,24 @@ export class PrismaPublicQuestionReadRepository
       this.prisma.discipline.findMany({
         where: {
           isActive: true,
-          questions: {
-            some: {
-              status: "PUBLISHED",
+          OR: [
+            {
+              questions: {
+                some: {
+                  status: "PUBLISHED",
+                },
+              },
             },
-          },
+            {
+              occurrences: {
+                some: {
+                  question: {
+                    status: "PUBLISHED",
+                  },
+                },
+              },
+            },
+          ],
         },
         orderBy: [
           { sortOrder: "asc" },
@@ -259,11 +327,24 @@ export class PrismaPublicQuestionReadRepository
           isActive: true,
           examinations: {
             some: {
-              questions: {
-                some: {
-                  status: "PUBLISHED",
+              OR: [
+                {
+                  questions: {
+                    some: {
+                      status: "PUBLISHED",
+                    },
+                  },
                 },
-              },
+                {
+                  occurrences: {
+                    some: {
+                      question: {
+                        status: "PUBLISHED",
+                      },
+                    },
+                  },
+                },
+              ],
             },
           },
         },
