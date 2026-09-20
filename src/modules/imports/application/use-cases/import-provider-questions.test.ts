@@ -227,6 +227,89 @@ describe("ImportProviderQuestionsUseCase", () => {
     });
   });
 
+  it("persists questions without provider topic as IN_REVIEW for later taxonomy review", async () => {
+    const provider = new FakeProvider();
+    provider.page = {
+      ...provider.page,
+      items: [
+        {
+          ...provider.page.items[0],
+          topic: null,
+        },
+      ],
+    };
+
+    const repository =
+      new FakeImportRepository();
+
+    const useCase =
+      new ImportProviderQuestionsUseCase(
+        provider,
+        repository,
+      );
+
+    const result = await useCase.execute({
+      limit: 1,
+      publish: false,
+    });
+
+    expect(result).toMatchObject({
+      imported: 1,
+      reviewRequired: 0,
+      failed: 0,
+    });
+    expect(repository.persisted).toHaveLength(
+      1,
+    );
+    expect(
+      repository.persisted[0],
+    ).toMatchObject({
+      status: "IN_REVIEW",
+      disciplineName:
+        "Direito Administrativo",
+      topicName: null,
+    });
+  });
+
+  it("does not publish questions whose provider taxonomy has no topic", async () => {
+    const provider = new FakeProvider();
+    provider.page = {
+      ...provider.page,
+      items: [
+        {
+          ...provider.page.items[0],
+          topic: null,
+        },
+      ],
+    };
+
+    const repository =
+      new FakeImportRepository();
+
+    const useCase =
+      new ImportProviderQuestionsUseCase(
+        provider,
+        repository,
+      );
+
+    const result = await useCase.execute({
+      limit: 1,
+      publish: true,
+    });
+
+    expect(result).toMatchObject({
+      imported: 0,
+      reviewRequired: 1,
+      failed: 0,
+    });
+    expect(repository.persisted).toHaveLength(
+      0,
+    );
+    expect(repository.reviews[0]?.reason).toBe(
+      "INCOMPLETE_OR_INVALID_QUESTION",
+    );
+  });
+
   it("routes image-bearing questions to review until media persistence is ready", async () => {
     const provider = new FakeProvider();
     provider.page = {
