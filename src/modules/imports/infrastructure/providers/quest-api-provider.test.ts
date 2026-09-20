@@ -246,7 +246,7 @@ describe("QuestApiProvider", () => {
                 alternative_type:
                   "MULTIPLA_ESCOLHA",
               },
-              total_questoes: 2,
+              total_questoes: "2",
               items: [
                 {
                   id: "q-1",
@@ -271,13 +271,9 @@ describe("QuestApiProvider", () => {
                     materia: "Nutrição",
                     assunto: "Oncologia",
                   },
-                  textos_associados: [],
-                  anexos: [],
-                  sinalizadores: {
-                    tem_imagem: false,
-                    tem_gabarito: false,
-                    tem_texto_associado: false,
-                  },
+                  textos_associados: null,
+                  anexos: null,
+                  sinalizadores: null,
                 },
                 {
                   id: "q-2",
