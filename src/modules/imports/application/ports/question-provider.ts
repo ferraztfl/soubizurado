@@ -28,6 +28,7 @@ export type ProviderQuestionCandidate =
 export type QuestionProviderListInput =
   Readonly<{
     limit: number;
+    externalId?: string;
     afterId?: string;
     includeAnswerKey?: boolean;
     requireAnswerKey?: boolean;
