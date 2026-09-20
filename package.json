@@ -22,7 +22,8 @@
     "import:inspect": "npx --yes tsx scripts/inspect-import-job.ts",
     "import:inspect-questions": "npx --yes tsx scripts/inspect-imported-questions.ts",
     "import:enem": "npx --yes tsx scripts/import-enem.ts",
-    "import:enem-status": "npx --yes tsx scripts/enem-import-status.ts"
+    "import:enem-status": "npx --yes tsx scripts/enem-import-status.ts",
+    "maintenance:fix-enem-slugs": "npx --yes tsx scripts/fix-enem-examination-slugs.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
