@@ -35,6 +35,11 @@ ON "question_sources"("reference");
 CREATE UNIQUE INDEX "questions_canonical_fingerprint_key"
 ON "questions"("canonical_fingerprint");
 
+-- CreateIndex
+CREATE INDEX "questions_statement_trgm_idx"
+ON "questions"
+USING GIN (lower("statement") gin_trgm_ops);
+
 -- CreateTable
 CREATE TABLE "question_support_contents" (
     "id" UUID NOT NULL,
