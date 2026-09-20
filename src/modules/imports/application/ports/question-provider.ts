@@ -52,8 +52,25 @@ export type QuestionProviderListResult =
       readonly ProviderQuestionCandidate[];
   }>;
 
+export type ProviderExaminationMetadata =
+  Readonly<{
+    externalId: string;
+    organization: string | null;
+    careerPosition: string | null;
+    year: number | null;
+    board: string | null;
+    alternativeType:
+      | "MULTIPLA_ESCOLHA"
+      | "CERTO_ERRADO"
+      | null;
+  }>;
+
 export interface QuestionProvider {
   listQuestions(
     input: QuestionProviderListInput,
   ): Promise<QuestionProviderListResult>;
+
+  getExamination(
+    externalId: string,
+  ): Promise<ProviderExaminationMetadata | null>;
 }
