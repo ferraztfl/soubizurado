@@ -154,7 +154,7 @@ function buildPersistenceInput(
   if (
     !candidate.answerKey ||
     !candidate.discipline ||
-    !candidate.topic
+    (input.publish && !candidate.topic)
   ) {
     return null;
   }
@@ -300,7 +300,8 @@ function buildPersistenceInput(
     correctTrueFalse,
     disciplineName:
       candidate.discipline,
-    topicName: candidate.topic,
+    topicName:
+      candidate.topic ?? null,
     supportContents,
     examination,
   };
