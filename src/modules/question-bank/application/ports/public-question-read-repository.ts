@@ -36,6 +36,24 @@ export type PublicQuestionExaminationReference =
     board: PublicQuestionBoardReference | null;
   }>;
 
+
+export type PublicQuestionOccurrenceReference =
+  Readonly<{
+    id: string;
+    source: Readonly<{
+      name: string;
+    }>;
+    externalQuestionNumber: string | null;
+    examination: Readonly<{
+      id: string;
+      title: string;
+      year: number | null;
+      board: PublicQuestionBoardReference | null;
+      organization: PublicQuestionTaxonomyReference | null;
+      careerPosition: PublicQuestionTaxonomyReference | null;
+    }> | null;
+  }>;
+
 export type PublicQuestionReadRecord = Readonly<{
   id: string;
   type: QuestionType;
@@ -51,6 +69,8 @@ export type PublicQuestionReadRecord = Readonly<{
   examination:
     | PublicQuestionExaminationReference
     | null;
+  occurrences:
+    readonly PublicQuestionOccurrenceReference[];
 }>;
 
 export type PublicQuestionReadFilters = Readonly<{
