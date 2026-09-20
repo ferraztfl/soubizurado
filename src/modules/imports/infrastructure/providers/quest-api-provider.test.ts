@@ -229,6 +229,193 @@ describe("QuestApiProvider", () => {
     );
   });
 
+  it("loads an examination and merges its official answer key into local candidates", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              prova: {
+                id: "2511693",
+                orgao: "A.C.Camargo Cancer Center",
+                cargo:
+                  "Residência em Nutrição - Área: Oncologia",
+                ano: "2025",
+                banca: "VUNESP",
+                alternative_type:
+                  "MULTIPLA_ESCOLHA",
+              },
+              total_questoes: 2,
+              items: [
+                {
+                  id: "q-1",
+                  numero: "1",
+                  enunciado:
+                    "<p>Questão um</p>",
+                  alternativas: [
+                    {
+                      letra: "A",
+                      texto: "<p>A</p>",
+                      imagens: [],
+                    },
+                    {
+                      letra: "B",
+                      texto: "<p>B</p>",
+                      imagens: [],
+                    },
+                  ],
+                  gabarito: null,
+                  provas: ["2511693"],
+                  classificacao: {
+                    materia: "Nutrição",
+                    assunto: "Oncologia",
+                  },
+                  textos_associados: [],
+                  anexos: [],
+                  sinalizadores: {
+                    tem_imagem: false,
+                    tem_gabarito: false,
+                    tem_texto_associado: false,
+                  },
+                },
+                {
+                  id: "q-2",
+                  numero: "2",
+                  enunciado:
+                    "<p>Questão dois</p>",
+                  alternativas: [
+                    {
+                      letra: "A",
+                      texto: "<p>A</p>",
+                      imagens: [],
+                    },
+                    {
+                      letra: "B",
+                      texto: "<p>B</p>",
+                      imagens: [],
+                    },
+                  ],
+                  gabarito: null,
+                  provas: ["2511693"],
+                  classificacao: {
+                    materia: "Nutrição",
+                    assunto: "Oncologia",
+                  },
+                  textos_associados: [],
+                  anexos: [],
+                  sinalizadores: {
+                    tem_imagem: false,
+                    tem_gabarito: false,
+                    tem_texto_associado: false,
+                  },
+                },
+              ],
+            },
+            meta: {
+              correlationId: "exam-content-1",
+              timestamp:
+                "2026-09-20T00:00:00.000Z",
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type":
+                "application/json",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              prova: {
+                id: "2511693",
+                orgao: "A.C.Camargo Cancer Center",
+                cargo:
+                  "Residência em Nutrição - Área: Oncologia",
+                ano: "2025",
+                banca: "VUNESP",
+                alternative_type:
+                  "MULTIPLA_ESCOLHA",
+              },
+              gabaritos: [
+                {
+                  questao_id: "q-1",
+                  numero: "1",
+                  gabarito: "B",
+                },
+                {
+                  questao_id: "q-2",
+                  numero: "2",
+                  gabarito: "A",
+                },
+              ],
+            },
+            meta: {
+              correlationId: "exam-key-1",
+              timestamp:
+                "2026-09-20T00:00:00.000Z",
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type":
+                "application/json",
+            },
+          },
+        ),
+      );
+
+    const provider = new QuestApiProvider({
+      apiKey: "qk_test",
+      fetcher,
+    });
+
+    const result = await provider.listQuestions({
+      limit: 10,
+      examinationId: "2511693",
+      includeAnswerKey: true,
+      requireAnswerKey: true,
+    });
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(String(fetcher.mock.calls[0]?.[0]))
+      .toContain("/v1/provas/2511693");
+    expect(String(fetcher.mock.calls[1]?.[0]))
+      .toContain(
+        "/v1/provas/2511693/gabarito",
+      );
+
+    expect(result).toMatchObject({
+      total: 2,
+      nextCursor: null,
+      correlationId: "exam-content-1",
+    });
+
+    expect(
+      result.items.map((item) => ({
+        id: item.externalId,
+        answerKey: item.answerKey,
+        hasAnswerKey: item.hasAnswerKey,
+      })),
+    ).toEqual([
+      {
+        id: "q-1",
+        answerKey: "B",
+        hasAnswerKey: true,
+      },
+      {
+        id: "q-2",
+        answerKey: "A",
+        hasAnswerKey: true,
+      },
+    ]);
+  });
+
   it("lists current examinations so imports do not depend on stale documentation ids", async () => {
     const fetcher = vi.fn().mockResolvedValue(
       new Response(
