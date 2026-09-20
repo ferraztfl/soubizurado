@@ -1291,6 +1291,7 @@ export class EnemPdfProvider
       visualQuestionCount: number;
       blankAlternativeQuestionCount: number;
       officialNumberCount: number;
+      answerKeyOrdinals: readonly number[];
       ordinals: readonly number[];
     }>
   > {
@@ -1333,6 +1334,18 @@ export class EnemPdfProvider
               .officialQuestionNumber !==
             null,
         ).length,
+      answerKeyOrdinals:
+        document.questions
+          .filter(
+            (question) =>
+              Boolean(
+                question.answerKey,
+              ),
+          )
+          .map(
+            (question) =>
+              question.ordinal,
+          ),
       ordinals:
         document.questions.map(
           (question) =>
