@@ -13,7 +13,6 @@ import type {
   QuestionProviderListInput,
 } from "../ports/question-provider";
 import type {
-  ImportJobCounts,
   PersistImportedQuestionInput,
   QuestionImportRepository,
 } from "../ports/question-import-repository";
@@ -333,7 +332,7 @@ export class ImportProviderQuestionsUseCase {
           input.afterId ?? null,
       });
 
-    const counts: ImportJobCounts = {
+    const counts = {
       received: 0,
       imported: 0,
       duplicates: 0,
