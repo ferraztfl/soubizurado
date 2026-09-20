@@ -26,11 +26,26 @@ const ENEM_SOURCE_CONFIG:
   };
 
 type Arguments = Readonly<{
-  year: number;
+  year: number | null;
+  allYears: boolean;
   limit: number;
   all: boolean;
   afterId?: string;
   externalId?: string;
+}>;
+
+type ImportCounts = {
+  received: number;
+  imported: number;
+  duplicates: number;
+  reviewRequired: number;
+  failed: number;
+};
+
+type YearSummary = Readonly<{
+  year: number;
+  jobs: readonly string[];
+  counts: Readonly<ImportCounts>;
 }>;
 
 function argumentValue(
@@ -55,24 +70,71 @@ function hasFlag(
     .includes(`--${name}`);
 }
 
+function emptyCounts(): ImportCounts {
+  return {
+    received: 0,
+    imported: 0,
+    duplicates: 0,
+    reviewRequired: 0,
+    failed: 0,
+  };
+}
+
+function addCounts(
+  target: ImportCounts,
+  source: Readonly<ImportCounts>,
+): void {
+  target.received += source.received;
+  target.imported += source.imported;
+  target.duplicates += source.duplicates;
+  target.reviewRequired +=
+    source.reviewRequired;
+  target.failed += source.failed;
+}
+
 function parseArguments(): Arguments {
+  const allYears =
+    hasFlag("todos-anos");
   const yearRaw =
     argumentValue("ano");
-  const year = Number(yearRaw);
+  const year = yearRaw
+    ? Number(yearRaw)
+    : null;
 
   if (
-    !Number.isSafeInteger(year) ||
-    year < 2009 ||
-    year > 2100
+    year !== null &&
+    (
+      !Number.isSafeInteger(year) ||
+      year < 2009 ||
+      year > 2100
+    )
   ) {
     throw new Error(
-      "--ano is required and must be a valid ENEM year.",
+      "--ano must be a valid ENEM year.",
+    );
+  }
+
+  if (
+    !allYears &&
+    year === null
+  ) {
+    throw new Error(
+      "Use --ano=<year> or --todos-anos.",
+    );
+  }
+
+  if (
+    allYears &&
+    year !== null
+  ) {
+    throw new Error(
+      "Use either --ano=<year> or --todos-anos, not both.",
     );
   }
 
   const limit = Number(
     argumentValue("limit") ??
-      "20",
+      "100",
   );
 
   if (
@@ -87,13 +149,24 @@ function parseArguments(): Arguments {
 
   const externalId =
     argumentValue("id");
+  const afterId =
+    argumentValue("after-id");
 
   if (
     externalId &&
-    hasFlag("all")
+    (hasFlag("all") || allYears)
   ) {
     throw new Error(
-      "Use either --id or --all, not both.",
+      "Use --id only with a single --ano import.",
+    );
+  }
+
+  if (
+    afterId &&
+    allYears
+  ) {
+    throw new Error(
+      "--after-id is only supported with a single --ano import.",
     );
   }
 
@@ -105,12 +178,95 @@ function parseArguments(): Arguments {
 
   return {
     year,
+    allYears,
     limit:
       externalId ? 1 : limit,
-    all: hasFlag("all"),
-    afterId:
-      argumentValue("after-id"),
+    all:
+      allYears ||
+      hasFlag("all"),
+    afterId,
     externalId,
+  };
+}
+
+async function importYear(
+  input: Readonly<{
+    year: number;
+    limit: number;
+    all: boolean;
+    afterId?: string;
+    externalId?: string;
+    useCase:
+      ImportProviderQuestionsUseCase;
+  }>,
+): Promise<YearSummary> {
+  let afterId =
+    input.afterId;
+  const jobs: string[] = [];
+  const counts = emptyCounts();
+
+  do {
+    const result =
+      await input.useCase.execute({
+        limit: input.limit,
+        externalId:
+          input.externalId,
+        examinationId:
+          `enem-${input.year}`,
+        afterId,
+        publish: false,
+        filters: {
+          year:
+            String(input.year),
+        },
+      });
+
+    jobs.push(result.jobId);
+    addCounts(counts, result);
+
+    const previousAfterId =
+      afterId;
+    afterId =
+      result.nextCursor ??
+      undefined;
+
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          year: input.year,
+          pageJobId:
+            result.jobId,
+          ...result,
+          publicationMode:
+            "IN_REVIEW",
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    if (
+      !input.all ||
+      input.externalId ||
+      !afterId
+    ) {
+      break;
+    }
+
+    if (
+      afterId ===
+      previousAfterId
+    ) {
+      throw new Error(
+        `ENEM ${input.year} import cursor did not advance.`,
+      );
+    }
+  } while (true);
+
+  return {
+    year: input.year,
+    jobs,
+    counts,
   };
 }
 
@@ -134,92 +290,59 @@ async function main(): Promise<void> {
       repository,
     );
 
-  let afterId =
-    args.afterId;
-  const jobs: string[] = [];
-  const totals = {
-    received: 0,
-    imported: 0,
-    duplicates: 0,
-    reviewRequired: 0,
-    failed: 0,
-  };
+  const years = args.allYears
+    ? (
+        await provider.listAvailableYears()
+      ).filter(
+        (year) => year >= 2009,
+      )
+    : [args.year!];
 
-  do {
-    const result =
-      await useCase.execute({
-        limit: args.limit,
-        externalId:
-          args.externalId,
-        examinationId:
-          `enem-${args.year}`,
-        afterId,
-        publish: false,
-        filters: {
-          year:
-            String(args.year),
-        },
-      });
+  if (years.length === 0) {
+    throw new Error(
+      "No ENEM years are available from 2009 onward.",
+    );
+  }
 
-    jobs.push(result.jobId);
-    totals.received +=
-      result.received;
-    totals.imported +=
-      result.imported;
-    totals.duplicates +=
-      result.duplicates;
-    totals.reviewRequired +=
-      result.reviewRequired;
-    totals.failed +=
-      result.failed;
+  const totalCounts =
+    emptyCounts();
+  const summaries:
+    YearSummary[] = [];
 
-    const previousAfterId =
-      afterId;
-    afterId =
-      result.nextCursor ??
-      undefined;
-
+  for (const year of years) {
     process.stdout.write(
-      `${JSON.stringify(
-        {
-          pageJobId:
-            result.jobId,
-          ...result,
-          publicationMode:
-            "IN_REVIEW",
-        },
-        null,
-        2,
-      )}\n`,
+      `\n=== ENEM ${year} ===\n`,
     );
 
-    if (
-      !args.all ||
-      args.externalId ||
-      !afterId
-    ) {
-      break;
-    }
+    const summary =
+      await importYear({
+        year,
+        limit: args.limit,
+        all: args.all,
+        afterId:
+          args.afterId,
+        externalId:
+          args.externalId,
+        useCase,
+      });
 
-    if (
-      afterId ===
-      previousAfterId
-    ) {
-      throw new Error(
-        "ENEM import cursor did not advance.",
-      );
-    }
-  } while (true);
+    summaries.push(summary);
+    addCounts(
+      totalCounts,
+      summary.counts,
+    );
+  }
 
   process.stdout.write(
-    `${JSON.stringify(
+    `\n${JSON.stringify(
       {
         summary: {
-          year: args.year,
-          jobs,
-          ...totals,
-          nextCursor:
-            afterId ?? null,
+          years,
+          yearCount:
+            years.length,
+          perYear:
+            summaries,
+          ...totalCounts,
           publicationMode:
             "IN_REVIEW",
         },
