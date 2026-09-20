@@ -18,6 +18,20 @@ const publicQuestionSelect = {
   id: true,
   type: true,
   statement: true,
+  supportLinks: {
+    orderBy: {
+      position: "asc",
+    },
+    select: {
+      position: true,
+      supportContent: {
+        select: {
+          id: true,
+          content: true,
+        },
+      },
+    },
+  },
   alternatives: {
     orderBy: {
       position: "asc",
@@ -140,6 +154,15 @@ function toPublicQuestionReadRecord(
     id: question.id,
     type: question.type,
     statement: question.statement,
+    supportContents:
+      question.supportLinks.map(
+        (link) => ({
+          id: link.supportContent.id,
+          content:
+            link.supportContent.content,
+          position: link.position,
+        }),
+      ),
     alternatives: question.alternatives,
     discipline: question.discipline,
     area: question.area,
