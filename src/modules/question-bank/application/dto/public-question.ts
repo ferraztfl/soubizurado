@@ -31,6 +31,23 @@ export type PublicQuestionExaminationDto = Readonly<{
   board: PublicQuestionBoardDto | null;
 }>;
 
+
+export type PublicQuestionOccurrenceDto = Readonly<{
+  id: string;
+  source: Readonly<{
+    name: string;
+  }>;
+  externalQuestionNumber: string | null;
+  examination: Readonly<{
+    id: string;
+    title: string;
+    year: number | null;
+    board: PublicQuestionBoardDto | null;
+    organization: PublicTaxonomyReferenceDto | null;
+    careerPosition: PublicTaxonomyReferenceDto | null;
+  }> | null;
+}>;
+
 export type PublicQuestionDto = Readonly<{
   id: string;
   type: QuestionType;
@@ -48,4 +65,6 @@ export type PublicQuestionDto = Readonly<{
   }>;
 
   examination: PublicQuestionExaminationDto | null;
+  occurrences:
+    readonly PublicQuestionOccurrenceDto[];
 }>;
