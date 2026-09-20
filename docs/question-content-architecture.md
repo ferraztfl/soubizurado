@@ -242,3 +242,31 @@ When the global question search is unavailable, the preferred fallback is exam-f
 The CLI supports this mode with `npm run import:quest-api -- --prova=<provider-exam-id>`.
 
 This mode still materializes questions locally; the provider is never required during student runtime.
+
+
+## ENEM open-dataset ingestion
+
+The ENEM ingestion adapter reads the public dataset from `yunger7/enem-api` as an **ingestion source only**. Runtime study and question explorer flows continue reading exclusively from Sou Bizurado PostgreSQL.
+
+Source strategy:
+
+- provider code: `ENEM_DATA`;
+- source reference: `enem-api-yunger7`;
+- upstream repository: `https://github.com/yunger7/enem-api`;
+- upstream repository license: GNU GPL-2.0;
+- original exam provenance remains ENEM / INEP and is stored separately from the repository packaging/license metadata;
+- examination records use `ENEM <year>`, organization `INEP`, no invented examining board;
+- the four ENEM areas are imported as the initial discipline classification;
+- topic remains nullable while the question is `IN_REVIEW`;
+- imports are review-first and the ENEM CLI intentionally does not publish directly.
+
+Question mapping:
+
+- `context` becomes reusable support content when an alternatives introduction is present;
+- `alternativesIntroduction` becomes the question statement;
+- alternatives and official answer key are persisted through the common provider-neutral pipeline;
+- source URL points back to the exact upstream question JSON;
+- questions with files, alternative media, or Markdown image references remain `REVIEW_REQUIRED / MEDIA_NOT_PERSISTED_YET` until Media/R2 ingestion exists;
+- text-only questions can be materialized immediately as canonical `Question` rows in `IN_REVIEW`.
+
+The 2023 upstream exam index currently exposes 183 question entries because language-choice variants are represented separately. Pagination remains capped at 100 per import job; `import:enem -- --ano=2023 --all` iterates jobs until the year is exhausted.
