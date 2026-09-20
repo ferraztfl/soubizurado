@@ -22,6 +22,9 @@ export type PersistImportedQuestionInput =
     externalQuestionNumber:
       | string
       | null;
+    externalExaminationId:
+      | string
+      | null;
     sourceUrl: string | null;
     rawPayload: unknown;
     payloadHash: string;
