@@ -144,6 +144,75 @@ describe("QuestApiProvider", () => {
     });
   });
 
+  it("loads lightweight examination metadata by external id", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            total: 1,
+            page: 1,
+            per_page: 10,
+            items: [
+              {
+                id: "2554075",
+                orgao: "TRF 1",
+                cargo: "Juiz Federal Substituto",
+                ano: "2025",
+                banca: "FGV",
+                alternative_type:
+                  "MULTIPLA_ESCOLHA",
+                total_questoes: 100,
+              },
+            ],
+          },
+          meta: {
+            correlationId: "corr-proof-1",
+            timestamp:
+              "2026-07-31T22:49:04.691Z",
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type":
+              "application/json",
+          },
+        },
+      ),
+    );
+
+    const provider = new QuestApiProvider({
+      apiKey: "qk_test",
+      fetcher,
+    });
+
+    await expect(
+      provider.getExamination(
+        "2554075",
+      ),
+    ).resolves.toEqual({
+      externalId: "2554075",
+      organization: "TRF 1",
+      careerPosition:
+        "Juiz Federal Substituto",
+      year: 2025,
+      board: "FGV",
+      alternativeType:
+        "MULTIPLA_ESCOLHA",
+    });
+
+    const requestUrl = String(
+      fetcher.mock.calls[0]?.[0],
+    );
+
+    expect(requestUrl).toContain(
+      "/v1/provas?",
+    );
+    expect(requestUrl).toContain(
+      "codigo=2554075",
+    );
+  });
+
   it("fails clearly when the provider returns a non-success response", async () => {
     const provider = new QuestApiProvider({
       apiKey: "qk_test",
