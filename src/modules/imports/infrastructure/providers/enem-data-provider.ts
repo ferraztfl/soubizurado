@@ -492,10 +492,9 @@ export class EnemDataProvider
                   : [],
             );
           const attachmentUrls =
-            uniqueStrings([
-              ...raw.files,
-              ...alternativeImageUrls,
-            ]);
+            uniqueStrings(
+              raw.files,
+            );
 
           const context =
             raw.context.trim();
@@ -557,6 +556,7 @@ export class EnemDataProvider
             attachmentUrls,
             hasImages:
               attachmentUrls.length > 0 ||
+              alternativeImageUrls.length > 0 ||
               markdownHasImage(
                 context,
               ) ||

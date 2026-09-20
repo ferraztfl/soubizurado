@@ -562,7 +562,7 @@ model ImportItemMediaLink {
   importItemId     String   @map("import_item_id") @db.Uuid
   mediaAssetId     String   @map("media_asset_id") @db.Uuid
   role             String   @db.VarChar(40)
-  alternativeLabel String?  @map("alternative_label") @db.VarChar(8)
+  alternativeLabel String   @default("") @map("alternative_label") @db.VarChar(8)
   position         Int
   page             Int?
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -570,7 +570,7 @@ model ImportItemMediaLink {
   importItem ImportItem @relation(fields: [importItemId], references: [id], onDelete: Cascade)
   mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
 
-  @@unique([importItemId, mediaAssetId, role, position])
+  @@unique([importItemId, mediaAssetId, role, alternativeLabel, position], map: "import_item_media_links_item_asset_role_alt_position_key")
   @@index([importItemId, role, position])
   @@index([mediaAssetId])
   @@map("import_item_media_links")

@@ -389,6 +389,7 @@ describe("EnemDataProvider", () => {
         "enem-2009-21",
       answerKey: "C",
       hasImages: true,
+      attachmentUrls: [],
       alternatives: [
         {
           label: "A",
