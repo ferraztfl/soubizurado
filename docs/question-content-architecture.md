@@ -269,4 +269,9 @@ Question mapping:
 - questions with files, alternative media, or Markdown image references remain `REVIEW_REQUIRED / MEDIA_NOT_PERSISTED_YET` until Media/R2 ingestion exists;
 - text-only questions can be materialized immediately as canonical `Question` rows in `IN_REVIEW`.
 
-The 2023 upstream exam index currently exposes 183 question entries because language-choice variants are represented separately. Pagination remains capped at 100 per import job; `import:enem -- --ano=2023 --all` iterates jobs until the year is exhausted.
+The upstream dataset currently exposes ENEM years **2009 through 2023**, totaling **2,758 question entries** across those yearly indexes. Language-choice variants are represented separately where present.
+
+Pagination remains capped at 100 per import job:
+
+- `import:enem -- --ano=2023 --all` imports one complete year;
+- `import:enem -- --todos-anos` discovers `exams.json` dynamically and imports every available year from 2009 onward, sequentially and review-first.
