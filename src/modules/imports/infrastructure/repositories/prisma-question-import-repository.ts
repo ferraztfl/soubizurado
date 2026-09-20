@@ -529,9 +529,7 @@ export class PrismaQuestionImportRepository
                   AS "similarity"
               FROM "questions"
               WHERE
-                "canonical_fingerprint"
-                  IS NOT NULL
-                AND similarity(
+                similarity(
                   lower("statement"),
                   lower(${input.statement})
                 ) >=
