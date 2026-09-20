@@ -242,3 +242,20 @@ When the global question search is unavailable, the preferred fallback is exam-f
 The CLI supports this mode with `npm run import:quest-api -- --prova=<provider-exam-id>`.
 
 This mode still materializes questions locally; the provider is never required during student runtime.
+
+
+## Proveniência por ocorrência
+
+A relação `Question.examinationId` pode continuar existindo como referência primária e compatível com o modelo atual, mas **não representa exclusividade de origem**. A proveniência operacional e pública deve ser lida de `QuestionOccurrence`.
+
+Uma questão canônica pode ter uma ou mais ocorrências em provas/fontes. Cada ocorrência preserva a fonte, o identificador externo, o número da questão e a prova correspondente.
+
+Regras:
+
+- conteúdo canônico idêntico + nova prova/fonte: reutilizar a mesma `Question` e registrar uma nova `QuestionOccurrence`;
+- conteúdo materialmente diferente, inclusive conjunto de alternativas diferente: gerar fingerprint diferente e manter outra `Question`;
+- enunciados muito semelhantes, mas fingerprints diferentes: usar a detecção fuzzy para revisão, nunca mesclar automaticamente;
+- banca, ano, órgão, cargo e prova exibidos ao usuário devem preferir as ocorrências registradas, sem afirmar que uma questão pertence exclusivamente a uma única prova;
+- filtros públicos por banca, ano ou prova devem considerar tanto a referência primária legada quanto as ocorrências, enquanto a migração conceitual estiver em andamento.
+
+Isso permite representar com segurança questões reutilizadas ou adaptadas por concursos diferentes sem sobrescrever a proveniência já capturada.
