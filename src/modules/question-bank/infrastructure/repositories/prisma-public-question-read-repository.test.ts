@@ -91,6 +91,33 @@ const validPublicRow = {
       acronym: "BE",
     },
   },
+  occurrences: [
+    {
+      id: "occurrence-1",
+      externalQuestionNumber: "10",
+      source: {
+        name: "Quest API",
+      },
+      examination: {
+        id: "exam-1",
+        title: "Concurso 2026",
+        year: 2026,
+        board: {
+          id: "board-1",
+          name: "Banca Exemplo",
+          acronym: "BE",
+        },
+        organization: {
+          id: "organization-1",
+          name: "Órgão Exemplo",
+        },
+        careerPosition: {
+          id: "career-1",
+          name: "Cargo Exemplo",
+        },
+      },
+    },
+  ],
 } as const;
 
 describe("PrismaPublicQuestionReadRepository", () => {
@@ -131,12 +158,28 @@ describe("PrismaPublicQuestionReadRepository", () => {
       },
       disciplineId: "discipline-1",
       type: "MULTIPLE_CHOICE",
-      examination: {
-        is: {
-          boardId: "board-1",
-          year: 2026,
+      OR: [
+        {
+          examination: {
+            is: {
+              boardId: "board-1",
+              year: 2026,
+            },
+          },
         },
-      },
+        {
+          occurrences: {
+            some: {
+              examination: {
+                is: {
+                  boardId: "board-1",
+                  year: 2026,
+                },
+              },
+            },
+          },
+        },
+      ],
     };
 
     expect(questionFindMany).toHaveBeenCalledWith(
