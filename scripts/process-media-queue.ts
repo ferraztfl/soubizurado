@@ -151,6 +151,12 @@ async function main(): Promise<void> {
       2,
     )}\n`,
   );
+
+  if (
+    result.failed > 0
+  ) {
+    process.exitCode = 2;
+  }
 }
 
 main().catch(

@@ -109,9 +109,7 @@ const imageQuestionPayload = {
   discipline: "linguagens",
   context:
     "![](https://enem.dev/2023/questions/1-ingles/image.png)",
-  files: [
-    "https://enem.dev/2023/questions/1-ingles/image.png",
-  ],
+  files: [],
   correctAlternative: "B",
   alternativesIntroduction:
     "Esse cartaz sugere que",
@@ -340,7 +338,7 @@ describe("EnemDataProvider", () => {
     ]);
   });
 
-  it("marks image-dependent ENEM questions for media review", async () => {
+  it("extracts question media URLs from markdown when the files array is empty", async () => {
     const provider =
       new EnemDataProvider({
         baseUrl:

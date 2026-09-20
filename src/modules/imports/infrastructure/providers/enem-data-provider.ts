@@ -149,6 +149,36 @@ function markdownHasImage(
   );
 }
 
+function markdownImageUrls(
+  value: string,
+): readonly string[] {
+  const urls: string[] = [];
+
+  const pattern =
+    /!\[[^\]]*\]\(\s*(?:<([^>]+)>|([^\s)]+))(?:\s+["'][^"']*["'])?\s*\)/g;
+
+  for (
+    const match of value.matchAll(
+      pattern,
+    )
+  ) {
+    const url =
+      (
+        match[1] ??
+        match[2] ??
+        ""
+      ).trim();
+
+    if (url) {
+      urls.push(url);
+    }
+  }
+
+  return uniqueStrings(
+    urls,
+  );
+}
+
 function uniqueStrings(
   values: readonly (
     | string
@@ -491,10 +521,21 @@ export class EnemDataProvider
                   ? [alternative.file]
                   : [],
             );
+          const markdownAttachmentUrls =
+            uniqueStrings([
+              ...markdownImageUrls(
+                raw.context,
+              ),
+              ...markdownImageUrls(
+                raw.alternativesIntroduction,
+              ),
+            ]);
+
           const attachmentUrls =
-            uniqueStrings(
-              raw.files,
-            );
+            uniqueStrings([
+              ...raw.files,
+              ...markdownAttachmentUrls,
+            ]);
 
           const context =
             raw.context.trim();
