@@ -22,7 +22,7 @@ const NAMED_ENTITIES: Readonly<
 > = {
   nbsp: " ",
   amp: "&",
-  quot: """,
+  quot: "\"",
   apos: "'",
   lt: "<",
   gt: ">",
