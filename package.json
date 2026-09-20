@@ -17,7 +17,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
     "import:quest-api": "npx --yes tsx scripts/import-quest-api.ts",
-    "quest-api:check": "npx --yes tsx scripts/check-quest-api.ts"
+    "quest-api:check": "npx --yes tsx scripts/check-quest-api.ts",
+    "quest-api:provas": "npx --yes tsx scripts/list-quest-api-exams.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
