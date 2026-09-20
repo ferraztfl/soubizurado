@@ -68,9 +68,19 @@ const examIndexSchema = z.array(
   }),
 );
 
+const nullableString = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? "");
+
+const nullableStringArray = z
+  .array(z.string())
+  .nullish()
+  .transform((value) => value ?? []);
+
 const alternativeSchema = z.object({
   letter: z.string(),
-  text: z.string(),
+  text: nullableString,
   file: z
     .string()
     .nullable()
@@ -87,15 +97,14 @@ const questionDetailsSchema = z.object({
     .nullable()
     .optional(),
   discipline: z.string(),
-  context: z.string().default(""),
-  files: z.array(z.string()).default([]),
+  context: nullableString,
+  files: nullableStringArray,
   correctAlternative: z
     .string()
     .nullable()
     .optional(),
-  alternativesIntroduction: z
-    .string()
-    .default(""),
+  alternativesIntroduction:
+    nullableString,
   alternatives: z.array(alternativeSchema),
 });
 
