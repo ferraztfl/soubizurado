@@ -214,8 +214,14 @@ async function resolveExamination(
     metadata.slugPrefix?.trim() ||
     "quest-api";
 
+  const normalizedExternalId =
+    metadata.externalId.trim();
   const slug = truncate(
-    `${slugPrefix}-${metadata.externalId}`,
+    normalizedExternalId.startsWith(
+      `${slugPrefix}-`,
+    )
+      ? normalizedExternalId
+      : `${slugPrefix}-${normalizedExternalId}`,
     260,
   );
 
