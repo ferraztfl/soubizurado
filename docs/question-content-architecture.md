@@ -180,3 +180,65 @@ This is a defense-in-depth rule, not only a DTO-mapping convention.
 4. Add official answer-key outcome metadata when official ingestion begins.
 5. Build Comments as its own bounded context.
 6. Add scraper/parser adapters only for sources that are operationally and legally appropriate.
+
+
+## Provider APIs are ingestion sources, not runtime dependencies
+
+External question APIs are used only to acquire/import content into the Sou Bizurado canonical database.
+
+The student-facing Question Bank and Study flows must never require a provider request in order to list, open, answer or review a question.
+
+For the Quest API integration, the intended lifecycle is:
+
+Quest API -> ImportJob -> raw staging -> normalization -> deduplication -> local Question/QuestionOccurrence -> review/publication.
+
+After a question is materialized locally, runtime reads use PostgreSQL only.
+
+Provider IDs are preserved in QuestionOccurrence for provenance and idempotency, while Question.id remains a Sou Bizurado UUID.
+
+## Duplicate prevention
+
+The ingestion foundation uses layered duplicate controls:
+
+1. unique source occurrence: source + external question id;
+2. unique canonical fingerprint for exact normalized content;
+3. trigram similarity against existing question statements;
+4. review blocking for possible duplicates.
+
+A source occurrence or exact canonical duplicate does not create a second Question.
+
+A fuzzy match above the configured threshold is stored as an import duplicate candidate and remains REVIEW_REQUIRED instead of being auto-created.
+
+The raw provider payload is preserved in ImportItem for audit/reprocessing.
+
+## Current media gate
+
+Questions containing provider media are staged as REVIEW_REQUIRED until MediaAsset/R2 persistence is implemented.
+
+They are not discarded and they are not published with missing figures.
+
+Initial automated imports may deliberately request questions without attachments so that statement, support text, alternatives, answer key, taxonomy and examination metadata can be validated end-to-end first.
+
+
+## Quest API live compatibility notes
+
+As of 2026-09-19, the published Quest API documentation lists `alternative_type` on `GET /v2/questoes`, but the live endpoint returned HTTP 422 with "property alternative_type should not exist". The adapter therefore does not send that parameter on the question search route until the provider behavior and documentation converge.
+
+The broad `GET /v2/questoes` search also returned HTTP 503 with `search_quest_api não respondeu em 4000ms` even with matter/year filters. For operational resilience, the adapter supports direct question lookup via `GET /v2/questoes/{id}`, which bypasses the catalog search path and can be used to validate local persistence independently of search availability.
+
+Provider outages or metadata lookup failures must never make already-imported Sou Bizurado questions unavailable to students.
+
+
+### Exam-first Quest API ingestion
+
+When the global question search is unavailable, the preferred fallback is exam-first ingestion:
+
+1. discover a current exam through `GET /v1/provas`;
+2. fetch its complete question payload through `GET /v1/provas/{id}`;
+3. fetch `GET /v1/provas/{id}/gabarito`;
+4. join answer keys locally by provider question id;
+5. send the resulting candidates through the same Sou Bizurado normalization, deduplication and persistence pipeline.
+
+The CLI supports this mode with `npm run import:quest-api -- --prova=<provider-exam-id>`.
+
+This mode still materializes questions locally; the provider is never required during student runtime.

@@ -9,6 +9,13 @@ export type PublicQuestionAlternativeRecord = Readonly<{
   position: number;
 }>;
 
+export type PublicQuestionSupportContentRecord =
+  Readonly<{
+    id: string;
+    content: string;
+    position: number;
+  }>;
+
 export type PublicQuestionTaxonomyReference =
   Readonly<{
     id: string;
@@ -33,6 +40,8 @@ export type PublicQuestionReadRecord = Readonly<{
   id: string;
   type: QuestionType;
   statement: string;
+  supportContents?:
+    readonly PublicQuestionSupportContentRecord[];
   alternatives:
     readonly PublicQuestionAlternativeRecord[];
   discipline: PublicQuestionTaxonomyReference;

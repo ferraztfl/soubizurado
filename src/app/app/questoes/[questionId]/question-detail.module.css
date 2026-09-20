@@ -61,6 +61,35 @@
   color: var(--sb-brand-strong);
 }
 
+.supportContent {
+  margin-top: 24px;
+  padding: 16px 18px;
+  border: 1px solid var(--sb-border);
+  border-radius: 13px;
+  background: var(--sb-surface-muted);
+}
+
+.supportLabel {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--sb-info);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.supportContent p {
+  margin: 0;
+  color: var(--sb-text);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.supportContent p + p {
+  margin-top: 10px;
+}
+
 .statement {
   margin-top: 24px;
   color: var(--sb-text-strong);

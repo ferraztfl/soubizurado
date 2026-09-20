@@ -88,6 +88,25 @@ export default async function QuestionDetailPage({
             {board ? <span>{board}</span> : null}
           </div>
 
+          {question.supportContents.length > 0 ? (
+            <section
+              className={styles.supportContent}
+              aria-label="Texto de apoio"
+            >
+              <span className={styles.supportLabel}>
+                Texto de apoio
+              </span>
+
+              {question.supportContents.map(
+                (support) => (
+                  <p key={support.id}>
+                    {support.content}
+                  </p>
+                ),
+              )}
+            </section>
+          ) : null}
+
           <div className={styles.statement}>
             {question.statement}
           </div>
