@@ -150,19 +150,21 @@ function toPublicQuestionReadRecord(
     );
   }
 
+  const supportContents = (
+    question.supportLinks ?? []
+  ).map((link) => ({
+    id: link.supportContent.id,
+    content: link.supportContent.content,
+    position: link.position,
+  }));
+
   return {
     id: question.id,
     type: question.type,
     statement: question.statement,
-    supportContents:
-      question.supportLinks.map(
-        (link) => ({
-          id: link.supportContent.id,
-          content:
-            link.supportContent.content,
-          position: link.position,
-        }),
-      ),
+    ...(supportContents.length > 0
+      ? { supportContents }
+      : {}),
     alternatives: question.alternatives,
     discipline: question.discipline,
     area: question.area,
