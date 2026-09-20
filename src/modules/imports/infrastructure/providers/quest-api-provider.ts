@@ -182,6 +182,21 @@ const errorResponseSchema = z.object({
   correlationId: z.string().optional(),
 });
 
+const directQuestionResponseSchema = z.object({
+  data: questionSchema,
+  meta: z
+    .object({
+      correlationId: z
+        .string()
+        .nullable()
+        .optional(),
+      timestamp: z
+        .string()
+        .optional(),
+    })
+    .optional(),
+});
+
 const responseSchema = z.object({
   data: z.object({
     total: z.number().int().nonnegative(),
@@ -718,6 +733,58 @@ export class QuestApiProvider
       );
     }
 
+    if (input.externalId) {
+      const normalizedId =
+        input.externalId.trim();
+
+      if (!normalizedId) {
+        throw new Error(
+          "Quest API question id is required.",
+        );
+      }
+
+      const directUrl = new URL(
+        `/v2/questoes/${encodeURIComponent(
+          normalizedId,
+        )}`,
+        this.baseUrl,
+      );
+
+      if (input.includeAnswerKey) {
+        directUrl.searchParams.set(
+          "include_gabarito",
+          "true",
+        );
+      }
+
+      const directResponse =
+        await this.request(directUrl);
+
+      const directParsed =
+        directQuestionResponseSchema.safeParse(
+          await directResponse.json(),
+        );
+
+      if (!directParsed.success) {
+        throw new Error(
+          "Quest API returned an unexpected direct question response shape.",
+        );
+      }
+
+      return {
+        total: 1,
+        nextCursor: null,
+        correlationId:
+          directParsed.data.meta
+            ?.correlationId ?? null,
+        items: [
+          mapQuestion(
+            directParsed.data.data,
+          ),
+        ],
+      };
+    }
+
     const url = new URL(
       "/v2/questoes",
       this.baseUrl,
@@ -776,13 +843,6 @@ export class QuestApiProvider
       url.searchParams.set(
         "assunto",
         filters.topic,
-      );
-    }
-
-    if (filters?.alternativeType) {
-      url.searchParams.set(
-        "alternative_type",
-        filters.alternativeType,
       );
     }
 
