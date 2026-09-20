@@ -7,6 +7,12 @@ export type PublicQuestionAlternativeDto = Readonly<{
   position: number;
 }>;
 
+export type PublicQuestionSupportContentDto = Readonly<{
+  id: string;
+  content: string;
+  position: number;
+}>;
+
 export type PublicTaxonomyReferenceDto = Readonly<{
   id: string;
   name: string;
@@ -29,6 +35,8 @@ export type PublicQuestionDto = Readonly<{
   id: string;
   type: QuestionType;
   statement: string;
+  supportContents:
+    readonly PublicQuestionSupportContentDto[];
 
   alternatives: readonly PublicQuestionAlternativeDto[];
 
