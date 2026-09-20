@@ -2,9 +2,9 @@ import {
   createHash,
 } from "node:crypto";
 
-import type {
+import {
   Prisma,
-  PrismaClient,
+  type PrismaClient,
 } from "@/generated/prisma/client";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
