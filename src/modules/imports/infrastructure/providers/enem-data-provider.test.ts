@@ -71,6 +71,36 @@ const textQuestionPayload = {
   ],
 };
 
+const imageOnlyAlternativePayload = {
+  title: "Questão 21 - ENEM 2009",
+  index: 21,
+  year: 2009,
+  language: null,
+  discipline: "ciencias-natureza",
+  context:
+    "Texto de apoio.",
+  files: [],
+  correctAlternative: "C",
+  alternativesIntroduction:
+    "Assinale a alternativa correta.",
+  alternatives: [
+    {
+      letter: "A",
+      text: null,
+      file:
+        "https://enem.dev/2009/questions/21/a.png",
+      isCorrect: false,
+    },
+    {
+      letter: "C",
+      text: null,
+      file:
+        "https://enem.dev/2009/questions/21/c.png",
+      isCorrect: true,
+    },
+  ],
+};
+
 const imageQuestionPayload = {
   title: "Questão 1 - ENEM 2023",
   index: 1,
@@ -167,6 +197,46 @@ function createFetcher() {
       ) {
         return jsonResponse(
           textQuestionPayload,
+        );
+      }
+
+      if (
+        url.endsWith(
+          "/2009/details.json",
+        )
+      ) {
+        return jsonResponse({
+          title: "ENEM 2009",
+          year: 2009,
+          disciplines: [
+            {
+              label:
+                "Ciências da Natureza e suas Tecnologias",
+              value:
+                "ciencias-natureza",
+            },
+          ],
+          languages: [],
+          questions: [
+            {
+              title:
+                "Questão 21 - ENEM 2009",
+              index: 21,
+              discipline:
+                "ciencias-natureza",
+              language: null,
+            },
+          ],
+        });
+      }
+
+      if (
+        url.endsWith(
+          "/2009/questions/21/details.json",
+        )
+      ) {
+        return jsonResponse(
+          imageOnlyAlternativePayload,
         );
       }
 
@@ -295,6 +365,45 @@ describe("EnemDataProvider", () => {
       hasImages: true,
       attachmentUrls: [
         "https://enem.dev/2023/questions/1-ingles/image.png",
+      ],
+    });
+  });
+
+  it("accepts image-only alternatives with null text and marks the question for media review", async () => {
+    const provider =
+      new EnemDataProvider({
+        baseUrl:
+          "https://example.test/public",
+        fetcher: createFetcher(),
+      });
+
+    const result =
+      await provider.listQuestions({
+        limit: 1,
+        examinationId:
+          "enem-2009",
+      });
+
+    expect(result.items[0]).toMatchObject({
+      externalId:
+        "enem-2009-21",
+      answerKey: "C",
+      hasImages: true,
+      alternatives: [
+        {
+          label: "A",
+          contentHtml: "",
+          imageUrls: [
+            "https://enem.dev/2009/questions/21/a.png",
+          ],
+        },
+        {
+          label: "C",
+          contentHtml: "",
+          imageUrls: [
+            "https://enem.dev/2009/questions/21/c.png",
+          ],
+        },
       ],
     });
   });
