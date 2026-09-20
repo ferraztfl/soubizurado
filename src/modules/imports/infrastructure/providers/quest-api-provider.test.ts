@@ -144,6 +144,91 @@ describe("QuestApiProvider", () => {
     });
   });
 
+  it("loads one question directly by id without using the search endpoint", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: "2511300125",
+            numero: "41",
+            enunciado:
+              "<p>Compete privativamente...</p>",
+            alternativas: [
+              {
+                letra: "C",
+                texto: "<p>Certo</p>",
+                imagens: [],
+              },
+              {
+                letra: "E",
+                texto: "<p>Errado</p>",
+                imagens: [],
+              },
+            ],
+            gabarito: "C",
+            provas: ["2597585"],
+            classificacao: {
+              materia:
+                "Direito Constitucional",
+              assunto:
+                "Controle de constitucionalidade",
+            },
+            textos_associados: [],
+            anexos: [],
+            sinalizadores: {
+              tem_imagem: false,
+              tem_gabarito: true,
+              tem_texto_associado: false,
+            },
+          },
+          meta: {
+            correlationId: "direct-1",
+            timestamp:
+              "2026-09-20T00:00:00.000Z",
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type":
+              "application/json",
+          },
+        },
+      ),
+    );
+
+    const provider = new QuestApiProvider({
+      apiKey: "qk_test",
+      fetcher,
+    });
+
+    const result = await provider.listQuestions({
+      limit: 1,
+      externalId: "2511300125",
+      includeAnswerKey: true,
+    });
+
+    expect(result.total).toBe(1);
+    expect(result.nextCursor).toBeNull();
+    expect(result.correlationId).toBe(
+      "direct-1",
+    );
+    expect(result.items[0]?.externalId).toBe(
+      "2511300125",
+    );
+
+    const requestUrl = String(
+      fetcher.mock.calls[0]?.[0],
+    );
+
+    expect(requestUrl).toContain(
+      "/v2/questoes/2511300125",
+    );
+    expect(requestUrl).not.toContain(
+      "alternative_type",
+    );
+  });
+
   it("loads lightweight examination metadata by external id", async () => {
     const fetcher = vi.fn().mockResolvedValue(
       new Response(
