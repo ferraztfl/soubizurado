@@ -63,7 +63,7 @@ describe(
   "ENEM PDF provider",
   () => {
     it(
-      "parses pdftohtml XML pages and ignores header/footer images by question bounds",
+      "parses all raw pdftohtml XML image spans before question-level filtering",
       () => {
         const pages =
           parsePdftohtmlXml(
@@ -75,7 +75,7 @@ describe(
         ).toHaveLength(3);
         expect(
           pages[0]?.images,
-        ).toHaveLength(3);
+        ).toHaveLength(4);
       },
     );
 
@@ -131,6 +131,16 @@ describe(
             content: "",
           },
         ]);
+        expect(
+          first.images,
+        ).toHaveLength(3);
+        expect(
+          first.images.some(
+            (image) =>
+              image.src ===
+              "header.png",
+          ),
+        ).toBe(false);
         expect(
           first.hasVisualCue,
         ).toBe(true);
