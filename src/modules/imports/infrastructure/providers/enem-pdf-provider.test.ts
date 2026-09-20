@@ -178,6 +178,67 @@ describe(
     );
 
     it(
+      "associates parsed PDF images with alternatives while preserving question attachments",
+      () => {
+        const document =
+          parseEnemPdfDocument({
+            xml: XML,
+            checksum:
+              "d".repeat(64),
+          });
+
+        const first =
+          document.questions[0]!;
+
+        expect(
+          first.alternatives[0]
+            ?.images
+            .map(
+              (image) =>
+                image.src,
+            ),
+        ).toEqual([
+          "a.png",
+        ]);
+
+        expect(
+          first.alternatives[1]
+            ?.images
+            .map(
+              (image) =>
+                image.src,
+            ),
+        ).toEqual([
+          "b.png",
+        ]);
+
+        const alternativeImages =
+          new Set(
+            first.alternatives
+              .flatMap(
+                (alternative) =>
+                  alternative.images,
+              ),
+          );
+
+        expect(
+          first.images
+            .filter(
+              (image) =>
+                !alternativeImages.has(
+                  image,
+                ),
+            )
+            .map(
+              (image) =>
+                image.src,
+            ),
+        ).toEqual([
+          "legend.png",
+        ]);
+      },
+    );
+    it(
       "reconstructs an answer-key entry split across a page boundary",
       () => {
         const xml = `<?xml version="1.0" encoding="UTF-8"?>

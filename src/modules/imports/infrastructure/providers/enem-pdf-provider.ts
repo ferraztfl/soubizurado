@@ -5,15 +5,23 @@ import {
   createHash,
 } from "node:crypto";
 import {
+  mkdir,
   mkdtemp,
   readFile,
   rm,
+  writeFile,
 } from "node:fs/promises";
 import {
   tmpdir,
 } from "node:os";
 import {
+  dirname,
+  extname,
+  isAbsolute,
   join,
+  relative,
+  resolve,
+  sep,
 } from "node:path";
 import {
   promisify,
@@ -31,6 +39,14 @@ const execFileAsync = promisify(execFile);
 
 const GRAN_SIMULADO_URL =
   "https://questoes.grancursosonline.com.br/aluno/simulado/29401523/resolver";
+
+function isGranSimuladoUrl(
+  value: string,
+): boolean {
+  return /^https:\/\/questoes\.grancursosonline\.com\.br\/aluno\/simulado\/\d+\/resolver\/?$/i.test(
+    value.trim(),
+  );
+}
 
 type PdfTextSpan = Readonly<{
   page: number;
@@ -69,6 +85,7 @@ type ParsedQuestion = Readonly<{
     label: string;
     content: string;
     imageCount: number;
+    images: readonly PdfImageSpan[];
   }>[];
   answerKey: string | null;
   startPage: number;
@@ -81,6 +98,8 @@ type ParsedQuestion = Readonly<{
 type ParsedDocument = Readonly<{
   checksum: string;
   questions: readonly ParsedQuestion[];
+  mediaUrls:
+    Readonly<Record<string, string>>;
 }>;
 
 type MutableQuestionBlock = {
@@ -96,6 +115,7 @@ export type EnemPdfProviderOptions =
     year: number;
     sourceUrl?: string;
     pdftohtmlBinary?: string;
+    mediaStagingDirectory?: string;
     extractDocument?: (
       input: Readonly<{
         pdfPath: string;
@@ -316,8 +336,9 @@ function isBoilerplateText(
     normalized.startsWith(
       "Gran Cursos Questões -",
     ) ||
-    normalized ===
-      GRAN_SIMULADO_URL
+    isGranSimuladoUrl(
+      normalized,
+    )
   );
 }
 
@@ -591,8 +612,9 @@ function isAnswerKeyBoilerplate(
     normalized.startsWith(
       "Gran Cursos Questões -",
     ) ||
-    normalized ===
-      GRAN_SIMULADO_URL ||
+    isGranSimuladoUrl(
+      normalized,
+    ) ||
     /^\d+\/\d+$/.test(
       normalized,
     )
@@ -940,25 +962,39 @@ function parseQuestionBlock(
                 span.text,
               ),
           );
+const images =
+          block.images.filter(
+            (image) => {
+              const afterCurrent =
+                image.page >
+                  current.span.page ||
+                (
+                  image.page ===
+                    current.span.page &&
+                  image.top >=
+                    current.span.top
+                );
 
-        const nextTopOnPage =
-          next &&
-          next.span.page ===
-            current.span.page
-            ? next.span.top
-            : Number
-                .POSITIVE_INFINITY;
+              const beforeNext =
+                !next ||
+                image.page <
+                  next.span.page ||
+                (
+                  image.page ===
+                    next.span.page &&
+                  image.top <
+                    next.span.top
+                );
+
+              return (
+                afterCurrent &&
+                beforeNext
+              );
+            },
+          );
 
         const imageCount =
-          block.images.filter(
-            (image) =>
-              image.page ===
-                current.span.page &&
-              image.top >=
-                current.span.top &&
-              image.top <
-                nextTopOnPage,
-          ).length;
+          images.length;
 
         return {
           label: current.label,
@@ -970,6 +1006,7 @@ function parseQuestionBlock(
               ),
             ),
           imageCount,
+          images,
         };
       },
     );
@@ -1126,6 +1163,7 @@ export function parseEnemPdfDocument(
   return {
     checksum:
       input.checksum,
+    mediaUrls: {},
     questions:
       questions.sort(
         (first, second) =>
@@ -1135,10 +1173,172 @@ export function parseEnemPdfDocument(
   };
 }
 
+function safeExtension(
+  sourceName: string,
+): string {
+  const extension =
+    extname(
+      sourceName,
+    )
+      .toLocaleLowerCase(
+        "en-US",
+      );
+
+  return /^\.[a-z0-9]{1,10}$/.test(
+    extension,
+  )
+    ? extension
+    : ".bin";
+}
+
+function pathIsInside(
+  root: string,
+  target: string,
+): boolean {
+  const value =
+    relative(
+      root,
+      target,
+    );
+
+  return (
+    value === "" ||
+    (
+      value !== ".." &&
+      !value.startsWith(
+        `..${sep}`,
+      ) &&
+      !isAbsolute(value)
+    )
+  );
+}
+
+export async function stageParsedDocumentMedia(
+  input: Readonly<{
+    document: ParsedDocument;
+    workspace: string;
+    stagingDirectory: string;
+    year: number;
+  }>,
+): Promise<ParsedDocument> {
+  const workspace =
+    resolve(
+      input.workspace,
+    );
+
+  const stagingRoot =
+    resolve(
+      input.stagingDirectory,
+    );
+
+  const sourceNames = [
+    ...new Set(
+      input.document.questions
+        .flatMap(
+          (question) =>
+            question.images,
+        )
+        .map(
+          (image) =>
+            image.src,
+        ),
+    ),
+  ];
+
+  const entries:
+    [string, string][] = [];
+
+  for (
+    const sourceName of sourceNames
+  ) {
+    const sourcePath =
+      resolve(
+        workspace,
+        sourceName,
+      );
+
+    if (
+      !pathIsInside(
+        workspace,
+        sourcePath,
+      )
+    ) {
+      throw new Error(
+        `PDF media path escapes extraction workspace: ${sourceName}.`,
+      );
+    }
+
+    const bytes =
+      await readFile(
+        sourcePath,
+      );
+
+    const assetChecksum =
+      createHash("sha256")
+        .update(bytes)
+        .digest("hex");
+
+    const relativeKey = [
+      "enem-pdf",
+      String(input.year),
+      input.document.checksum,
+      `${assetChecksum}${safeExtension(
+        sourceName,
+      )}`,
+    ].join("/");
+
+    const targetPath =
+      resolve(
+        stagingRoot,
+        ...relativeKey.split("/"),
+      );
+
+    if (
+      !pathIsInside(
+        stagingRoot,
+        targetPath,
+      )
+    ) {
+      throw new Error(
+        "PDF staging target escapes configured root.",
+      );
+    }
+
+    await mkdir(
+      dirname(
+        targetPath,
+      ),
+      {
+        recursive: true,
+      },
+    );
+
+    await writeFile(
+      targetPath,
+      bytes,
+    );
+
+    entries.push([
+      sourceName,
+      `staging://local/${relativeKey}`,
+    ]);
+  }
+
+  return {
+    ...input.document,
+    mediaUrls:
+      Object.fromEntries(
+        entries,
+      ),
+  };
+}
+
 async function extractWithPdftohtml(
   input: Readonly<{
     pdfPath: string;
     binary: string;
+    year: number;
+    stagingDirectory: string;
   }>,
 ): Promise<ParsedDocument> {
   const pdfBuffer =
@@ -1157,10 +1357,13 @@ async function extractWithPdftohtml(
         "soubizurado-enem-pdf-",
       ),
     );
+  const outputBase =
+    "document";
+
   const outputPath =
     join(
       workspace,
-      "document.xml",
+      `${outputBase}.xml`,
     );
 
   try {
@@ -1173,10 +1376,12 @@ async function extractWithPdftohtml(
         "-enc",
         "UTF-8",
         input.pdfPath,
-        outputPath,
+        outputBase,
       ],
       {
         windowsHide: true,
+        cwd:
+          workspace,
         maxBuffer:
           1024 * 1024 * 8,
       },
@@ -1188,9 +1393,19 @@ async function extractWithPdftohtml(
         "utf8",
       );
 
-    return parseEnemPdfDocument({
-      xml,
-      checksum,
+    const document =
+      parseEnemPdfDocument({
+        xml,
+        checksum,
+      });
+
+    return await stageParsedDocumentMedia({
+      document,
+      workspace,
+      stagingDirectory:
+        input.stagingDirectory,
+      year:
+        input.year,
     });
   } catch (error) {
     const code =
@@ -1239,6 +1454,7 @@ export class EnemPdfProvider
 {
   private readonly sourceUrl: string;
   private readonly pdftohtmlBinary: string;
+  private readonly mediaStagingDirectory: string;
   private document:
     Promise<ParsedDocument> | null =
       null;
@@ -1256,6 +1472,13 @@ export class EnemPdfProvider
     this.pdftohtmlBinary =
       options.pdftohtmlBinary ??
       "pdftohtml";
+
+    this.mediaStagingDirectory =
+      resolve(
+        options.mediaStagingDirectory ??
+          process.env.MEDIA_STAGING_LOCAL_ROOT ??
+          "data-private/media-staging",
+      );
   }
 
   private loadDocument(): Promise<ParsedDocument> {
@@ -1277,6 +1500,10 @@ export class EnemPdfProvider
                   .pdfPath,
               binary:
                 this.pdftohtmlBinary,
+              year:
+                this.options.year,
+              stagingDirectory:
+                this.mediaStagingDirectory,
             });
     }
 
@@ -1291,6 +1518,9 @@ export class EnemPdfProvider
       visualQuestionCount: number;
       blankAlternativeQuestionCount: number;
       officialNumberCount: number;
+      mediaReferenceCount: number;
+      questionMediaReferenceCount: number;
+      alternativeMediaReferenceCount: number;
       answerKeyOrdinals: readonly number[];
       ordinals: readonly number[];
     }>
@@ -1333,6 +1563,58 @@ export class EnemPdfProvider
             question
               .officialQuestionNumber !==
             null,
+        ).length,
+      questionMediaReferenceCount:
+        document.questions.reduce(
+          (total, question) => {
+            const alternativeImages =
+              new Set(
+                question.alternatives
+                  .flatMap(
+                    (alternative) =>
+                      alternative.images,
+                  ),
+              );
+
+            return (
+              total +
+              question.images.filter(
+                (image) =>
+                  !alternativeImages.has(
+                    image,
+                  ) &&
+                  Boolean(
+                    document.mediaUrls[
+                      image.src
+                    ],
+                  ),
+              ).length
+            );
+          },
+          0,
+        ),
+      alternativeMediaReferenceCount:
+        document.questions.reduce(
+          (total, question) =>
+            total +
+            question.alternatives
+              .flatMap(
+                (alternative) =>
+                  alternative.images,
+              )
+              .filter(
+                (image) =>
+                  Boolean(
+                    document.mediaUrls[
+                      image.src
+                    ],
+                  ),
+              ).length,
+          0,
+        ),
+      mediaReferenceCount:
+        Object.keys(
+          document.mediaUrls,
         ).length,
       answerKeyOrdinals:
         document.questions
@@ -1420,7 +1702,38 @@ export class EnemPdfProvider
     const items:
       ProviderQuestionCandidate[] =
         selected.map(
-          (question) => ({
+          (question) => {
+            const alternativeImages =
+              new Set(
+                question.alternatives
+                  .flatMap(
+                    (alternative) =>
+                      alternative.images,
+                  ),
+              );
+
+            const attachmentUrls =
+              question.images
+                .filter(
+                  (image) =>
+                    !alternativeImages.has(
+                      image,
+                    ),
+                )
+                .map(
+                  (image) =>
+                    document.mediaUrls[
+                      image.src
+                    ],
+                )
+                .filter(
+                  (
+                    value,
+                  ): value is string =>
+                    Boolean(value),
+                );
+
+            return {
             externalId:
               this.externalId(
                 question,
@@ -1445,7 +1758,20 @@ export class EnemPdfProvider
                     alternative.label,
                   contentHtml:
                     alternative.content,
-                  imageUrls: [],
+                  imageUrls:
+                    alternative.images
+                      .map(
+                        (image) =>
+                          document.mediaUrls[
+                            image.src
+                          ],
+                      )
+                      .filter(
+                        (
+                          value,
+                        ): value is string =>
+                          Boolean(value),
+                      ),
                 }),
               ),
             answerKey:
@@ -1457,7 +1783,7 @@ export class EnemPdfProvider
               question.area,
             topic: null,
             supportTextsHtml: [],
-            attachmentUrls: [],
+            attachmentUrls,
             hasImages:
               question.hasVisualCue,
             hasAnswerKey:
@@ -1507,6 +1833,10 @@ export class EnemPdfProvider
                       image.height,
                     sourceName:
                       image.src,
+                    mediaUrl:
+                      document.mediaUrls[
+                        image.src
+                      ] ?? null,
                   }),
                 ),
               alternatives:
@@ -1516,7 +1846,8 @@ export class EnemPdfProvider
               rawText:
                 question.rawText,
             },
-          }),
+            };
+          },
         );
 
     const nextCursor =

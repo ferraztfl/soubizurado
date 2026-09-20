@@ -11,6 +11,12 @@ import {
   HttpMediaSourceReader,
 } from "../src/modules/imports/infrastructure/media/http-media-source-reader";
 import {
+  RoutingMediaSourceReader,
+} from "../src/modules/imports/infrastructure/media/routing-media-source-reader";
+import {
+  StagedMediaSourceReader,
+} from "../src/modules/imports/infrastructure/media/staged-media-source-reader";
+import {
   LocalMediaStorage,
 } from "../src/modules/imports/infrastructure/media/local-media-storage";
 import {
@@ -108,9 +114,25 @@ async function main(): Promise<void> {
   const repository =
     new PrismaMediaTaskRepository();
 
+  const stagingRoot =
+    resolve(
+      process.env
+        .MEDIA_STAGING_LOCAL_ROOT ??
+        "data-private/media-staging",
+    );
+
   const reader =
-    new HttpMediaSourceReader({
-      maxBytes,
+    new RoutingMediaSourceReader({
+      httpReader:
+        new HttpMediaSourceReader({
+          maxBytes,
+        }),
+      stagedReader:
+        new StagedMediaSourceReader({
+          rootDirectory:
+            stagingRoot,
+          maxBytes,
+        }),
     });
 
   const storage =
@@ -144,6 +166,7 @@ async function main(): Promise<void> {
             storage.bucket,
           root:
             storageRoot,
+          stagingRoot,
         },
         ...result,
       },

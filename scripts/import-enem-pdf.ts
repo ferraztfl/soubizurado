@@ -74,20 +74,59 @@ async function main(): Promise<void> {
 
   const pdfPath =
     resolve(pdfRaw);
+
+  const sourceUrl =
+    argumentValue(
+      "source-url",
+    ) ??
+    "https://questoes.grancursosonline.com.br/";
+
   const provider =
     new EnemPdfProvider({
       pdfPath,
       year,
+      sourceUrl,
     });
   const inspection =
     await provider.inspect();
 
+  const expectedTotalRaw =
+    argumentValue(
+      "expected-total",
+    );
+
+  if (expectedTotalRaw) {
+    const expectedTotal =
+      Number(
+        expectedTotalRaw,
+      );
+
+    if (
+      !Number.isSafeInteger(
+        expectedTotal,
+      ) ||
+      expectedTotal < 1
+    ) {
+      throw new Error(
+        "--expected-total must be a positive integer.",
+      );
+    }
+
+    if (
+      inspection.total !==
+      expectedTotal
+    ) {
+      throw new Error(
+        `Expected ${expectedTotal} ENEM PDF questions, parsed ${inspection.total}.`,
+      );
+    }
+  }
+
   if (
-    year === 2024 &&
-    inspection.total !== 189
+    inspection.total < 1
   ) {
     throw new Error(
-      `Expected 189 ENEM 2024 PDF questions, parsed ${inspection.total}.`,
+      "ENEM PDF did not produce any questions.",
     );
   }
 
@@ -100,16 +139,31 @@ async function main(): Promise<void> {
     );
   }
 
+  const sourceReference =
+    argumentValue(
+      "source-ref",
+    ) ??
+    `gran-enem-${year}-pdf-${inspection.checksum.slice(
+      0,
+      16,
+    )}`;
+
+  const sourceName =
+    argumentValue(
+      "source-name",
+    ) ??
+    `Gran Cursos Questões - ENEM ${year} PDF export`;
+
   const sourceConfig:
     QuestionImportSourceConfig = {
       providerCode:
         "ENEM_PDF_GRAN",
       reference:
-        `gran-enem-${year}-pdf-29401523`,
+        sourceReference,
       name:
-        `Gran Cursos Questões - ENEM ${year} PDF export`,
+        sourceName,
       url:
-        "https://questoes.grancursosonline.com.br/aluno/simulado/29401523/resolver",
+        sourceUrl,
       sourceType:
         "OTHER",
       licenseStatus:
@@ -215,6 +269,15 @@ async function main(): Promise<void> {
           blankAlternativeQuestions:
             inspection
               .blankAlternativeQuestionCount,
+          mediaReferences:
+            inspection
+              .mediaReferenceCount,
+          questionMediaReferences:
+            inspection
+              .questionMediaReferenceCount,
+          alternativeMediaReferences:
+            inspection
+              .alternativeMediaReferenceCount,
           jobs,
           ...totals,
           publicationMode:
