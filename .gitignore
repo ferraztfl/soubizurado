@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# local ingestion inputs / private source files
+/data-private/
+
 # next.js
 /.next/
 /out/
