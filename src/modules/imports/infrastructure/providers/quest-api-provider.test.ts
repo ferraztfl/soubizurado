@@ -266,7 +266,12 @@ describe("QuestApiProvider", () => {
                     },
                   ],
                   gabarito: null,
-                  provas: ["2511693"],
+                  provas: [
+                    {
+                      id: "2511693",
+                      banca: "VUNESP",
+                    },
+                  ],
                   classificacao: {
                     materia: "Nutrição",
                     assunto: "Oncologia",
@@ -293,7 +298,12 @@ describe("QuestApiProvider", () => {
                     },
                   ],
                   gabarito: null,
-                  provas: ["2511693"],
+                  provas: [
+                    {
+                      id: "2511693",
+                      banca: "VUNESP",
+                    },
+                  ],
                   classificacao: {
                     materia: "Nutrição",
                     assunto: "Oncologia",
