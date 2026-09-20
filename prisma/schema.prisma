@@ -75,6 +75,7 @@ model Profile {
   roles               UserRole[]
   studyAnswerAttempts StudyAnswerAttempt[]
   studyFavorites      StudyFavorite[]
+  mediaLinks          QuestionMediaLink[]
 
   @@map("profiles")
 }
@@ -344,6 +345,7 @@ model QuestionAlternative {
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   studyAnswerAttempts StudyAnswerAttempt[] @relation("StudyAttemptSelectedAlternative")
+  mediaLinks          QuestionAlternativeMediaLink[]
 
   @@unique([questionId, label])
   @@unique([questionId, position])
@@ -468,6 +470,7 @@ model ImportItem {
   job                 ImportJob                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
   question            Question?                  @relation(fields: [questionId], references: [id], onDelete: Restrict)
   duplicateCandidates ImportDuplicateCandidate[]
+  mediaLinks           ImportItemMediaLink[]
 
   @@unique([jobId, externalId])
   @@index([questionId])
@@ -489,6 +492,80 @@ model ImportDuplicateCandidate {
   @@unique([importItemId, candidateQuestionId])
   @@index([candidateQuestionId, similarity])
   @@map("import_duplicate_candidates")
+}
+
+model MediaAsset {
+  id              String   @id @default(uuid()) @db.Uuid
+  storageProvider String   @map("storage_provider") @db.VarChar(40)
+  bucket          String   @db.VarChar(160)
+  storageKey      String   @unique @map("storage_key") @db.VarChar(700)
+  mimeType        String   @map("mime_type") @db.VarChar(160)
+  sizeBytes       BigInt   @map("size_bytes") @db.BigInt
+  width           Int?
+  height          Int?
+  altText         String?  @map("alt_text") @db.Text
+  checksum        String   @unique @db.Char(64)
+  sourceUrl       String?  @map("source_url") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  importItemLinks           ImportItemMediaLink[]
+  questionLinks             QuestionMediaLink[]
+  questionAlternativeLinks  QuestionAlternativeMediaLink[]
+
+  @@index([storageProvider, bucket])
+  @@index([mimeType])
+  @@map("media_assets")
+}
+
+model ImportItemMediaLink {
+  id               String   @id @default(uuid()) @db.Uuid
+  importItemId     String   @map("import_item_id") @db.Uuid
+  mediaAssetId     String   @map("media_asset_id") @db.Uuid
+  role             String   @db.VarChar(40)
+  alternativeLabel String?  @map("alternative_label") @db.VarChar(8)
+  position         Int
+  page             Int?
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  importItem ImportItem @relation(fields: [importItemId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([importItemId, mediaAssetId, role, position])
+  @@index([importItemId, role, position])
+  @@index([mediaAssetId])
+  @@map("import_item_media_links")
+}
+
+model QuestionMediaLink {
+  id           String   @id @default(uuid()) @db.Uuid
+  questionId   String   @map("question_id") @db.Uuid
+  mediaAssetId String   @map("media_asset_id") @db.Uuid
+  role         String   @db.VarChar(40)
+  position     Int
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([questionId, role, position])
+  @@index([mediaAssetId])
+  @@map("question_media_links")
+}
+
+model QuestionAlternativeMediaLink {
+  id            String   @id @default(uuid()) @db.Uuid
+  alternativeId String   @map("alternative_id") @db.Uuid
+  mediaAssetId  String   @map("media_asset_id") @db.Uuid
+  position      Int
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  alternative QuestionAlternative @relation(fields: [alternativeId], references: [id], onDelete: Cascade)
+  mediaAsset  MediaAsset          @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([alternativeId, position])
+  @@index([mediaAssetId])
+  @@map("question_alternative_media_links")
 }
 
 model StudyAnswerAttempt {
