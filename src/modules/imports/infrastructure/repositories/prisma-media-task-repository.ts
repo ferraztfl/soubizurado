@@ -74,6 +74,8 @@ export class PrismaMediaTaskRepository
                 "error_message",
                 'Recovered stale PROCESSING task.'
               ),
+            "next_attempt_at" =
+              NULL,
             "updated_at" =
               CURRENT_TIMESTAMP
           WHERE
@@ -111,7 +113,18 @@ export class PrismaMediaTaskRepository
               WHERE
                 "status" =
                   'PENDING'::"ImportMediaTaskStatus"
+                AND
+                (
+                  "next_attempt_at" IS NULL
+                  OR
+                  "next_attempt_at" <=
+                    CURRENT_TIMESTAMP
+                )
               ORDER BY
+                COALESCE(
+                  "next_attempt_at",
+                  "created_at"
+                ) ASC,
                 "created_at" ASC,
                 "id" ASC
               FOR UPDATE
@@ -126,6 +139,8 @@ export class PrismaMediaTaskRepository
               "attempts" =
                 task."attempts" + 1,
               "error_message" =
+                NULL,
+              "next_attempt_at" =
                 NULL,
               "updated_at" =
                 CURRENT_TIMESTAMP
@@ -383,6 +398,8 @@ export class PrismaMediaTaskRepository
                 input.mediaAssetId,
               errorMessage:
                 null,
+              nextAttemptAt:
+                null,
             },
           });
       },
@@ -393,11 +410,23 @@ export class PrismaMediaTaskRepository
     input: Readonly<{
       taskId: string;
       maxAttempts: number;
+      retryDelaySeconds: number;
       message: string;
     }>,
   ): Promise<
     "PENDING" | "FAILED"
   > {
+    if (
+      !Number.isSafeInteger(
+        input.retryDelaySeconds,
+      ) ||
+      input.retryDelaySeconds < 1
+    ) {
+      throw new Error(
+        "retryDelaySeconds must be a positive integer.",
+      );
+    }
+
     const task =
       await this.prisma
         .importMediaTask
@@ -421,6 +450,15 @@ export class PrismaMediaTaskRepository
       task.attempts >=
       input.maxAttempts;
 
+    const nextAttemptAt =
+      finalFailure
+        ? null
+        : new Date(
+            Date.now() +
+              input.retryDelaySeconds *
+                1000,
+          );
+
     await this.prisma
       .importMediaTask
       .update({
@@ -433,6 +471,7 @@ export class PrismaMediaTaskRepository
             finalFailure
               ? "FAILED"
               : "PENDING",
+          nextAttemptAt,
           errorMessage:
             input.message.slice(
               0,

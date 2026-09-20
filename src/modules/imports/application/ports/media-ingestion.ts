@@ -70,6 +70,7 @@ export interface MediaTaskRepository {
     input: Readonly<{
       taskId: string;
       maxAttempts: number;
+      retryDelaySeconds: number;
       message: string;
     }>,
   ): Promise<"PENDING" | "FAILED">;

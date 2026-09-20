@@ -18,6 +18,8 @@ export type ProcessMediaQueueInput =
     limit: number;
     maxAttempts: number;
     staleMinutes: number;
+    retryBaseSeconds?: number;
+    retryMaxSeconds?: number;
   }>;
 
 export type ProcessMediaQueueOutput =
@@ -76,9 +78,72 @@ export function mediaStorageKey(
   ].join("/");
 }
 
+function validateRetrySettings(
+  baseSeconds: number,
+  maxSeconds: number,
+): void {
+  if (
+    !Number.isSafeInteger(
+      baseSeconds,
+    ) ||
+    baseSeconds < 1 ||
+    baseSeconds > 86_400
+  ) {
+    throw new Error(
+      "Media retryBaseSeconds must be between 1 and 86400.",
+    );
+  }
+
+  if (
+    !Number.isSafeInteger(
+      maxSeconds,
+    ) ||
+    maxSeconds <
+      baseSeconds ||
+    maxSeconds > 604_800
+  ) {
+    throw new Error(
+      "Media retryMaxSeconds must be between retryBaseSeconds and 604800.",
+    );
+  }
+}
+
+export function mediaRetryDelaySeconds(
+  attempts: number,
+  baseSeconds: number,
+  maxSeconds: number,
+): number {
+  if (
+    !Number.isSafeInteger(
+      attempts,
+    ) ||
+    attempts < 1
+  ) {
+    throw new Error(
+      "Media retry attempts must be a positive integer.",
+    );
+  }
+
+  validateRetrySettings(
+    baseSeconds,
+    maxSeconds,
+  );
+
+  return Math.min(
+    maxSeconds,
+    baseSeconds *
+      2 ** Math.min(
+        attempts - 1,
+        30,
+      ),
+  );
+}
+
 async function processOne(
   input: ProcessMediaQueueInput,
   task: ClaimedMediaTask,
+  retryBaseSeconds: number,
+  retryMaxSeconds: number,
 ): Promise<
   "COMPLETED" | "RETRIED" | "FAILED"
 > {
@@ -149,6 +214,12 @@ async function processOne(
             task.id,
           maxAttempts:
             input.maxAttempts,
+          retryDelaySeconds:
+            mediaRetryDelaySeconds(
+              task.attempts,
+              retryBaseSeconds,
+              retryMaxSeconds,
+            ),
           message:
             error instanceof Error
               ? error.message
@@ -261,6 +332,19 @@ export async function processMediaQueue(
     );
   }
 
+  const retryBaseSeconds =
+    input.retryBaseSeconds ??
+    30;
+
+  const retryMaxSeconds =
+    input.retryMaxSeconds ??
+    15 * 60;
+
+  validateRetrySettings(
+    retryBaseSeconds,
+    retryMaxSeconds,
+  );
+
   const recovered =
     await input.repository
       .recoverStaleTasks(
@@ -305,6 +389,8 @@ export async function processMediaQueue(
           processOne(
             input,
             task,
+            retryBaseSeconds,
+            retryMaxSeconds,
           ),
       );
 
