@@ -12,6 +12,7 @@ import {
 
 type Arguments = Readonly<{
   limit: number;
+  externalId?: string;
   afterId?: string;
   publish: boolean;
   board?: string;
@@ -76,8 +77,18 @@ function parseArguments(): Arguments {
     );
   }
 
+  if (alternativeType) {
+    throw new Error(
+      "--tipo is temporarily disabled for /v2/questoes because the live Quest API currently rejects alternative_type with 422 despite its documentation.",
+    );
+  }
+
+  const externalId =
+    argumentValue("id");
+
   return {
-    limit,
+    limit: externalId ? 1 : limit,
+    externalId,
     afterId:
       argumentValue("after-id"),
     publish: hasFlag("publish"),
@@ -123,6 +134,7 @@ async function main(): Promise<void> {
 
   const result = await useCase.execute({
     limit: args.limit,
+    externalId: args.externalId,
     afterId: args.afterId,
     publish: args.publish,
     filters: {
