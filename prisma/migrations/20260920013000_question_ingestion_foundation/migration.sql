@@ -1,3 +1,6 @@
+-- EnableExtension
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- CreateEnum
 CREATE TYPE "ImportJobStatus" AS ENUM (
     'PENDING',
@@ -170,6 +173,29 @@ ON "import_items"("question_id");
 CREATE INDEX "import_items_status_created_at_idx"
 ON "import_items"("status", "created_at");
 
+-- CreateTable
+CREATE TABLE "import_duplicate_candidates" (
+    "id" UUID NOT NULL,
+    "import_item_id" UUID NOT NULL,
+    "candidate_question_id" UUID NOT NULL,
+    "similarity" DECIMAL(5,4) NOT NULL,
+    "reason" VARCHAR(120) NOT NULL,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "import_duplicate_candidates_pkey"
+    PRIMARY KEY ("id"),
+    CONSTRAINT "import_duplicate_candidates_similarity_check"
+    CHECK ("similarity" >= 0 AND "similarity" <= 1)
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "import_duplicate_candidates_import_item_id_candidate_question_id_key"
+ON "import_duplicate_candidates"("import_item_id", "candidate_question_id");
+
+-- CreateIndex
+CREATE INDEX "import_duplicate_candidates_candidate_question_id_similarity_idx"
+ON "import_duplicate_candidates"("candidate_question_id", "similarity");
+
 -- AddForeignKey
 ALTER TABLE "question_support_links"
 ADD CONSTRAINT "question_support_links_question_id_fkey"
@@ -219,9 +245,22 @@ ADD CONSTRAINT "import_items_question_id_fkey"
 FOREIGN KEY ("question_id") REFERENCES "questions"("id")
 ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "import_duplicate_candidates"
+ADD CONSTRAINT "import_duplicate_candidates_import_item_id_fkey"
+FOREIGN KEY ("import_item_id") REFERENCES "import_items"("id")
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "import_duplicate_candidates"
+ADD CONSTRAINT "import_duplicate_candidates_candidate_question_id_fkey"
+FOREIGN KEY ("candidate_question_id") REFERENCES "questions"("id")
+ON DELETE RESTRICT ON UPDATE CASCADE;
+
 -- Enable Row Level Security
 ALTER TABLE "question_support_contents" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "question_support_links" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "question_occurrences" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "import_jobs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "import_items" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "import_duplicate_candidates" ENABLE ROW LEVEL SECURITY;
