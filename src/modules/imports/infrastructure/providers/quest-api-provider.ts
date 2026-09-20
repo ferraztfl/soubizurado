@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type {
+  ProviderExaminationMetadata,
   ProviderQuestionCandidate,
   QuestionProvider,
   QuestionProviderListInput,
@@ -81,6 +82,62 @@ const questionSchema = z.object({
         .optional(),
     })
     .default({}),
+});
+
+const examinationSchema = z.object({
+  id: z.union([
+    z.string(),
+    z.number(),
+  ]),
+  orgao: z
+    .string()
+    .nullable()
+    .optional(),
+  cargo: z
+    .string()
+    .nullable()
+    .optional(),
+  ano: z
+    .union([
+      z.string(),
+      z.number(),
+    ])
+    .nullable()
+    .optional(),
+  banca: z
+    .string()
+    .nullable()
+    .optional(),
+  alternative_type: z
+    .enum([
+      "MULTIPLA_ESCOLHA",
+      "CERTO_ERRADO",
+    ])
+    .nullable()
+    .optional(),
+  total_questoes: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional(),
+});
+
+const examinationListResponseSchema = z.object({
+  data: z.object({
+    total: z.number().int().nonnegative(),
+    page: z.number().int().positive(),
+    per_page: z.number().int().positive(),
+    items: z.array(examinationSchema),
+  }),
+  meta: z
+    .object({
+      correlationId: z
+        .string()
+        .nullable()
+        .optional(),
+      timestamp: z.string().optional(),
+    })
+    .optional(),
 });
 
 const responseSchema = z.object({
@@ -288,6 +345,99 @@ export class QuestApiProvider
     ).replace(/\/$/, "");
     this.fetcher =
       options.fetcher ?? fetch;
+  }
+
+  public async getExamination(
+    externalId: string,
+  ): Promise<ProviderExaminationMetadata | null> {
+    const normalizedId = externalId.trim();
+
+    if (!normalizedId) {
+      throw new Error(
+        "Quest API examination id is required.",
+      );
+    }
+
+    const url = new URL(
+      "/v1/provas",
+      this.baseUrl,
+    );
+
+    url.searchParams.set(
+      "codigo",
+      normalizedId,
+    );
+    url.searchParams.set(
+      "per_page",
+      "10",
+    );
+
+    const response = await this.fetcher(
+      url,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "X-API-Key": this.apiKey,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Quest API request failed with status ${response.status}.`,
+      );
+    }
+
+    const parsed =
+      examinationListResponseSchema.safeParse(
+        await response.json(),
+      );
+
+    if (!parsed.success) {
+      throw new Error(
+        "Quest API returned an unexpected examination response shape.",
+      );
+    }
+
+    const match =
+      parsed.data.data.items.find(
+        (item) =>
+          stringifyProviderId(item.id) ===
+          normalizedId,
+      );
+
+    if (!match) {
+      return null;
+    }
+
+    const parsedYear =
+      match.ano === null ||
+      match.ano === undefined
+        ? null
+        : Number.parseInt(
+            String(match.ano),
+            10,
+          );
+
+    return {
+      externalId: normalizedId,
+      organization: normalizeOptionalText(
+        match.orgao,
+      ),
+      careerPosition:
+        normalizeOptionalText(
+          match.cargo,
+        ),
+      year: Number.isSafeInteger(parsedYear)
+        ? parsedYear
+        : null,
+      board: normalizeOptionalText(
+        match.banca,
+      ),
+      alternativeType:
+        match.alternative_type ?? null,
+    };
   }
 
   public async listQuestions(
