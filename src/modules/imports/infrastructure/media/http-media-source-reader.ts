@@ -1,17 +1,34 @@
-﻿import type {
+﻿import {
+  request as httpRequest,
+  type IncomingMessage,
+} from "node:http";
+import {
+  request as httpsRequest,
+} from "node:https";
+import {
+  isIP,
+} from "node:net";
+import {
+  buffer as consumeBuffer,
+} from "node:stream/consumers";
+
+import type {
   MediaBinary,
   MediaSourceReader,
 } from "../../application/ports/media-ingestion";
 
-type Fetcher =
-  typeof fetch;
+import {
+  resolvePublicMediaAddress,
+  type MediaHostResolver,
+  type ResolvedMediaAddress,
+} from "./public-media-network-policy";
 
 export type HttpMediaSourceReaderOptions =
   Readonly<{
-    fetcher?: Fetcher;
     maxBytes?: number;
     timeoutMs?: number;
     maxRedirects?: number;
+    resolver?: MediaHostResolver;
   }>;
 
 const ALLOWED_MIME_PREFIXES = [
@@ -68,7 +85,7 @@ function validateMimeType(
   );
 }
 
-function validateProtocol(
+function validateUrl(
   url: URL,
 ): void {
   if (
@@ -81,14 +98,134 @@ function validateProtocol(
       `Unsupported media protocol: ${url.protocol}`,
     );
   }
+
+  if (
+    url.username ||
+    url.password
+  ) {
+    throw new Error(
+      "Media URLs with credentials are not allowed.",
+    );
+  }
+}
+
+function headerValue(
+  value:
+    | string
+    | string[]
+    | undefined,
+): string | null {
+  if (
+    Array.isArray(
+      value,
+    )
+  ) {
+    return (
+      value[0] ??
+      null
+    );
+  }
+
+  return value ?? null;
+}
+
+function hostnameWithoutBrackets(
+  hostname: string,
+): string {
+  if (
+    hostname.startsWith("[") &&
+    hostname.endsWith("]")
+  ) {
+    return hostname.slice(
+      1,
+      -1,
+    );
+  }
+
+  return hostname;
+}
+
+function requestPinned(
+  url: URL,
+  resolved:
+    ResolvedMediaAddress,
+  signal:
+    AbortSignal,
+): Promise<IncomingMessage> {
+  const originalHostname =
+    hostnameWithoutBrackets(
+      url.hostname,
+    );
+
+  const commonOptions = {
+    hostname:
+      resolved.address,
+    family:
+      resolved.family,
+    port:
+      url.port ||
+      undefined,
+    method:
+      "GET",
+    path:
+      `${url.pathname}${url.search}`,
+    signal,
+    headers: {
+      Accept:
+        "image/*,application/pdf;q=0.9,*/*;q=0.1",
+      Host:
+        url.host,
+    },
+  };
+
+  return new Promise(
+    (
+      resolve,
+      reject,
+    ) => {
+      const onResponse =
+        (
+          response:
+            IncomingMessage,
+        ) => {
+          resolve(
+            response,
+          );
+        };
+
+      const request =
+        url.protocol ===
+        "https:"
+          ? httpsRequest(
+              {
+                ...commonOptions,
+                servername:
+                  isIP(
+                    originalHostname,
+                  ) === 0
+                    ? originalHostname
+                    : undefined,
+              },
+              onResponse,
+            )
+          : httpRequest(
+              commonOptions,
+              onResponse,
+            );
+
+      request.once(
+        "error",
+        reject,
+      );
+
+      request.end();
+    },
+  );
 }
 
 export class HttpMediaSourceReader
   implements MediaSourceReader
 {
-  private readonly fetcher:
-    Fetcher;
-
   private readonly maxBytes:
     number;
 
@@ -98,14 +235,13 @@ export class HttpMediaSourceReader
   private readonly maxRedirects:
     number;
 
+  private readonly resolver:
+    MediaHostResolver | undefined;
+
   public constructor(
     options:
       HttpMediaSourceReaderOptions = {},
   ) {
-    this.fetcher =
-      options.fetcher ??
-      fetch;
-
     this.maxBytes =
       options.maxBytes ??
       25 * 1024 * 1024;
@@ -117,6 +253,9 @@ export class HttpMediaSourceReader
     this.maxRedirects =
       options.maxRedirects ??
       5;
+
+    this.resolver =
+      options.resolver;
 
     if (
       !Number.isSafeInteger(
@@ -176,123 +315,157 @@ export class HttpMediaSourceReader
     let redirectCount =
       0;
 
-    let response:
-      Response;
-
-    while (true) {
-      validateProtocol(
-        currentUrl,
-      );
-
-      response =
-        await this.fetcher(
+    try {
+      while (true) {
+        validateUrl(
           currentUrl,
-          {
-            method: "GET",
-            redirect:
-              "manual",
+        );
+
+        const resolved =
+          await resolvePublicMediaAddress(
+            currentUrl.hostname,
+            this.resolver,
+          );
+
+        const response =
+          await requestPinned(
+            currentUrl,
+            resolved,
             signal,
-            headers: {
-              Accept:
-                "image/*,application/pdf;q=0.9,*/*;q=0.1",
-            },
-          },
-        );
+          );
 
-      if (
-        !REDIRECT_STATUSES.has(
-          response.status,
-        )
-      ) {
-        break;
+        const status =
+          response.statusCode ??
+          0;
+
+        if (
+          REDIRECT_STATUSES.has(
+            status,
+          )
+        ) {
+          const location =
+            headerValue(
+              response.headers
+                .location,
+            );
+
+          response.destroy();
+
+          if (
+            redirectCount >=
+            this.maxRedirects
+          ) {
+            throw new Error(
+              `Media redirect limit exceeded: ${sourceUrl}`,
+            );
+          }
+
+          if (!location) {
+            throw new Error(
+              `Media redirect response is missing Location header: ${currentUrl.toString()}`,
+            );
+          }
+
+          currentUrl =
+            new URL(
+              location,
+              currentUrl,
+            );
+
+          redirectCount +=
+            1;
+
+          continue;
+        }
+
+        if (
+          status < 200 ||
+          status >= 300
+        ) {
+          response.destroy();
+
+          throw new Error(
+            `Media download failed with status ${status}: ${currentUrl.toString()}`,
+          );
+        }
+
+        const declaredLength =
+          Number(
+            headerValue(
+              response.headers[
+                "content-length"
+              ],
+            ) ??
+              "0",
+          );
+
+        if (
+          Number.isFinite(
+            declaredLength,
+          ) &&
+          declaredLength >
+            this.maxBytes
+        ) {
+          response.destroy();
+
+          throw new Error(
+            `Media exceeds maximum size of ${this.maxBytes} bytes.`,
+          );
+        }
+
+        const mimeType =
+          normalizedMimeType(
+            headerValue(
+              response.headers[
+                "content-type"
+              ],
+            ),
+          );
+
+        try {
+          validateMimeType(
+            mimeType,
+          );
+        } catch (error) {
+          response.destroy();
+
+          throw error;
+        }
+
+        const buffer =
+          await consumeBuffer(
+            response,
+          );
+
+        if (
+          buffer.byteLength >
+          this.maxBytes
+        ) {
+          throw new Error(
+            `Media exceeds maximum size of ${this.maxBytes} bytes.`,
+          );
+        }
+
+        return {
+          bytes:
+            new Uint8Array(
+              buffer,
+            ),
+          mimeType,
+          sourceUrl:
+            currentUrl.toString(),
+        };
       }
-
+    } catch (error) {
       if (
-        redirectCount >=
-        this.maxRedirects
+        signal.aborted
       ) {
         throw new Error(
-          `Media redirect limit exceeded: ${sourceUrl}`,
+          `Media download timed out after ${this.timeoutMs} ms: ${sourceUrl}`,
         );
       }
 
-      const location =
-        response.headers.get(
-          "location",
-        );
-
-      if (!location) {
-        throw new Error(
-          `Media redirect response is missing Location header: ${currentUrl.toString()}`,
-        );
-      }
-
-      currentUrl =
-        new URL(
-          location,
-          currentUrl,
-        );
-
-      redirectCount += 1;
+      throw error;
     }
-
-    if (!response.ok) {
-      throw new Error(
-        `Media download failed with status ${response.status}: ${currentUrl.toString()}`,
-      );
-    }
-
-    const declaredLength =
-      Number(
-        response.headers.get(
-          "content-length",
-        ) ?? "0",
-      );
-
-    if (
-      Number.isFinite(
-        declaredLength,
-      ) &&
-      declaredLength >
-        this.maxBytes
-    ) {
-      throw new Error(
-        `Media exceeds maximum size of ${this.maxBytes} bytes.`,
-      );
-    }
-
-    const mimeType =
-      normalizedMimeType(
-        response.headers.get(
-          "content-type",
-        ),
-      );
-
-    validateMimeType(
-      mimeType,
-    );
-
-    const buffer =
-      await response
-        .arrayBuffer();
-
-    if (
-      buffer.byteLength >
-      this.maxBytes
-    ) {
-      throw new Error(
-        `Media exceeds maximum size of ${this.maxBytes} bytes.`,
-      );
-    }
-
-    return {
-      bytes:
-        new Uint8Array(
-          buffer,
-        ),
-      mimeType,
-      sourceUrl:
-        currentUrl.toString(),
-    };
   }
 }
