@@ -32,6 +32,24 @@ const publicQuestionSelect = {
       },
     },
   },
+  mediaLinks: {
+    orderBy: {
+      position: "asc",
+    },
+    select: {
+      role: true,
+      position: true,
+      mediaAsset: {
+        select: {
+          id: true,
+          mimeType: true,
+          width: true,
+          height: true,
+          altText: true,
+        },
+      },
+    },
+  },
   alternatives: {
     orderBy: {
       position: "asc",
@@ -41,6 +59,23 @@ const publicQuestionSelect = {
       label: true,
       content: true,
       position: true,
+      mediaLinks: {
+        orderBy: {
+          position: "asc",
+        },
+        select: {
+          position: true,
+          mediaAsset: {
+            select: {
+              id: true,
+              mimeType: true,
+              width: true,
+              height: true,
+              altText: true,
+            },
+          },
+        },
+      },
     },
   },
   discipline: {
@@ -158,6 +193,71 @@ function toPublicQuestionReadRecord(
     position: link.position,
   }));
 
+  const media = (
+    question.mediaLinks ?? []
+  )
+    .filter(
+      (link) =>
+        link.role ===
+        "QUESTION_ATTACHMENT",
+    )
+    .map((link) => ({
+      id: link.mediaAsset.id,
+      mimeType:
+        link.mediaAsset.mimeType,
+      width:
+        link.mediaAsset.width,
+      height:
+        link.mediaAsset.height,
+      altText:
+        link.mediaAsset.altText,
+      position:
+        link.position,
+    }));
+
+  const alternatives =
+    question.alternatives.map(
+      (alternative) => {
+        const alternativeMedia =
+          (
+            alternative.mediaLinks ??
+            []
+          ).map((link) => ({
+            id:
+              link.mediaAsset.id,
+            mimeType:
+              link.mediaAsset
+                .mimeType,
+            width:
+              link.mediaAsset.width,
+            height:
+              link.mediaAsset.height,
+            altText:
+              link.mediaAsset.altText,
+            position:
+              link.position,
+          }));
+
+        return {
+          id:
+            alternative.id,
+          label:
+            alternative.label,
+          content:
+            alternative.content,
+          position:
+            alternative.position,
+          ...(alternativeMedia.length >
+          0
+            ? {
+                media:
+                  alternativeMedia,
+              }
+            : {}),
+        };
+      },
+    );
+
   return {
     id: question.id,
     type: question.type,
@@ -165,7 +265,10 @@ function toPublicQuestionReadRecord(
     ...(supportContents.length > 0
       ? { supportContents }
       : {}),
-    alternatives: question.alternatives,
+    ...(media.length > 0
+      ? { media }
+      : {}),
+    alternatives,
     discipline: question.discipline,
     area: question.area,
     topic: question.topic,

@@ -2,11 +2,21 @@ import type {
   QuestionType,
 } from "../../domain/question-type";
 
+export type PublicQuestionMediaRecord = Readonly<{
+  id: string;
+  mimeType: string;
+  width: number | null;
+  height: number | null;
+  altText: string | null;
+  position: number;
+}>;
+
 export type PublicQuestionAlternativeRecord = Readonly<{
   id: string;
   label: string;
   content: string;
   position: number;
+  media?: readonly PublicQuestionMediaRecord[];
 }>;
 
 export type PublicQuestionSupportContentRecord =
@@ -40,14 +50,20 @@ export type PublicQuestionReadRecord = Readonly<{
   id: string;
   type: QuestionType;
   statement: string;
+
   supportContents?:
     readonly PublicQuestionSupportContentRecord[];
+
+  media?: readonly PublicQuestionMediaRecord[];
+
   alternatives:
     readonly PublicQuestionAlternativeRecord[];
+
   discipline: PublicQuestionTaxonomyReference;
   area: PublicQuestionTaxonomyReference | null;
   topic: PublicQuestionTaxonomyReference;
   subtopic: PublicQuestionTaxonomyReference | null;
+
   examination:
     | PublicQuestionExaminationReference
     | null;

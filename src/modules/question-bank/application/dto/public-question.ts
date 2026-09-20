@@ -1,10 +1,20 @@
 import type { QuestionType } from "../../domain/question-type";
 
+export type PublicQuestionMediaDto = Readonly<{
+  id: string;
+  mimeType: string;
+  width: number | null;
+  height: number | null;
+  altText: string | null;
+  position: number;
+}>;
+
 export type PublicQuestionAlternativeDto = Readonly<{
   id: string;
   label: string;
   content: string;
   position: number;
+  media?: readonly PublicQuestionMediaDto[];
 }>;
 
 export type PublicQuestionSupportContentDto = Readonly<{
@@ -35,10 +45,14 @@ export type PublicQuestionDto = Readonly<{
   id: string;
   type: QuestionType;
   statement: string;
+
   supportContents:
     readonly PublicQuestionSupportContentDto[];
 
-  alternatives: readonly PublicQuestionAlternativeDto[];
+  media?: readonly PublicQuestionMediaDto[];
+
+  alternatives:
+    readonly PublicQuestionAlternativeDto[];
 
   classification: Readonly<{
     discipline: PublicTaxonomyReferenceDto;
