@@ -48,7 +48,13 @@ function sha256(
 function payloadHash(
   value: unknown,
 ): string {
-  return sha256(JSON.stringify(value));
+  const serialized = JSON.stringify(value);
+
+  if (serialized === undefined) {
+    return sha256("null");
+  }
+
+  return sha256(serialized);
 }
 
 function determineQuestionType(
