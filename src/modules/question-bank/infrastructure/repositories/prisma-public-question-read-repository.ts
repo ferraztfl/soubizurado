@@ -294,24 +294,11 @@ export class PrismaPublicQuestionReadRepository
       this.prisma.discipline.findMany({
         where: {
           isActive: true,
-          OR: [
-            {
-              questions: {
-                some: {
-                  status: "PUBLISHED",
-                },
-              },
+          questions: {
+            some: {
+              status: "PUBLISHED",
             },
-            {
-              occurrences: {
-                some: {
-                  question: {
-                    status: "PUBLISHED",
-                  },
-                },
-              },
-            },
-          ],
+          },
         },
         orderBy: [
           { sortOrder: "asc" },
@@ -362,11 +349,24 @@ export class PrismaPublicQuestionReadRepository
           year: {
             not: null,
           },
-          questions: {
-            some: {
-              status: "PUBLISHED",
+          OR: [
+            {
+              questions: {
+                some: {
+                  status: "PUBLISHED",
+                },
+              },
             },
-          },
+            {
+              occurrences: {
+                some: {
+                  question: {
+                    status: "PUBLISHED",
+                  },
+                },
+              },
+            },
+          ],
         },
         distinct: ["year"],
         orderBy: {
