@@ -89,10 +89,7 @@ async function resolveExamination(
         },
         create: {
           name: metadata.board,
-          acronym:
-            metadata.board.length <= 40
-              ? metadata.board
-              : null,
+          acronym: null,
           slug: slugify(
             metadata.board,
             200,
@@ -119,11 +116,7 @@ async function resolveExamination(
             },
             create: {
               name: metadata.organization,
-              acronym:
-                metadata.organization.length <=
-                40
-                  ? metadata.organization
-                  : null,
+              acronym: null,
               slug: slugify(
                 metadata.organization,
                 220,
