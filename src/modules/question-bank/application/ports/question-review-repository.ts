@@ -8,6 +8,22 @@ export type ReviewTaxonomyReference =
     name: string;
   }>;
 
+
+export type ReviewQuestionOccurrence =
+  Readonly<{
+    id: string;
+    sourceName: string;
+    externalQuestionNumber: string | null;
+    examination: Readonly<{
+      id: string;
+      title: string;
+      year: number | null;
+      board: string | null;
+      organization: string | null;
+      careerPosition: string | null;
+    }> | null;
+  }>;
+
 export type ReviewQuestionListItem =
   Readonly<{
     id: string;
@@ -23,12 +39,8 @@ export type ReviewQuestionListItem =
     topic:
       | ReviewTaxonomyReference
       | null;
-    examination: Readonly<{
-      id: string;
-      title: string;
-      year: number | null;
-      board: string | null;
-    }> | null;
+    occurrences:
+      readonly ReviewQuestionOccurrence[];
     updatedAt: Date;
   }>;
 
