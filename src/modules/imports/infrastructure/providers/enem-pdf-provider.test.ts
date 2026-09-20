@@ -178,6 +178,42 @@ describe(
     );
 
     it(
+      "reconstructs an answer-key entry split across a page boundary",
+      () => {
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<pdf2xml>
+<page number="1" height="1262" width="892">
+  <text top="100" left="43" width="90" height="19">1. [Q1]</text>
+  <text top="140" left="149" width="400" height="19">Questão de teste.</text>
+  <text top="180" left="61" width="16" height="19">a )</text>
+  <text top="180" left="85" width="80" height="19">Um.</text>
+  <text top="210" left="61" width="16" height="19">b )</text>
+  <text top="210" left="85" width="80" height="19">Dois.</text>
+  <text top="260" left="50" width="400" height="19">Disciplinas/Assuntos vinculados: Matemática &gt; Teste</text>
+  <text top="290" left="50" width="500" height="19">Fonte: INEP/ENEM 2024 / Enem / Questão: 1</text>
+  <text top="1072" left="379" width="80" height="19">Gabarito</text>
+  <text top="1201" left="46" width="100" height="19">(1</text>
+</page>
+<page number="2" height="1262" width="892">
+  <text top="43" left="47" width="100" height="19">= b)</text>
+</page>
+</pdf2xml>`;
+
+        const document =
+          parseEnemPdfDocument({
+            xml,
+            checksum:
+              "c".repeat(64),
+          });
+
+        expect(
+          document.questions[0]
+            ?.answerKey,
+        ).toBe("B");
+      },
+    );
+
+    it(
       "maps parsed questions into review-first provider candidates",
       async () => {
         const provider =
