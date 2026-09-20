@@ -4,6 +4,114 @@ import {
   getPrismaClient,
 } from "../src/shared/infrastructure/database/prisma";
 
+function asRecord(
+  value: unknown,
+): Record<string, unknown> | null {
+  return value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asArray(
+  value: unknown,
+): readonly unknown[] {
+  return Array.isArray(value)
+    ? value
+    : [];
+}
+
+function asText(
+  value: unknown,
+): string | null {
+  if (
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
+    const normalized =
+      String(value).trim();
+
+    return normalized || null;
+  }
+
+  return null;
+}
+
+function summarizeRawPayload(
+  value: unknown,
+): Record<string, unknown> {
+  const payload = asRecord(value);
+
+  if (!payload) {
+    return {
+      payloadType: typeof value,
+    };
+  }
+
+  const classification =
+    asRecord(payload.classificacao);
+  const alternatives =
+    asArray(payload.alternativas);
+  const statement =
+    asText(payload.enunciado) ?? "";
+
+  const alternativeSummaries =
+    alternatives.map((item) => {
+      const alternative =
+        asRecord(item);
+
+      return {
+        label: asText(
+          alternative?.letra,
+        ),
+        contentLength:
+          (
+            asText(
+              alternative?.texto,
+            ) ?? ""
+          ).length,
+      };
+    });
+
+  return {
+    keys: Object.keys(payload).sort(),
+    answerKey:
+      asText(payload.gabarito),
+    discipline:
+      asText(
+        classification?.materia,
+      ),
+    topic:
+      asText(
+        classification?.assunto,
+      ),
+    statementLength:
+      statement.length,
+    alternativesCount:
+      alternatives.length,
+    alternatives:
+      alternativeSummaries,
+    proofsCount:
+      asArray(payload.provas).length,
+    firstProofType:
+      (() => {
+        const first =
+          asArray(payload.provas)[0];
+
+        if (Array.isArray(first)) {
+          return "array";
+        }
+
+        if (first === null) {
+          return "null";
+        }
+
+        return typeof first;
+      })(),
+  };
+}
+
 function argumentValue(
   name: string,
 ): string | undefined {
@@ -64,6 +172,7 @@ async function main(): Promise<void> {
             status: true,
             failureReason: true,
             questionId: true,
+            rawPayload: true,
           },
         },
       },
@@ -130,7 +239,21 @@ async function main(): Promise<void> {
               ),
           ),
         sampleItems:
-          job.items.slice(0, 10),
+          job.items
+            .slice(0, 10)
+            .map((item) => ({
+              externalId:
+                item.externalId,
+              status: item.status,
+              failureReason:
+                item.failureReason,
+              questionId:
+                item.questionId,
+              diagnostics:
+                summarizeRawPayload(
+                  item.rawPayload,
+                ),
+            })),
       },
       null,
       2,
