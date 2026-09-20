@@ -7,7 +7,6 @@ import {
 import type {
   ProviderExaminationMetadata,
   QuestionProvider,
-  QuestionProviderListInput,
   QuestionProviderListResult,
 } from "../ports/question-provider";
 import type {
@@ -80,9 +79,7 @@ class FakeProvider
         "MULTIPLA_ESCOLHA",
     };
 
-  public async listQuestions(
-    _input: QuestionProviderListInput,
-  ): Promise<QuestionProviderListResult> {
+  public async listQuestions(): Promise<QuestionProviderListResult> {
     return this.page;
   }
 
