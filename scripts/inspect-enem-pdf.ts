@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   const inspection =
     await provider.inspect();
 
-  const missingOrdinals =
+  const expectedOrdinals =
     Array.from(
       {
         length:
@@ -60,9 +60,20 @@ async function main(): Promise<void> {
       },
       (_, index) =>
         index + 1,
-    ).filter(
+    );
+
+  const missingOrdinals =
+    expectedOrdinals.filter(
       (ordinal) =>
         !inspection.ordinals
+          .includes(ordinal),
+    );
+
+  const missingAnswerKeyOrdinals =
+    expectedOrdinals.filter(
+      (ordinal) =>
+        !inspection
+          .answerKeyOrdinals
           .includes(ordinal),
     );
 
@@ -74,6 +85,7 @@ async function main(): Promise<void> {
           resolve(pdfRaw),
         ...inspection,
         missingOrdinals,
+        missingAnswerKeyOrdinals,
       },
       null,
       2,
