@@ -482,8 +482,7 @@ export class PrismaQuestionImportRepository
                 externalQuestionNumber:
                   input.externalQuestionNumber,
                 externalExaminationId:
-                  input.examination
-                    ?.externalId ?? null,
+                  input.externalExaminationId,
                 sourceUrl:
                   input.sourceUrl,
               },
@@ -704,8 +703,7 @@ export class PrismaQuestionImportRepository
               externalQuestionNumber:
                 input.externalQuestionNumber,
               externalExaminationId:
-                input.examination
-                  ?.externalId ?? null,
+                input.externalExaminationId,
               sourceUrl:
                 input.sourceUrl,
             },
