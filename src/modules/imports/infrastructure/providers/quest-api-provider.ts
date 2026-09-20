@@ -52,12 +52,7 @@ const questionSchema = z.object({
     .nullable()
     .optional(),
   provas: z
-    .array(
-      z.union([
-        z.string(),
-        z.number(),
-      ]),
-    )
+    .array(z.unknown())
     .nullish()
     .transform((value) => value ?? []),
   classificacao: z
@@ -379,6 +374,66 @@ function stringifyProviderId(
   return String(value).trim();
 }
 
+function collectProviderIds(
+  value: unknown,
+): string[] {
+  if (
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
+    const normalized =
+      stringifyProviderId(value);
+
+    return normalized
+      ? [normalized]
+      : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap(
+      collectProviderIds,
+    );
+  }
+
+  if (
+    value !== null &&
+    typeof value === "object"
+  ) {
+    const record = value as Record<
+      string,
+      unknown
+    >;
+
+    const preferredKeys = [
+      "id",
+      "codigo",
+      "prova_id",
+      "provaId",
+    ];
+
+    for (const key of preferredKeys) {
+      const candidate =
+        record[key];
+
+      if (
+        typeof candidate === "string" ||
+        typeof candidate === "number"
+      ) {
+        const normalized =
+          stringifyProviderId(
+            candidate,
+          );
+
+        if (normalized) {
+          return [normalized];
+        }
+      }
+    }
+  }
+
+  return [];
+}
+
 function collectUrls(
   value: unknown,
 ): string[] {
@@ -500,7 +555,11 @@ function mapQuestion(
             raw.gabarito,
           ),
     examinationExternalIds:
-      raw.provas.map(stringifyProviderId),
+      [...new Set(
+        raw.provas.flatMap(
+          collectProviderIds,
+        ),
+      )],
     discipline: normalizeOptionalText(
       raw.classificacao?.materia,
     ),
@@ -1172,12 +1231,9 @@ export class QuestApiProvider
             return mapQuestion({
               ...raw,
               gabarito: answerKey,
-              provas:
-                raw.provas.length > 0
-                  ? raw.provas
-                  : [
-                      normalizedExaminationId,
-                    ],
+              provas: [
+                normalizedExaminationId,
+              ],
               sinalizadores: {
                 ...raw.sinalizadores,
                 tem_gabarito:
