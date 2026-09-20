@@ -132,6 +132,8 @@ class FakeImportRepository
     this.reviews.push(input);
   }
 
+  public async recordFailure(): Promise<void> {}
+
   public async completeJob(): Promise<void> {}
 
   public async failJob(): Promise<void> {}
