@@ -34,6 +34,7 @@ enum QuestionAnswerKeyStatus {
 
 enum QuestionSourceType {
   OFFICIAL_EXAM
+  PROVIDER_API
   ORIGINAL
   LICENSED
   OTHER
