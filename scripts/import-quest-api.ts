@@ -13,6 +13,7 @@ import {
 type Arguments = Readonly<{
   limit: number;
   externalId?: string;
+  examinationId?: string;
   afterId?: string;
   publish: boolean;
   board?: string;
@@ -48,8 +49,20 @@ function hasFlag(
 }
 
 function parseArguments(): Arguments {
+  const externalId =
+    argumentValue("id");
+  const examinationId =
+    argumentValue("prova");
+
+  if (externalId && examinationId) {
+    throw new Error(
+      "Use either --id or --prova, not both.",
+    );
+  }
+
   const limitRaw =
-    argumentValue("limit") ?? "5";
+    argumentValue("limit") ??
+    (examinationId ? "100" : "5");
   const limit = Number(limitRaw);
 
   if (
@@ -83,12 +96,10 @@ function parseArguments(): Arguments {
     );
   }
 
-  const externalId =
-    argumentValue("id");
-
   return {
     limit: externalId ? 1 : limit,
     externalId,
+    examinationId,
     afterId:
       argumentValue("after-id"),
     publish: hasFlag("publish"),
@@ -135,6 +146,8 @@ async function main(): Promise<void> {
   const result = await useCase.execute({
     limit: args.limit,
     externalId: args.externalId,
+    examinationId:
+      args.examinationId,
     afterId: args.afterId,
     publish: args.publish,
     filters: {
