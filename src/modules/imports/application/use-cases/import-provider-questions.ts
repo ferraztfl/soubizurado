@@ -277,7 +277,8 @@ function buildPersistenceInput(
     externalExaminationId:
       candidate.examinationExternalIds[0] ??
       null,
-    sourceUrl: null,
+    sourceUrl:
+      candidate.sourceUrl ?? null,
     rawPayload: candidate.rawPayload,
     payloadHash: payloadHash(
       candidate.rawPayload,

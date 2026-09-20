@@ -19,8 +19,41 @@ import type {
   ProviderExaminationMetadata,
 } from "../../application/ports/question-provider";
 
-const QUEST_API_SOURCE_REFERENCE =
-  "quest-api";
+export type QuestionImportSourceConfig =
+  Readonly<{
+    providerCode: string;
+    reference: string;
+    name: string;
+    url: string | null;
+    sourceType:
+      | "OFFICIAL_EXAM"
+      | "PROVIDER_API"
+      | "ORIGINAL"
+      | "LICENSED"
+      | "OTHER";
+    licenseStatus:
+      | "UNKNOWN"
+      | "PUBLIC_DOMAIN"
+      | "AUTHORIZED"
+      | "LICENSED"
+      | "RESTRICTED";
+    licenseName?: string | null;
+    licenseNotes?: string | null;
+  }>;
+
+export const QUEST_API_SOURCE_CONFIG:
+  QuestionImportSourceConfig = {
+    providerCode: "QUEST_API",
+    reference: "quest-api",
+    name: "Quest API",
+    url: "https://quest.api.br",
+    sourceType: "PROVIDER_API",
+    licenseStatus: "UNKNOWN",
+    licenseName: null,
+    licenseNotes:
+      "Imported through authenticated provider API; preserve source provenance for every occurrence.",
+  };
+
 const FUZZY_DUPLICATE_THRESHOLD = 0.92;
 
 type DuplicateSimilarityRow = Readonly<{
@@ -168,14 +201,27 @@ async function resolveExamination(
   );
 
   const title = truncate(
-    titleParts.length > 0
-      ? titleParts.join(" - ")
-      : `Prova Quest API ${metadata.externalId}`,
+    metadata.title?.trim() ||
+      (
+        titleParts.length > 0
+          ? titleParts.join(" - ")
+          : `Prova importada ${metadata.externalId}`
+      ),
     240,
   );
 
+  const slugPrefix =
+    metadata.slugPrefix?.trim() ||
+    "quest-api";
+
+  const normalizedExternalId =
+    metadata.externalId.trim();
   const slug = truncate(
-    `quest-api-${metadata.externalId}`,
+    normalizedExternalId.startsWith(
+      `${slugPrefix}-`,
+    )
+      ? normalizedExternalId
+      : `${slugPrefix}-${normalizedExternalId}`,
     260,
   );
 
@@ -351,30 +397,47 @@ export class PrismaQuestionImportRepository
   public constructor(
     private readonly prisma: PrismaClient =
       getPrismaClient(),
+    private readonly sourceConfig:
+      QuestionImportSourceConfig =
+        QUEST_API_SOURCE_CONFIG,
   ) {}
 
   public async ensureSource(): Promise<{
     id: string;
   }> {
+    const source =
+      this.sourceConfig;
+
     return this.prisma.questionSource.upsert({
       where: {
         reference:
-          QUEST_API_SOURCE_REFERENCE,
+          source.reference,
       },
       update: {
-        name: "Quest API",
-        url: "https://quest.api.br",
-        sourceType: "PROVIDER_API",
+        name: source.name,
+        url: source.url,
+        sourceType:
+          source.sourceType,
+        licenseStatus:
+          source.licenseStatus,
+        licenseName:
+          source.licenseName ?? null,
+        licenseNotes:
+          source.licenseNotes ?? null,
       },
       create: {
-        sourceType: "PROVIDER_API",
-        name: "Quest API",
+        sourceType:
+          source.sourceType,
+        name: source.name,
         reference:
-          QUEST_API_SOURCE_REFERENCE,
-        url: "https://quest.api.br",
-        licenseStatus: "UNKNOWN",
+          source.reference,
+        url: source.url,
+        licenseStatus:
+          source.licenseStatus,
+        licenseName:
+          source.licenseName ?? null,
         licenseNotes:
-          "Imported through authenticated provider API; preserve source provenance for every occurrence.",
+          source.licenseNotes ?? null,
       },
       select: {
         id: true,
@@ -394,7 +457,8 @@ export class PrismaQuestionImportRepository
     return this.prisma.importJob.create({
       data: {
         sourceId: input.sourceId,
-        provider: "QUEST_API",
+        provider:
+          this.sourceConfig.providerCode,
         status: "RUNNING",
         requestedLimit:
           input.requestedLimit,
@@ -844,4 +908,14 @@ export class PrismaQuestionImportRepository
       },
     });
   }
+}
+
+
+export function createConfiguredQuestionImportRepository(
+  sourceConfig: QuestionImportSourceConfig,
+): PrismaQuestionImportRepository {
+  return new PrismaQuestionImportRepository(
+    getPrismaClient(),
+    sourceConfig,
+  );
 }
