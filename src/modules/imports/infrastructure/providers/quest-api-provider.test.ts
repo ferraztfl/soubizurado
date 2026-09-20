@@ -213,6 +213,131 @@ describe("QuestApiProvider", () => {
     );
   });
 
+  it("retries transient 503 responses before succeeding", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            statusCode: 503,
+            message: "Service Unavailable",
+            correlationId: "corr-503",
+          }),
+          {
+            status: 503,
+            headers: {
+              "content-type":
+                "application/json",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              total: 0,
+              page: 1,
+              per_page: 1,
+              next_cursor: null,
+              items: [],
+            },
+            meta: {
+              correlationId: "corr-ok",
+              timestamp:
+                "2026-09-20T00:00:00.000Z",
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type":
+                "application/json",
+            },
+          },
+        ),
+      );
+    const sleep = vi
+      .fn()
+      .mockResolvedValue(undefined);
+
+    const provider = new QuestApiProvider({
+      apiKey: "qk_test",
+      fetcher,
+      sleep,
+    });
+
+    await expect(
+      provider.listQuestions({
+        limit: 1,
+        includeAnswerKey: true,
+      }),
+    ).resolves.toMatchObject({
+      total: 0,
+      items: [],
+    });
+
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledOnce();
+  });
+
+  it("reads account quota without consuming question credits", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            planCode: "starter",
+            periodStart:
+              "2026-09-01T00:00:00.000Z",
+            periodEnd:
+              "2026-10-01T00:00:00.000Z",
+            used: 30,
+            quotaPerCycle: 10000,
+            remaining: 9970,
+            percentUsed: 0.3,
+            unlimited: false,
+          },
+          meta: {
+            correlationId: "quota-1",
+            timestamp:
+              "2026-09-20T00:00:00.000Z",
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type":
+              "application/json",
+          },
+        },
+      ),
+    );
+
+    const provider = new QuestApiProvider({
+      apiKey: "qk_test",
+      fetcher,
+    });
+
+    await expect(
+      provider.getQuota(),
+    ).resolves.toEqual({
+      planCode: "starter",
+      periodStart:
+        "2026-09-01T00:00:00.000Z",
+      periodEnd:
+        "2026-10-01T00:00:00.000Z",
+      used: 30,
+      quotaPerCycle: 10000,
+      remaining: 9970,
+      percentUsed: 0.3,
+      unlimited: false,
+      correlationId: "quota-1",
+    });
+
+    expect(String(fetcher.mock.calls[0]?.[0]))
+      .toContain("/v2/quota");
+  });
+
   it("fails clearly when the provider returns a non-success response", async () => {
     const provider = new QuestApiProvider({
       apiKey: "qk_test",
@@ -238,7 +363,7 @@ describe("QuestApiProvider", () => {
         includeAnswerKey: true,
       }),
     ).rejects.toThrow(
-      "Quest API request failed with status 402.",
+      "Quest API request failed with status 402: Quota esgotada",
     );
   });
 });
