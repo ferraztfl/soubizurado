@@ -44,7 +44,7 @@ export type PersistImportedQuestionInput =
     }>[];
     correctTrueFalse: boolean | null;
     disciplineName: string;
-    topicName: string;
+    topicName: string | null;
     supportContents: readonly Readonly<{
       content: string;
       contentHash: string;
