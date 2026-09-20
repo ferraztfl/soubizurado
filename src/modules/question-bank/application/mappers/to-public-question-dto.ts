@@ -25,6 +25,8 @@ export function toPublicQuestionDto(
     id: question.id,
     type: question.type,
     statement: question.statement,
+    supportContents:
+      question.supportContents ?? [],
     alternatives,
 
     classification: {
