@@ -210,8 +210,12 @@ async function resolveExamination(
     240,
   );
 
+  const slugPrefix =
+    metadata.slugPrefix?.trim() ||
+    "quest-api";
+
   const slug = truncate(
-    `quest-api-${metadata.externalId}`,
+    `${slugPrefix}-${metadata.externalId}`,
     260,
   );
 
