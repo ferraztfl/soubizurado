@@ -64,6 +64,13 @@ enum ImportItemStatus {
   FAILED
 }
 
+enum ImportMediaTaskStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model Profile {
   id          String   @id @default(uuid()) @db.Uuid
   authUserId  String   @unique @map("auth_user_id") @db.Uuid
@@ -75,7 +82,6 @@ model Profile {
   roles               UserRole[]
   studyAnswerAttempts StudyAnswerAttempt[]
   studyFavorites      StudyFavorite[]
-  mediaLinks          QuestionMediaLink[]
 
   @@map("profiles")
 }
@@ -279,31 +285,31 @@ model QuestionSource {
 
   questions   Question[]
   occurrences QuestionOccurrence[]
-  importJobs   ImportJob[]
+  importJobs  ImportJob[]
 
   @@index([sourceType, licenseStatus])
   @@map("question_sources")
 }
 
 model Question {
-  id               String                  @id @default(uuid()) @db.Uuid
-  type             QuestionType
-  status           QuestionStatus          @default(DRAFT)
-  answerKeyStatus  QuestionAnswerKeyStatus @default(MISSING) @map("answer_key_status")
+  id                   String                  @id @default(uuid()) @db.Uuid
+  type                 QuestionType
+  status               QuestionStatus          @default(DRAFT)
+  answerKeyStatus      QuestionAnswerKeyStatus @default(MISSING) @map("answer_key_status")
   statement            String                  @db.Text
   contentHash          String?                 @map("content_hash") @db.Char(64)
   canonicalFingerprint String?                 @unique @map("canonical_fingerprint") @db.Char(64)
   normalizationVersion Int                     @default(1) @map("normalization_version")
-  correctTrueFalse Boolean?                @map("correct_true_false")
-  sourceId         String?                 @map("source_id") @db.Uuid
-  examinationId    String?                 @map("examination_id") @db.Uuid
-  disciplineId     String?                 @map("discipline_id") @db.Uuid
-  areaId           String?                 @map("area_id") @db.Uuid
-  topicId          String?                 @map("topic_id") @db.Uuid
-  subtopicId       String?                 @map("subtopic_id") @db.Uuid
-  publishedAt      DateTime?               @map("published_at") @db.Timestamptz(6)
-  createdAt        DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  correctTrueFalse     Boolean?                @map("correct_true_false")
+  sourceId             String?                 @map("source_id") @db.Uuid
+  examinationId        String?                 @map("examination_id") @db.Uuid
+  disciplineId         String?                 @map("discipline_id") @db.Uuid
+  areaId               String?                 @map("area_id") @db.Uuid
+  topicId              String?                 @map("topic_id") @db.Uuid
+  subtopicId           String?                 @map("subtopic_id") @db.Uuid
+  publishedAt          DateTime?               @map("published_at") @db.Timestamptz(6)
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   source      QuestionSource? @relation(fields: [sourceId], references: [id], onDelete: Restrict)
   examination Examination?    @relation(fields: [examinationId], references: [id], onDelete: Restrict)
@@ -321,6 +327,9 @@ model Question {
   duplicateCandidates ImportDuplicateCandidate[] @relation("ImportDuplicateCandidateQuestion")
   studyAnswerAttempts StudyAnswerAttempt[]
   studyFavorites      StudyFavorite[]
+
+  mediaLinks QuestionMediaLink[]
+  mediaTasks ImportMediaTask[]
 
   @@index([status, type])
   @@index([status, disciplineId])
@@ -344,7 +353,7 @@ model QuestionAlternative {
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
-  studyAnswerAttempts StudyAnswerAttempt[] @relation("StudyAttemptSelectedAlternative")
+  studyAnswerAttempts StudyAnswerAttempt[]           @relation("StudyAttemptSelectedAlternative")
   mediaLinks          QuestionAlternativeMediaLink[]
 
   @@unique([questionId, label])
@@ -470,7 +479,9 @@ model ImportItem {
   job                 ImportJob                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
   question            Question?                  @relation(fields: [questionId], references: [id], onDelete: Restrict)
   duplicateCandidates ImportDuplicateCandidate[]
-  mediaLinks           ImportItemMediaLink[]
+  mediaLinks          ImportItemMediaLink[]
+
+  mediaTasks ImportMediaTask[]
 
   @@unique([jobId, externalId])
   @@index([questionId])
@@ -486,12 +497,38 @@ model ImportDuplicateCandidate {
   reason              String   @db.VarChar(120)
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  importItem ImportItem @relation(fields: [importItemId], references: [id], onDelete: Cascade)
-  candidateQuestion Question @relation("ImportDuplicateCandidateQuestion", fields: [candidateQuestionId], references: [id], onDelete: Restrict)
+  importItem        ImportItem @relation(fields: [importItemId], references: [id], onDelete: Cascade)
+  candidateQuestion Question   @relation("ImportDuplicateCandidateQuestion", fields: [candidateQuestionId], references: [id], onDelete: Restrict)
 
   @@unique([importItemId, candidateQuestionId])
   @@index([candidateQuestionId, similarity])
   @@map("import_duplicate_candidates")
+}
+
+model ImportMediaTask {
+  id               String                @id @default(uuid()) @db.Uuid
+  importItemId     String                @map("import_item_id") @db.Uuid
+  questionId       String?               @map("question_id") @db.Uuid
+  mediaAssetId     String?               @map("media_asset_id") @db.Uuid
+  sourceUrl        String                @map("source_url") @db.Text
+  role             String                @db.VarChar(40)
+  alternativeLabel String                @default("") @map("alternative_label") @db.VarChar(8)
+  position         Int
+  status           ImportMediaTaskStatus @default(PENDING)
+  attempts         Int                   @default(0)
+  errorMessage     String?               @map("error_message") @db.Text
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  importItem ImportItem  @relation(fields: [importItemId], references: [id], onDelete: Cascade)
+  question   Question?   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([importItemId, role, alternativeLabel, position])
+  @@index([status, createdAt])
+  @@index([questionId])
+  @@index([mediaAssetId])
+  @@map("import_media_tasks")
 }
 
 model MediaAsset {
@@ -509,9 +546,11 @@ model MediaAsset {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  importItemLinks           ImportItemMediaLink[]
-  questionLinks             QuestionMediaLink[]
-  questionAlternativeLinks  QuestionAlternativeMediaLink[]
+  importItemLinks          ImportItemMediaLink[]
+  questionLinks            QuestionMediaLink[]
+  questionAlternativeLinks QuestionAlternativeMediaLink[]
+
+  ingestionTasks ImportMediaTask[]
 
   @@index([storageProvider, bucket])
   @@index([mimeType])
@@ -592,9 +631,9 @@ model StudyAnswerAttempt {
 }
 
 model StudyFavorite {
-  profileId String   @map("profile_id") @db.Uuid
-  questionId String  @map("question_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  profileId  String   @map("profile_id") @db.Uuid
+  questionId String   @map("question_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   profile  Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
