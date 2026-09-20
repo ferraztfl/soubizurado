@@ -64,6 +64,33 @@ const publishedQuestion: PublicQuestionReadRecord = {
       acronym: "BE",
     },
   },
+  occurrences: [
+    {
+      id: "occurrence-1",
+      source: {
+        name: "Quest API",
+      },
+      externalQuestionNumber: "10",
+      examination: {
+        id: "exam-1",
+        title: "Concurso 2026",
+        year: 2026,
+        board: {
+          id: "board-1",
+          name: "Banca Exemplo",
+          acronym: "BE",
+        },
+        organization: {
+          id: "organization-1",
+          name: "Órgão Exemplo",
+        },
+        careerPosition: {
+          id: "career-1",
+          name: "Cargo Exemplo",
+        },
+      },
+    },
+  ],
 };
 
 class FakePublicQuestionReadRepository
