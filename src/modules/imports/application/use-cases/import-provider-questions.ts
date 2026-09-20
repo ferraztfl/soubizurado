@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 
 import {
+  buildMediaFingerprintIdentity,
+} from "../../domain/media-fingerprint-identity";
+
+import {
   buildCanonicalQuestionFingerprint,
   normalizeQuestionText,
   QUESTION_NORMALIZATION_VERSION,
@@ -315,13 +319,14 @@ function buildPersistenceInput(
         ),
       mediaHashes:
         media.map((item) =>
-          sha256(
-            [
+          buildMediaFingerprintIdentity({
+            role:
               item.role,
+            alternativeLabel:
               item.alternativeLabel,
+            sourceUrl:
               item.sourceUrl,
-            ].join("\u0000"),
-          ),
+          }),
         ),
     });
 
