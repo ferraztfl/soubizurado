@@ -180,10 +180,41 @@
   font-weight: 700;
 }
 
-.examination {
-  margin: 12px 0 0;
+.provenance {
+  margin-top: 14px;
+  border-radius: var(--sb-radius-sm);
+  background: var(--sb-surface);
+  padding: 12px 14px;
+}
+
+.provenanceLabel {
+  display: block;
+  color: var(--sb-text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.occurrenceList {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding-left: 18px;
   color: var(--sb-text-muted);
   font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.occurrenceList strong {
+  color: var(--sb-text);
+}
+
+.noProvenance {
+  margin: 8px 0 0;
+  color: var(--sb-warning);
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
 .actions {
