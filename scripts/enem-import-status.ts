@@ -49,14 +49,31 @@ async function main(): Promise<void> {
   const provider =
     new EnemDataProvider();
 
-  const years = (
+  const providerYears = (
     await provider.listAvailableYears()
   ).filter((year) => year >= 2009);
+
+  const years = [
+    ...new Set([
+      ...providerYears,
+      2024,
+    ]),
+  ].sort((first, second) =>
+    first - second,
+  );
 
   const expectedCounts =
     new Map<number, number>();
 
   for (const year of years) {
+    if (year === 2024) {
+      expectedCounts.set(
+        year,
+        189,
+      );
+      continue;
+    }
+
     const page =
       await provider.listQuestions({
         limit: 1,
@@ -70,18 +87,23 @@ async function main(): Promise<void> {
     );
   }
 
-  const source =
-    await prisma.questionSource.findUnique({
+  const sources =
+    await prisma.questionSource.findMany({
       where: {
-        reference:
-          "enem-api-yunger7",
+        reference: {
+          in: [
+            "enem-api-yunger7",
+            "gran-enem-2024-pdf-29401523",
+          ],
+        },
       },
       select: {
         id: true,
+        reference: true,
       },
     });
 
-  if (!source) {
+  if (sources.length === 0) {
     process.stdout.write(
       `${JSON.stringify(
         {
@@ -98,13 +120,19 @@ async function main(): Promise<void> {
     return;
   }
 
+  const sourceIds = sources.map(
+    (source) => source.id,
+  );
+
   const [
     occurrences,
     jobs,
   ] = await Promise.all([
     prisma.questionOccurrence.findMany({
       where: {
-        sourceId: source.id,
+        sourceId: {
+          in: sourceIds,
+        },
         externalExaminationId: {
           in: years.map(
             (year) =>
@@ -119,8 +147,15 @@ async function main(): Promise<void> {
     }),
     prisma.importJob.findMany({
       where: {
-        sourceId: source.id,
-        provider: "ENEM_DATA",
+        sourceId: {
+          in: sourceIds,
+        },
+        provider: {
+          in: [
+            "ENEM_DATA",
+            "ENEM_PDF_GRAN",
+          ],
+        },
       },
       orderBy: {
         createdAt: "desc",
