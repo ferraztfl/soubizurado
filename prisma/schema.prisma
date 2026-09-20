@@ -47,6 +47,22 @@ enum QuestionLicenseStatus {
   RESTRICTED
 }
 
+enum ImportJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+}
+
+enum ImportItemStatus {
+  RECEIVED
+  IMPORTED
+  DUPLICATE
+  REVIEW_REQUIRED
+  FAILED
+}
+
 model Profile {
   id          String   @id @default(uuid()) @db.Uuid
   authUserId  String   @unique @map("auth_user_id") @db.Uuid
@@ -237,7 +253,8 @@ model Examination {
   organization   PublicOrganization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   careerPosition CareerPosition?     @relation(fields: [careerPositionId], references: [id], onDelete: Restrict)
 
-  questions Question[]
+  questions   Question[]
+  occurrences QuestionOccurrence[]
 
   @@index([boardId, year])
   @@index([organizationId, year])
@@ -250,7 +267,7 @@ model QuestionSource {
   id            String                @id @default(uuid()) @db.Uuid
   sourceType    QuestionSourceType    @map("source_type")
   name          String                @db.VarChar(200)
-  reference     String?               @db.VarChar(250)
+  reference     String?               @unique @db.VarChar(250)
   url           String?               @db.Text
   licenseStatus QuestionLicenseStatus @default(UNKNOWN) @map("license_status")
   licenseName   String?               @map("license_name") @db.VarChar(160)
@@ -258,7 +275,9 @@ model QuestionSource {
   createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  questions Question[]
+  questions   Question[]
+  occurrences QuestionOccurrence[]
+  importJobs   ImportJob[]
 
   @@index([sourceType, licenseStatus])
   @@map("question_sources")
@@ -269,8 +288,10 @@ model Question {
   type             QuestionType
   status           QuestionStatus          @default(DRAFT)
   answerKeyStatus  QuestionAnswerKeyStatus @default(MISSING) @map("answer_key_status")
-  statement        String                  @db.Text
-  contentHash      String?                 @map("content_hash") @db.Char(64)
+  statement            String                  @db.Text
+  contentHash          String?                 @map("content_hash") @db.Char(64)
+  canonicalFingerprint String?                 @unique @map("canonical_fingerprint") @db.Char(64)
+  normalizationVersion Int                     @default(1) @map("normalization_version")
   correctTrueFalse Boolean?                @map("correct_true_false")
   sourceId         String?                 @map("source_id") @db.Uuid
   examinationId    String?                 @map("examination_id") @db.Uuid
@@ -289,9 +310,12 @@ model Question {
   topic       Topic?          @relation(fields: [topicId], references: [id], onDelete: Restrict)
   subtopic    Subtopic?       @relation(fields: [subtopicId], references: [id], onDelete: Restrict)
 
-  alternatives       QuestionAlternative[]
-  explanation        QuestionExplanation?
-  questionTags       QuestionTag[]
+  alternatives        QuestionAlternative[]
+  explanation         QuestionExplanation?
+  questionTags        QuestionTag[]
+  supportLinks        QuestionSupportLink[]
+  occurrences         QuestionOccurrence[]
+  importItems         ImportItem[]
   studyAnswerAttempts StudyAnswerAttempt[]
   studyFavorites      StudyFavorite[]
 
@@ -348,6 +372,104 @@ model QuestionTag {
   @@id([questionId, tagId])
   @@index([tagId, questionId])
   @@map("question_tags")
+}
+
+model QuestionSupportContent {
+  id          String   @id @default(uuid()) @db.Uuid
+  content     String   @db.Text
+  contentHash String   @unique @map("content_hash") @db.Char(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  questionLinks QuestionSupportLink[]
+
+  @@map("question_support_contents")
+}
+
+model QuestionSupportLink {
+  questionId       String @map("question_id") @db.Uuid
+  supportContentId String @map("support_content_id") @db.Uuid
+  position         Int
+
+  question       Question               @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  supportContent QuestionSupportContent @relation(fields: [supportContentId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, supportContentId])
+  @@unique([questionId, position])
+  @@index([supportContentId, questionId])
+  @@map("question_support_links")
+}
+
+model QuestionOccurrence {
+  id                     String   @id @default(uuid()) @db.Uuid
+  questionId             String   @map("question_id") @db.Uuid
+  sourceId               String   @map("source_id") @db.Uuid
+  examinationId          String?  @map("examination_id") @db.Uuid
+  externalId             String   @map("external_id") @db.VarChar(180)
+  externalQuestionNumber String?  @map("external_question_number") @db.VarChar(60)
+  externalExaminationId  String?  @map("external_examination_id") @db.VarChar(180)
+  sourceUrl              String?  @map("source_url") @db.Text
+  capturedAt             DateTime @default(now()) @map("captured_at") @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question    Question       @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  source      QuestionSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  examination Examination?   @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+
+  @@unique([sourceId, externalId])
+  @@index([questionId, capturedAt])
+  @@index([examinationId])
+  @@index([sourceId, externalExaminationId])
+  @@map("question_occurrences")
+}
+
+model ImportJob {
+  id             String          @id @default(uuid()) @db.Uuid
+  sourceId       String          @map("source_id") @db.Uuid
+  provider       String          @db.VarChar(80)
+  status         ImportJobStatus @default(PENDING)
+  cursorStart    String?         @map("cursor_start") @db.VarChar(200)
+  cursorEnd      String?         @map("cursor_end") @db.VarChar(200)
+  requestedLimit Int?            @map("requested_limit")
+  receivedCount  Int             @default(0) @map("received_count")
+  importedCount  Int             @default(0) @map("imported_count")
+  duplicateCount Int             @default(0) @map("duplicate_count")
+  reviewCount    Int             @default(0) @map("review_count")
+  failedCount    Int             @default(0) @map("failed_count")
+  errorMessage   String?         @map("error_message") @db.Text
+  startedAt      DateTime?       @map("started_at") @db.Timestamptz(6)
+  finishedAt     DateTime?       @map("finished_at") @db.Timestamptz(6)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  source QuestionSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  items  ImportItem[]
+
+  @@index([sourceId, createdAt])
+  @@index([status, createdAt])
+  @@map("import_jobs")
+}
+
+model ImportItem {
+  id            String           @id @default(uuid()) @db.Uuid
+  jobId         String           @map("job_id") @db.Uuid
+  externalId    String           @map("external_id") @db.VarChar(180)
+  status        ImportItemStatus @default(RECEIVED)
+  rawPayload    Json             @map("raw_payload")
+  payloadHash   String           @map("payload_hash") @db.Char(64)
+  questionId    String?          @map("question_id") @db.Uuid
+  failureReason String?          @map("failure_reason") @db.Text
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  job      ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  question Question? @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([jobId, externalId])
+  @@index([questionId])
+  @@index([status, createdAt])
+  @@map("import_items")
 }
 
 model StudyAnswerAttempt {
