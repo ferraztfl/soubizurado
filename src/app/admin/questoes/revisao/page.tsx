@@ -67,6 +67,21 @@ function formatQuestionType(
     : "Múltipla escolha";
 }
 
+
+function formatAnswerKeyStatus(
+  status: "MISSING" | "DEFINED" | "VERIFIED",
+): string {
+  if (status === "VERIFIED") {
+    return "Gabarito verificado";
+  }
+
+  if (status === "DEFINED") {
+    return "Gabarito definido";
+  }
+
+  return "Sem gabarito";
+}
+
 export default async function ReviewQueuePage({
   searchParams,
 }: ReviewQueuePageProps) {
@@ -201,15 +216,23 @@ export default async function ReviewQueuePage({
                       )}
                     </span>
                     <span>
-                      Gabarito:{" "}
-                      {question.answerKeyStatus}
+                      {formatAnswerKeyStatus(
+                        question.answerKeyStatus,
+                      )}
                     </span>
-                    {question.examination ? (
+                    {question.occurrences[0]
+                      ?.examination ? (
                       <span>
-                        {question.examination.board ??
+                        {question.occurrences[0]
+                          .examination.board ??
                           "Banca não informada"}
-                        {question.examination.year
-                          ? ` · ${question.examination.year}`
+                        {question.occurrences[0]
+                          .examination.year
+                          ? ` · ${question.occurrences[0].examination.year}`
+                          : ""}
+                        {question.occurrences
+                          .length > 1
+                          ? ` · +${question.occurrences.length - 1} ocorrência(s)`
                           : ""}
                       </span>
                     ) : null}
@@ -246,15 +269,73 @@ export default async function ReviewQueuePage({
                     </div>
                   </dl>
 
-                  {question.examination ? (
-                    <p
+                  <section
+                    className={
+                      styles.provenance
+                    }
+                    aria-label="Ocorrências e proveniência"
+                  >
+                    <span
                       className={
-                        styles.examination
+                        styles.provenanceLabel
                       }
                     >
-                      {question.examination.title}
-                    </p>
-                  ) : null}
+                      Ocorrências em provas
+                    </span>
+
+                    {question.occurrences.length >
+                    0 ? (
+                      <ul
+                        className={
+                          styles.occurrenceList
+                        }
+                      >
+                        {question.occurrences.map(
+                          (occurrence) => (
+                            <li
+                              key={
+                                occurrence.id
+                              }
+                            >
+                              <strong>
+                                {
+                                  occurrence
+                                    .sourceName
+                                }
+                              </strong>
+                              {" · "}
+                              {occurrence
+                                .examination
+                                ?.board ??
+                                "Banca não informada"}
+                              {occurrence
+                                .examination
+                                ?.year
+                                ? ` · ${occurrence.examination.year}`
+                                : ""}
+                              {occurrence
+                                .externalQuestionNumber
+                                ? ` · questão ${occurrence.externalQuestionNumber}`
+                                : ""}
+                              {occurrence
+                                .examination
+                                ?.title
+                                ? ` · ${occurrence.examination.title}`
+                                : ""}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    ) : (
+                      <p
+                        className={
+                          styles.noProvenance
+                        }
+                      >
+                        Nenhuma ocorrência de prova registrada.
+                      </p>
+                    )}
+                  </section>
 
                   <div
                     className={styles.actions}
