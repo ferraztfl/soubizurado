@@ -214,10 +214,10 @@ async function resolveExamination(
 async function resolveTaxonomy(
   transaction: Prisma.TransactionClient,
   disciplineName: string,
-  topicName: string,
+  topicName: string | null,
 ): Promise<Readonly<{
   disciplineId: string;
-  topicId: string;
+  topicId: string | null;
 }>> {
   const disciplineSlug = slugify(
     disciplineName,
@@ -241,6 +241,13 @@ async function resolveTaxonomy(
         id: true,
       },
     });
+
+  if (!topicName) {
+    return {
+      disciplineId: discipline.id,
+      topicId: null,
+    };
+  }
 
   const topicSlug = slugify(
     topicName,
