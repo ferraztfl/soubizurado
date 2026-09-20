@@ -48,6 +48,7 @@ const publishedQuestion: PublicQuestionReadRecord = {
   },
   subtopic: null,
   examination: null,
+  occurrences: [],
 };
 
 class FakePublicQuestionReadRepository
