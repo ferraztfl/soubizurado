@@ -59,6 +59,7 @@ export type ProviderExaminationMetadata =
   Readonly<{
     externalId: string;
     title?: string | null;
+    slugPrefix?: string | null;
     organization: string | null;
     careerPosition: string | null;
     year: number | null;
