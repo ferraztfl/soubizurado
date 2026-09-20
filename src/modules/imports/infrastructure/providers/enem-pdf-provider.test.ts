@@ -193,8 +193,12 @@ describe(
   <text top="290" left="50" width="500" height="19">Fonte: INEP/ENEM 2024 / Enem / Questão: 1</text>
   <text top="1072" left="379" width="80" height="19">Gabarito</text>
   <text top="1201" left="46" width="100" height="19">(1</text>
+  <text top="1228" left="36" width="406" height="13">https://questoes.grancursosonline.com.br/aluno/simulado/29401523/resolver</text>
+  <text top="1228" left="815" width="42" height="13">1/2</text>
 </page>
 <page number="2" height="1262" width="892">
+  <text top="23" left="36" width="83" height="13">20/09/26, 07:17</text>
+  <text top="23" left="278" width="465" height="13">Gran Cursos Questões - Questões de concursos públicos comentadas por professores.</text>
   <text top="43" left="47" width="100" height="19">= b)</text>
 </page>
 </pdf2xml>`;
