@@ -50,6 +50,24 @@ const examDetailsSchema = z.object({
   questions: z.array(questionReferenceSchema),
 });
 
+
+const examIndexSchema = z.array(
+  z.object({
+    title: z.string(),
+    year: z.number().int(),
+    disciplines:
+      z.array(disciplineSchema),
+    languages: z
+      .array(
+        z.object({
+          label: z.string(),
+          value: z.string(),
+        }),
+      )
+      .default([]),
+  }),
+);
+
 const alternativeSchema = z.object({
   letter: z.string(),
   text: z.string(),
@@ -284,6 +302,34 @@ export class EnemDataProvider
     }
 
     return response.json();
+  }
+
+  public async listAvailableYears(): Promise<readonly number[]> {
+    const raw =
+      await this.getJson(
+        "exams.json",
+      );
+    const parsed =
+      examIndexSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      throw new Error(
+        `ENEM dataset returned an unexpected exam index response shape: ${formatZodIssues(
+          parsed.error,
+        )}`,
+      );
+    }
+
+    return [
+      ...new Set(
+        parsed.data.map(
+          (exam) => exam.year,
+        ),
+      ),
+    ].sort(
+      (first, second) =>
+        first - second,
+    );
   }
 
   private async getExamDetails(
