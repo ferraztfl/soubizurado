@@ -10,6 +10,7 @@ export type HttpMediaSourceReaderOptions =
   Readonly<{
     fetcher?: Fetcher;
     maxBytes?: number;
+    timeoutMs?: number;
   }>;
 
 const ALLOWED_MIME_PREFIXES = [
@@ -62,7 +63,11 @@ export class HttpMediaSourceReader
 {
   private readonly fetcher:
     Fetcher;
+
   private readonly maxBytes:
+    number;
+
+  private readonly timeoutMs:
     number;
 
   public constructor(
@@ -77,6 +82,10 @@ export class HttpMediaSourceReader
       options.maxBytes ??
       25 * 1024 * 1024;
 
+    this.timeoutMs =
+      options.timeoutMs ??
+      15_000;
+
     if (
       !Number.isSafeInteger(
         this.maxBytes,
@@ -85,6 +94,17 @@ export class HttpMediaSourceReader
     ) {
       throw new Error(
         "Media maxBytes must be a positive integer.",
+      );
+    }
+
+    if (
+      !Number.isSafeInteger(
+        this.timeoutMs,
+      ) ||
+      this.timeoutMs < 1
+    ) {
+      throw new Error(
+        "Media timeoutMs must be a positive integer.",
       );
     }
   }
@@ -123,6 +143,10 @@ export class HttpMediaSourceReader
           method: "GET",
           redirect:
             "follow",
+          signal:
+            AbortSignal.timeout(
+              this.timeoutMs,
+            ),
           headers: {
             Accept:
               "image/*,application/pdf;q=0.9,*/*;q=0.1",
