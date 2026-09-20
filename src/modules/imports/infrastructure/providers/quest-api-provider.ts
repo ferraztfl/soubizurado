@@ -8,15 +8,23 @@ import type {
   QuestionProviderListResult,
 } from "../../application/ports/question-provider";
 
+const nullableString = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? "");
+
+const nullableUnknownArray = z
+  .array(z.unknown())
+  .nullish()
+  .transform((value) => value ?? []);
+
 const alternativeSchema = z.object({
   letra: z.union([
     z.string(),
     z.number(),
   ]),
-  texto: z.string().default(""),
-  imagens: z
-    .array(z.unknown())
-    .default([]),
+  texto: nullableString,
+  imagens: nullableUnknownArray,
 });
 
 const questionSchema = z.object({
@@ -31,10 +39,11 @@ const questionSchema = z.object({
     ])
     .nullable()
     .optional(),
-  enunciado: z.string(),
+  enunciado: nullableString,
   alternativas: z
     .array(alternativeSchema)
-    .default([]),
+    .nullish()
+    .transform((value) => value ?? []),
   gabarito: z
     .union([
       z.string(),
@@ -49,7 +58,8 @@ const questionSchema = z.object({
         z.number(),
       ]),
     )
-    .default([]),
+    .nullish()
+    .transform((value) => value ?? []),
   classificacao: z
     .object({
       materia: z
@@ -65,10 +75,9 @@ const questionSchema = z.object({
     .optional(),
   textos_associados: z
     .array(z.string())
-    .default([]),
-  anexos: z
-    .array(z.unknown())
-    .default([]),
+    .nullish()
+    .transform((value) => value ?? []),
+  anexos: nullableUnknownArray,
   sinalizadores: z
     .object({
       tem_imagem: z
@@ -81,7 +90,8 @@ const questionSchema = z.object({
         .boolean()
         .optional(),
     })
-    .default({}),
+    .nullish()
+    .transform((value) => value ?? {}),
 });
 
 const examinationSchema = z.object({
@@ -115,7 +125,7 @@ const examinationSchema = z.object({
     ])
     .nullable()
     .optional(),
-  total_questoes: z
+  total_questoes: z.coerce
     .number()
     .int()
     .nonnegative()
@@ -158,7 +168,7 @@ const examinationHeaderSchema = z.object({
 const examinationContentResponseSchema = z.object({
   data: z.object({
     prova: examinationHeaderSchema,
-    total_questoes: z
+    total_questoes: z.coerce
       .number()
       .int()
       .nonnegative(),
@@ -421,6 +431,22 @@ function uniqueUrls(
   values: readonly string[],
 ): readonly string[] {
   return [...new Set(values)];
+}
+
+function formatZodIssues(
+  error: z.ZodError,
+): string {
+  return error.issues
+    .slice(0, 8)
+    .map((issue) => {
+      const path =
+        issue.path.length > 0
+          ? issue.path.join(".")
+          : "<root>";
+
+      return `${path}: ${issue.message}`;
+    })
+    .join(" | ");
 }
 
 function normalizeOptionalText(
@@ -1025,7 +1051,9 @@ export class QuestApiProvider
 
       if (!directParsed.success) {
         throw new Error(
-          "Quest API returned an unexpected direct question response shape.",
+          `Quest API returned an unexpected direct question response shape: ${formatZodIssues(
+            directParsed.error,
+          )}`,
         );
       }
 
@@ -1070,7 +1098,9 @@ export class QuestApiProvider
 
       if (!contentParsed.success) {
         throw new Error(
-          "Quest API returned an unexpected examination content response shape.",
+          `Quest API returned an unexpected examination content response shape: ${formatZodIssues(
+            contentParsed.error,
+          )}`,
         );
       }
 
@@ -1098,7 +1128,9 @@ export class QuestApiProvider
 
         if (!answerKeyParsed.success) {
           throw new Error(
-            "Quest API returned an unexpected examination answer-key response shape.",
+            `Quest API returned an unexpected examination answer-key response shape: ${formatZodIssues(
+              answerKeyParsed.error,
+            )}`,
           );
         }
 
@@ -1245,7 +1277,9 @@ export class QuestApiProvider
 
     if (!parsed.success) {
       throw new Error(
-        "Quest API returned an unexpected response shape.",
+        `Quest API returned an unexpected response shape: ${formatZodIssues(
+          parsed.error,
+        )}`,
       );
     }
 
