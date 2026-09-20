@@ -218,3 +218,12 @@ Questions containing provider media are staged as REVIEW_REQUIRED until MediaAss
 They are not discarded and they are not published with missing figures.
 
 Initial automated imports may deliberately request questions without attachments so that statement, support text, alternatives, answer key, taxonomy and examination metadata can be validated end-to-end first.
+
+
+## Quest API live compatibility notes
+
+As of 2026-09-19, the published Quest API documentation lists `alternative_type` on `GET /v2/questoes`, but the live endpoint returned HTTP 422 with "property alternative_type should not exist". The adapter therefore does not send that parameter on the question search route until the provider behavior and documentation converge.
+
+The broad `GET /v2/questoes` search also returned HTTP 503 with `search_quest_api não respondeu em 4000ms` even with matter/year filters. For operational resilience, the adapter supports direct question lookup via `GET /v2/questoes/{id}`, which bypasses the catalog search path and can be used to validate local persistence independently of search availability.
+
+Provider outages or metadata lookup failures must never make already-imported Sou Bizurado questions unavailable to students.
