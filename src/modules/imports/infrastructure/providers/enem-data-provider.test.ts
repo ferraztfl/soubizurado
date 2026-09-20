@@ -271,6 +271,7 @@ describe("EnemDataProvider", () => {
       externalId:
         "enem-2023",
       title: "ENEM 2023",
+      slugPrefix: "enem",
       organization: "INEP",
       careerPosition: null,
       year: 2023,
