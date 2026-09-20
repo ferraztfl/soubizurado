@@ -1,4 +1,4 @@
-﻿import {
+import {
   request as httpRequest,
   type IncomingMessage,
 } from "node:http";
@@ -8,9 +8,6 @@ import {
 import {
   isIP,
 } from "node:net";
-import {
-  buffer as consumeBuffer,
-} from "node:stream/consumers";
 
 import type {
   MediaBinary,
@@ -145,6 +142,54 @@ function hostnameWithoutBrackets(
   return hostname;
 }
 
+async function readLimitedBody(
+  response: IncomingMessage,
+  maxBytes: number,
+): Promise<Uint8Array> {
+  const chunks: Buffer[] = [];
+
+  let totalBytes =
+    0;
+
+  for await (
+    const chunk
+    of response
+  ) {
+    const buffer =
+      Buffer.isBuffer(
+        chunk,
+      )
+        ? chunk
+        : Buffer.from(
+            chunk,
+          );
+
+    totalBytes +=
+      buffer.byteLength;
+
+    if (
+      totalBytes >
+      maxBytes
+    ) {
+      response.destroy();
+
+      throw new Error(
+        `Media exceeds maximum size of ${maxBytes} bytes.`,
+      );
+    }
+
+    chunks.push(
+      buffer,
+    );
+  }
+
+  return new Uint8Array(
+    Buffer.concat(
+      chunks,
+      totalBytes,
+    ),
+  );
+}
 function requestPinned(
   url: URL,
   resolved:
@@ -432,25 +477,14 @@ export class HttpMediaSourceReader
           throw error;
         }
 
-        const buffer =
-          await consumeBuffer(
+        const bytes =
+          await readLimitedBody(
             response,
+            this.maxBytes,
           );
-
-        if (
-          buffer.byteLength >
-          this.maxBytes
-        ) {
-          throw new Error(
-            `Media exceeds maximum size of ${this.maxBytes} bytes.`,
-          );
-        }
 
         return {
-          bytes:
-            new Uint8Array(
-              buffer,
-            ),
+          bytes,
           mimeType,
           sourceUrl:
             currentUrl.toString(),
