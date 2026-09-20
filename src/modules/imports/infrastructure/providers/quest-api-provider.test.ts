@@ -1,0 +1,175 @@
+import {
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+
+import {
+  QuestApiProvider,
+} from "./quest-api-provider";
+
+describe("QuestApiProvider", () => {
+  it("maps a Quest API page into provider-neutral candidates", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            total: 1,
+            page: 1,
+            per_page: 1,
+            next_cursor: "2511300125",
+            items: [
+              {
+                id: "2511300125",
+                numero: "41",
+                enunciado:
+                  "<p>Compete privativamente...</p>",
+                alternativas: [
+                  {
+                    letra: "C",
+                    texto: "<p>Certo</p>",
+                    imagens: [],
+                  },
+                  {
+                    letra: "E",
+                    texto: "<p>Errado</p>",
+                    imagens: [],
+                  },
+                ],
+                gabarito: "C",
+                provas: ["2597585"],
+                classificacao: {
+                  materia:
+                    "Direito Constitucional",
+                  assunto:
+                    "Controle de constitucionalidade",
+                },
+                textos_associados: [
+                  "<p>Com base na CF...</p>",
+                ],
+                anexos: [],
+                sinalizadores: {
+                  tem_imagem: false,
+                  tem_gabarito: true,
+                  tem_texto_associado: true,
+                },
+              },
+            ],
+          },
+          meta: {
+            correlationId: "corr-1",
+            timestamp:
+              "2026-07-31T22:45:15.751Z",
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type":
+              "application/json",
+          },
+        },
+      ),
+    );
+
+    const provider = new QuestApiProvider({
+      apiKey: "qk_test",
+      fetcher,
+    });
+
+    const result = await provider.listQuestions({
+      limit: 1,
+      includeAnswerKey: true,
+      requireAnswerKey: true,
+    });
+
+    expect(fetcher).toHaveBeenCalledOnce();
+
+    const requestUrl = String(
+      fetcher.mock.calls[0]?.[0],
+    );
+
+    expect(requestUrl).toContain(
+      "/v2/questoes?",
+    );
+    expect(requestUrl).toContain("per_page=1");
+    expect(requestUrl).toContain(
+      "include_gabarito=true",
+    );
+    expect(requestUrl).toContain(
+      "tem_gabarito=true",
+    );
+
+    expect(result).toEqual({
+      total: 1,
+      nextCursor: "2511300125",
+      correlationId: "corr-1",
+      items: [
+        {
+          externalId: "2511300125",
+          number: "41",
+          statementHtml:
+            "<p>Compete privativamente...</p>",
+          alternatives: [
+            {
+              label: "C",
+              contentHtml: "<p>Certo</p>",
+              imageUrls: [],
+            },
+            {
+              label: "E",
+              contentHtml: "<p>Errado</p>",
+              imageUrls: [],
+            },
+          ],
+          answerKey: "C",
+          examinationExternalIds: [
+            "2597585",
+          ],
+          discipline:
+            "Direito Constitucional",
+          topic:
+            "Controle de constitucionalidade",
+          supportTextsHtml: [
+            "<p>Com base na CF...</p>",
+          ],
+          attachmentUrls: [],
+          hasImages: false,
+          hasAnswerKey: true,
+          hasSupportText: true,
+          rawPayload: expect.any(Object),
+        },
+      ],
+    });
+  });
+
+  it("fails clearly when the provider returns a non-success response", async () => {
+    const provider = new QuestApiProvider({
+      apiKey: "qk_test",
+      fetcher: vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            message: "Quota esgotada",
+          }),
+          {
+            status: 402,
+            headers: {
+              "content-type":
+                "application/json",
+            },
+          },
+        ),
+      ),
+    });
+
+    await expect(
+      provider.listQuestions({
+        limit: 1,
+        includeAnswerKey: true,
+      }),
+    ).rejects.toThrow(
+      "Quest API request failed with status 402.",
+    );
+  });
+});
