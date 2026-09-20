@@ -29,6 +29,7 @@ export type QuestionProviderListInput =
   Readonly<{
     limit: number;
     externalId?: string;
+    examinationId?: string;
     afterId?: string;
     includeAnswerKey?: boolean;
     requireAnswerKey?: boolean;
