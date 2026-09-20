@@ -213,6 +213,19 @@ describe("PrismaPublicQuestionReadRepository", () => {
     expect(
       call?.select.alternatives.select,
     ).not.toHaveProperty("isCorrect");
+    expect(
+      call?.select.occurrences.select,
+    ).toEqual(
+      expect.objectContaining({
+        id: true,
+        externalQuestionNumber: true,
+        source: {
+          select: {
+            name: true,
+          },
+        },
+      }),
+    );
 
     expect(result).toEqual({
       items: [validPublicRow],
