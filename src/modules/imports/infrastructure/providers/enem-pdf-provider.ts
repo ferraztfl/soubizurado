@@ -586,8 +586,16 @@ function parseAnswerKey(
 
   const text = pages
     .flatMap((page) =>
-      orderedPageTexts(page)
-        .map((span) => span.text),
+      page.texts
+        .slice()
+        .sort(
+          (first, second) =>
+            first.top - second.top ||
+            first.left - second.left,
+        )
+        .map(
+          (span) => span.text,
+        ),
     )
     .join(" ");
 
