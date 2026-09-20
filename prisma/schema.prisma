@@ -316,6 +316,7 @@ model Question {
   supportLinks        QuestionSupportLink[]
   occurrences         QuestionOccurrence[]
   importItems         ImportItem[]
+  duplicateCandidates ImportDuplicateCandidate[] @relation("ImportDuplicateCandidateQuestion")
   studyAnswerAttempts StudyAnswerAttempt[]
   studyFavorites      StudyFavorite[]
 
@@ -463,13 +464,30 @@ model ImportItem {
   createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  job      ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  question Question? @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  job                 ImportJob                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  question            Question?                  @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  duplicateCandidates ImportDuplicateCandidate[]
 
   @@unique([jobId, externalId])
   @@index([questionId])
   @@index([status, createdAt])
   @@map("import_items")
+}
+
+model ImportDuplicateCandidate {
+  id                  String   @id @default(uuid()) @db.Uuid
+  importItemId        String   @map("import_item_id") @db.Uuid
+  candidateQuestionId String   @map("candidate_question_id") @db.Uuid
+  similarity          Decimal  @db.Decimal(5, 4)
+  reason              String   @db.VarChar(120)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  importItem ImportItem @relation(fields: [importItemId], references: [id], onDelete: Cascade)
+  candidateQuestion Question @relation("ImportDuplicateCandidateQuestion", fields: [candidateQuestionId], references: [id], onDelete: Restrict)
+
+  @@unique([importItemId, candidateQuestionId])
+  @@index([candidateQuestionId, similarity])
+  @@map("import_duplicate_candidates")
 }
 
 model StudyAnswerAttempt {
