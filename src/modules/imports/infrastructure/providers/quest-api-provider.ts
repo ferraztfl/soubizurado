@@ -233,6 +233,25 @@ type Sleep = (
   milliseconds: number,
 ) => Promise<void>;
 
+export type QuestApiExaminationSummary = Readonly<{
+  externalId: string;
+  organization: string | null;
+  careerPosition: string | null;
+  year: number | null;
+  board: string | null;
+  alternativeType:
+    | "MULTIPLA_ESCOLHA"
+    | "CERTO_ERRADO"
+    | null;
+  totalQuestions: number;
+}>;
+
+export type QuestApiExaminationListResult = Readonly<{
+  total: number;
+  correlationId: string | null;
+  items: readonly QuestApiExaminationSummary[];
+}>;
+
 export type QuestApiQuota = Readonly<{
   planCode: string | null;
   periodStart: string | null;
@@ -638,6 +657,155 @@ export class QuestApiProvider
       correlationId:
         parsed.data.meta
           ?.correlationId ?? null,
+    };
+  }
+
+  public async listExaminations(
+    input: Readonly<{
+      limit: number;
+      page?: number;
+      board?: string;
+      year?: string;
+      organization?: string;
+      careerPosition?: string;
+      alternativeType?:
+        | "MULTIPLA_ESCOLHA"
+        | "CERTO_ERRADO";
+    }>,
+  ): Promise<QuestApiExaminationListResult> {
+    if (
+      !Number.isSafeInteger(input.limit) ||
+      input.limit < 1 ||
+      input.limit > 100
+    ) {
+      throw new Error(
+        "Quest API exam limit must be between 1 and 100.",
+      );
+    }
+
+    const page = input.page ?? 1;
+
+    if (
+      !Number.isSafeInteger(page) ||
+      page < 1
+    ) {
+      throw new Error(
+        "Quest API exam page must be a positive integer.",
+      );
+    }
+
+    const url = new URL(
+      "/v1/provas",
+      this.baseUrl,
+    );
+
+    url.searchParams.set(
+      "page",
+      String(page),
+    );
+    url.searchParams.set(
+      "per_page",
+      String(input.limit),
+    );
+
+    if (input.board) {
+      url.searchParams.set(
+        "banca",
+        input.board,
+      );
+    }
+
+    if (input.year) {
+      url.searchParams.set(
+        "ano",
+        input.year,
+      );
+    }
+
+    if (input.organization) {
+      url.searchParams.set(
+        "orgao",
+        input.organization,
+      );
+    }
+
+    if (input.careerPosition) {
+      url.searchParams.set(
+        "cargo",
+        input.careerPosition,
+      );
+    }
+
+    if (input.alternativeType) {
+      url.searchParams.set(
+        "alternative_type",
+        input.alternativeType,
+      );
+    }
+
+    const response =
+      await this.request(url);
+
+    const parsed =
+      examinationListResponseSchema.safeParse(
+        await response.json(),
+      );
+
+    if (!parsed.success) {
+      throw new Error(
+        "Quest API returned an unexpected examination list response shape.",
+      );
+    }
+
+    return {
+      total: parsed.data.data.total,
+      correlationId:
+        parsed.data.meta
+          ?.correlationId ?? null,
+      items:
+        parsed.data.data.items.map(
+          (item) => {
+            const parsedYear =
+              item.ano === null ||
+              item.ano === undefined
+                ? null
+                : Number.parseInt(
+                    String(item.ano),
+                    10,
+                  );
+
+            return {
+              externalId:
+                stringifyProviderId(
+                  item.id,
+                ),
+              organization:
+                normalizeOptionalText(
+                  item.orgao,
+                ),
+              careerPosition:
+                normalizeOptionalText(
+                  item.cargo,
+                ),
+              year:
+                Number.isSafeInteger(
+                  parsedYear,
+                )
+                  ? parsedYear
+                  : null,
+              board:
+                normalizeOptionalText(
+                  item.banca,
+                ),
+              alternativeType:
+                item.alternative_type ??
+                null,
+              totalQuestions:
+                item.total_questoes ??
+                0,
+            };
+          },
+        ),
     };
   }
 
