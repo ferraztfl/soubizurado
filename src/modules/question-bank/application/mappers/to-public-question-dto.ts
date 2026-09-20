@@ -37,5 +37,6 @@ export function toPublicQuestionDto(
     },
 
     examination: question.examination,
+    occurrences: question.occurrences,
   };
 }
