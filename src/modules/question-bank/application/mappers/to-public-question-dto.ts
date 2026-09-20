@@ -3,11 +3,11 @@ import type {
 } from "../dto/public-question";
 
 import type {
-  PublishedQuestionRecord,
-} from "../ports/question-repository";
+  PublicQuestionReadRecord,
+} from "../ports/public-question-read-repository";
 
 export function toPublicQuestionDto(
-  question: PublishedQuestionRecord,
+  question: PublicQuestionReadRecord,
 ): PublicQuestionDto {
   const alternatives = [...question.alternatives]
     .sort(

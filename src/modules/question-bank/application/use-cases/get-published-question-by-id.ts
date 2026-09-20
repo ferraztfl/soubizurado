@@ -15,12 +15,15 @@ import {
 } from "../mappers/to-public-question-dto";
 
 import type {
-  QuestionRepository,
-} from "../ports/question-repository";
+  PublicQuestionReadRepository,
+} from "../ports/public-question-read-repository";
 
 export class GetPublishedQuestionByIdUseCase {
   public constructor(
-    private readonly questionRepository: QuestionRepository,
+    private readonly questionRepository: Pick<
+      PublicQuestionReadRepository,
+      "findPublishedById"
+    >,
   ) {}
 
   public async execute(

@@ -6,6 +6,11 @@ import {
   ERROR_CODES,
 } from "../../../../shared/errors/error-code";
 
+import {
+  QUESTION_TYPES,
+  type QuestionType,
+} from "../../domain/question-type";
+
 import type {
   PublicQuestionDto,
 } from "../dto/public-question";
@@ -15,18 +20,19 @@ import {
 } from "../mappers/to-public-question-dto";
 
 import type {
-  PublishedQuestionFilters,
-  QuestionRepository,
-} from "../ports/question-repository";
+  PublicQuestionReadFilters,
+  PublicQuestionReadRepository,
+} from "../ports/public-question-read-repository";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
+const MAX_SEARCH_LENGTH = 120;
 
 export type ListPublishedQuestionsQuery = Readonly<{
   page?: number;
   pageSize?: number;
-  filters?: PublishedQuestionFilters;
+  filters?: PublicQuestionReadFilters;
 }>;
 
 export type ListPublishedQuestionsOutput = Readonly<{
@@ -52,10 +58,131 @@ function requirePositiveSafeInteger(
   }
 }
 
+function normalizeOptionalText(
+  value: string | undefined,
+): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length > 0
+    ? normalized
+    : undefined;
+}
+
+function requireValidQuestionType(
+  value: QuestionType | undefined,
+): void {
+  if (
+    value !== undefined &&
+    value !== QUESTION_TYPES.MULTIPLE_CHOICE &&
+    value !== QUESTION_TYPES.TRUE_FALSE
+  ) {
+    throw new ApplicationError(
+      ERROR_CODES.VALIDATION_ERROR,
+      "Question type is invalid.",
+    );
+  }
+}
+
+function normalizeFilters(
+  filters: PublicQuestionReadFilters,
+): PublicQuestionReadFilters {
+  const search = normalizeOptionalText(
+    filters.search,
+  );
+
+  if (
+    search !== undefined &&
+    search.length > MAX_SEARCH_LENGTH
+  ) {
+    throw new ApplicationError(
+      ERROR_CODES.VALIDATION_ERROR,
+      `Search cannot exceed ${MAX_SEARCH_LENGTH} characters.`,
+    );
+  }
+
+  if (
+    filters.year !== undefined &&
+    (
+      !Number.isSafeInteger(filters.year) ||
+      filters.year < 1900 ||
+      filters.year > 2100
+    )
+  ) {
+    throw new ApplicationError(
+      ERROR_CODES.VALIDATION_ERROR,
+      "Year is invalid.",
+    );
+  }
+
+  requireValidQuestionType(filters.type);
+
+  return {
+    ...(search ? { search } : {}),
+    ...(normalizeOptionalText(
+      filters.disciplineId,
+    )
+      ? {
+          disciplineId: normalizeOptionalText(
+            filters.disciplineId,
+          ),
+        }
+      : {}),
+    ...(normalizeOptionalText(filters.areaId)
+      ? {
+          areaId: normalizeOptionalText(
+            filters.areaId,
+          ),
+        }
+      : {}),
+    ...(normalizeOptionalText(filters.topicId)
+      ? {
+          topicId: normalizeOptionalText(
+            filters.topicId,
+          ),
+        }
+      : {}),
+    ...(normalizeOptionalText(
+      filters.subtopicId,
+    )
+      ? {
+          subtopicId: normalizeOptionalText(
+            filters.subtopicId,
+          ),
+        }
+      : {}),
+    ...(normalizeOptionalText(filters.boardId)
+      ? {
+          boardId: normalizeOptionalText(
+            filters.boardId,
+          ),
+        }
+      : {}),
+    ...(normalizeOptionalText(
+      filters.examinationId,
+    )
+      ? {
+          examinationId: normalizeOptionalText(
+            filters.examinationId,
+          ),
+        }
+      : {}),
+    ...(filters.year !== undefined
+      ? { year: filters.year }
+      : {}),
+    ...(filters.type !== undefined
+      ? { type: filters.type }
+      : {}),
+  };
+}
+
 export class ListPublishedQuestionsUseCase {
   public constructor(
     private readonly questionRepository: Pick<
-      QuestionRepository,
+      PublicQuestionReadRepository,
       "listPublished"
     >,
   ) {}
@@ -91,7 +218,9 @@ export class ListPublishedQuestionsUseCase {
 
     const result =
       await this.questionRepository.listPublished({
-        filters: query.filters ?? {},
+        filters: normalizeFilters(
+          query.filters ?? {},
+        ),
         offset,
         limit: pageSize,
       });

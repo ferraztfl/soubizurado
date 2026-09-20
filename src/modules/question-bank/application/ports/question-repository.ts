@@ -1,4 +1,6 @@
-import type { QuestionType } from "../../domain/question-type";
+import type {
+  QuestionType,
+} from "../../domain/question-type";
 
 export type QuestionAnswerKeyStatus =
   | "MISSING"
@@ -24,12 +26,13 @@ export type QuestionBoardReference = Readonly<{
   acronym: string | null;
 }>;
 
-export type QuestionExaminationReference = Readonly<{
-  id: string;
-  title: string;
-  year: number | null;
-  board: QuestionBoardReference | null;
-}>;
+export type QuestionExaminationReference =
+  Readonly<{
+    id: string;
+    title: string;
+    year: number | null;
+    board: QuestionBoardReference | null;
+  }>;
 
 export type PublishedQuestionRecord = Readonly<{
   id: string;
@@ -40,43 +43,20 @@ export type PublishedQuestionRecord = Readonly<{
   correctTrueFalse: boolean | null;
   explanation: string | null;
 
-  alternatives: readonly QuestionAlternativeRecord[];
+  alternatives:
+    readonly QuestionAlternativeRecord[];
 
   discipline: QuestionTaxonomyReference;
   area: QuestionTaxonomyReference | null;
   topic: QuestionTaxonomyReference;
   subtopic: QuestionTaxonomyReference | null;
 
-  examination: QuestionExaminationReference | null;
-}>;
-
-export type PublishedQuestionFilters = Readonly<{
-  disciplineId?: string;
-  areaId?: string;
-  topicId?: string;
-  subtopicId?: string;
-  boardId?: string;
-  examinationId?: string;
-  year?: number;
-  type?: QuestionType;
-}>;
-
-export type ListPublishedQuestionsRepositoryInput = Readonly<{
-  filters: PublishedQuestionFilters;
-  offset: number;
-  limit: number;
-}>;
-
-export type ListPublishedQuestionsRepositoryResult = Readonly<{
-  items: readonly PublishedQuestionRecord[];
-  total: number;
+  examination:
+    | QuestionExaminationReference
+    | null;
 }>;
 
 export interface QuestionRepository {
-  listPublished(
-    input: ListPublishedQuestionsRepositoryInput,
-  ): Promise<ListPublishedQuestionsRepositoryResult>;
-
   findPublishedById(
     questionId: string,
   ): Promise<PublishedQuestionRecord | null>;

@@ -30,7 +30,7 @@ const navigationGroups: readonly NavigationGroup[] = [
     label: "Estudos",
     items: [
       { label: "Início", href: "/app" },
-      { label: "Explorar questões", href: null },
+      { label: "Explorar questões", href: "/app/questoes" },
       { label: "Estudar", href: null },
       { label: "Revisar", href: null },
       { label: "Desempenho", href: null },
@@ -118,7 +118,13 @@ export function StudentSidebar({
                   }
 
                   const active =
-                    pathname === item.href;
+                    pathname === item.href ||
+                    (
+                      item.href !== "/app" &&
+                      pathname.startsWith(
+                        `${item.href}/`,
+                      )
+                    );
 
                   return (
                     <Link

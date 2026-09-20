@@ -9,24 +9,21 @@ import {
 } from "../../domain/question-type";
 
 import type {
-  ListPublishedQuestionsRepositoryInput,
-  ListPublishedQuestionsRepositoryResult,
-  PublishedQuestionRecord,
-  QuestionRepository,
-} from "../ports/question-repository";
+  ListPublicQuestionsRepositoryInput,
+  ListPublicQuestionsRepositoryResult,
+  PublicQuestionReadRecord,
+  PublicQuestionReadRepository,
+  QuestionExplorerFacets,
+} from "../ports/public-question-read-repository";
 
 import {
   ListPublishedQuestionsUseCase,
 } from "./list-published-questions";
 
-const publishedQuestion: PublishedQuestionRecord = {
+const publishedQuestion: PublicQuestionReadRecord = {
   id: "question-1",
   type: QUESTION_TYPES.MULTIPLE_CHOICE,
   statement: "Qual alternativa esta correta?",
-
-  answerKeyStatus: "VERIFIED",
-  correctTrueFalse: null,
-  explanation: "A alternativa A esta correta.",
 
   alternatives: [
     {
@@ -34,14 +31,12 @@ const publishedQuestion: PublishedQuestionRecord = {
       label: "B",
       content: "Alternativa B",
       position: 2,
-      isCorrect: false,
     },
     {
       id: "alternative-a",
       label: "A",
       content: "Alternativa A",
       position: 1,
-      isCorrect: true,
     },
   ],
 
@@ -71,40 +66,45 @@ const publishedQuestion: PublishedQuestionRecord = {
   },
 };
 
-class FakeQuestionRepository
-  implements QuestionRepository
+class FakePublicQuestionReadRepository
+  implements PublicQuestionReadRepository
 {
   public lastInput:
-    | ListPublishedQuestionsRepositoryInput
+    | ListPublicQuestionsRepositoryInput
     | null = null;
 
   public result:
-    ListPublishedQuestionsRepositoryResult = {
+    ListPublicQuestionsRepositoryResult = {
       items: [publishedQuestion],
       total: 1,
     };
 
   public async listPublished(
-    input: ListPublishedQuestionsRepositoryInput,
-  ): Promise<ListPublishedQuestionsRepositoryResult> {
+    input: ListPublicQuestionsRepositoryInput,
+  ): Promise<ListPublicQuestionsRepositoryResult> {
     this.lastInput = input;
 
     return this.result;
   }
 
-  public async findPublishedById(
-    questionId: string,
-  ): Promise<PublishedQuestionRecord | null> {
-    void questionId;
-
+  public async findPublishedById(): Promise<PublicQuestionReadRecord | null> {
     return null;
+  }
+
+  public async listExplorerFacets(): Promise<QuestionExplorerFacets> {
+    return {
+      disciplines: [],
+      boards: [],
+      years: [],
+      types: [],
+    };
   }
 }
 
 describe("ListPublishedQuestionsUseCase", () => {
   it("uses bounded default pagination", async () => {
     const repository =
-      new FakeQuestionRepository();
+      new FakePublicQuestionReadRepository();
 
     const useCase =
       new ListPublishedQuestionsUseCase(
@@ -125,9 +125,9 @@ describe("ListPublishedQuestionsUseCase", () => {
     expect(result.totalPages).toBe(1);
   });
 
-  it("does not expose answer data before answering", async () => {
+  it("returns only public question data", async () => {
     const repository =
-      new FakeQuestionRepository();
+      new FakePublicQuestionReadRepository();
 
     const useCase =
       new ListPublishedQuestionsUseCase(
@@ -146,15 +146,12 @@ describe("ListPublishedQuestionsUseCase", () => {
     expect(question).not.toHaveProperty(
       "answerKeyStatus",
     );
-
     expect(question).not.toHaveProperty(
       "correctTrueFalse",
     );
-
     expect(question).not.toHaveProperty(
       "explanation",
     );
-
     expect(
       question.alternatives[0],
     ).not.toHaveProperty("isCorrect");
@@ -166,9 +163,9 @@ describe("ListPublishedQuestionsUseCase", () => {
     ).toEqual(["A", "B"]);
   });
 
-  it("passes filters and pagination to repository", async () => {
+  it("normalizes filters and pagination", async () => {
     const repository =
-      new FakeQuestionRepository();
+      new FakePublicQuestionReadRepository();
 
     const useCase =
       new ListPublishedQuestionsUseCase(
@@ -179,8 +176,9 @@ describe("ListPublishedQuestionsUseCase", () => {
       page: 3,
       pageSize: 10,
       filters: {
-        disciplineId: "discipline-1",
-        boardId: "board-1",
+        search: "  constitucional  ",
+        disciplineId: " discipline-1 ",
+        boardId: " board-1 ",
         year: 2026,
         type: QUESTION_TYPES.MULTIPLE_CHOICE,
       },
@@ -188,6 +186,7 @@ describe("ListPublishedQuestionsUseCase", () => {
 
     expect(repository.lastInput).toEqual({
       filters: {
+        search: "constitucional",
         disciplineId: "discipline-1",
         boardId: "board-1",
         year: 2026,
@@ -198,9 +197,9 @@ describe("ListPublishedQuestionsUseCase", () => {
     });
   });
 
-  it("rejects invalid pagination", async () => {
+  it("rejects invalid pagination and filters", async () => {
     const repository =
-      new FakeQuestionRepository();
+      new FakePublicQuestionReadRepository();
 
     const useCase =
       new ListPublishedQuestionsUseCase(
@@ -218,6 +217,26 @@ describe("ListPublishedQuestionsUseCase", () => {
     await expect(
       useCase.execute({
         pageSize: 51,
+      }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+    });
+
+    await expect(
+      useCase.execute({
+        filters: {
+          year: 1800,
+        },
+      }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+    });
+
+    await expect(
+      useCase.execute({
+        filters: {
+          search: "x".repeat(121),
+        },
       }),
     ).rejects.toMatchObject({
       code: "VALIDATION_ERROR",

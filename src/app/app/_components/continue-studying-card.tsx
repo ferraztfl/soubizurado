@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import styles from "./continue-studying-card.module.css";
 
 export function ContinueStudyingCard() {
@@ -30,14 +32,12 @@ export function ContinueStudyingCard() {
           </p>
         </div>
 
-        <button
-          type="button"
+        <Link
+          href="/app/questoes"
           className={styles.action}
-          disabled
         >
           Explorar questões
-          <span>Em breve</span>
-        </button>
+        </Link>
       </div>
     </article>
   );

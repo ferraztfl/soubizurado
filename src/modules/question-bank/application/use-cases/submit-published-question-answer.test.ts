@@ -9,8 +9,6 @@ import {
 } from "../../domain/question-type";
 
 import type {
-  ListPublishedQuestionsRepositoryInput,
-  ListPublishedQuestionsRepositoryResult,
   PublishedQuestionRecord,
   QuestionRepository,
 } from "../ports/question-repository";
@@ -83,17 +81,6 @@ class FakeQuestionRepository
     multipleChoiceQuestion;
 
   public lastQuestionId: string | null = null;
-
-  public async listPublished(
-    input: ListPublishedQuestionsRepositoryInput,
-  ): Promise<ListPublishedQuestionsRepositoryResult> {
-    void input;
-
-    return {
-      items: [],
-      total: 0,
-    };
-  }
 
   public async findPublishedById(
     questionId: string,
