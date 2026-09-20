@@ -673,16 +673,29 @@ function questionBlocksFromPages(
       );
 
     if (markers.length === 0) {
-      if (
-        active &&
-        gabaritoTop === null
-      ) {
+      if (active) {
         active.spans.push(
-          ...texts,
+          ...texts.filter(
+            (span) =>
+              gabaritoTop === null ||
+              span.top <
+                gabaritoTop,
+          ),
         );
         active.images.push(
-          ...images,
+          ...images.filter(
+            (image) =>
+              gabaritoTop === null ||
+              image.top <
+                gabaritoTop,
+          ),
         );
+      }
+
+      if (
+        gabaritoTop !== null
+      ) {
+        active = null;
       }
 
       continue;
