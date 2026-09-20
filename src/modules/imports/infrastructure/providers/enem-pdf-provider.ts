@@ -1785,7 +1785,7 @@ export class EnemPdfProvider
             supportTextsHtml: [],
             attachmentUrls,
             hasImages:
-              question.hasVisualCue,
+              question.images.length > 0,
             hasAnswerKey:
               Boolean(
                 question.answerKey,
