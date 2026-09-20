@@ -6,10 +6,21 @@ import {
 
 import {
   buildCanonicalQuestionFingerprint,
+  questionHtmlToPlainText,
   normalizeQuestionText,
 } from "./question-fingerprint";
 
 describe("question fingerprint", () => {
+  it("converts provider HTML to readable plain text without lowercasing display content", () => {
+    expect(
+      questionHtmlToPlainText(
+        "<p>Direito <strong>Administrativo</strong>&nbsp;Federal</p>",
+      ),
+    ).toBe(
+      "Direito Administrativo Federal",
+    );
+  });
+
   it("normalizes HTML, entities, whitespace and casing", () => {
     expect(
       normalizeQuestionText(
