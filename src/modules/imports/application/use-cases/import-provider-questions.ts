@@ -20,6 +20,7 @@ import type {
 export type ImportProviderQuestionsInput =
   Readonly<{
     limit: number;
+    externalId?: string;
     afterId?: string;
     publish?: boolean;
     filters?: QuestionProviderListInput["filters"];
@@ -272,6 +273,9 @@ function buildPersistenceInput(
     externalId: candidate.externalId,
     externalQuestionNumber:
       candidate.number,
+    externalExaminationId:
+      candidate.examinationExternalIds[0] ??
+      null,
     sourceUrl: null,
     rawPayload: candidate.rawPayload,
     payloadHash: payloadHash(
@@ -344,6 +348,7 @@ export class ImportProviderQuestionsUseCase {
       const page =
         await this.provider.listQuestions({
           limit: input.limit,
+          externalId: input.externalId,
           afterId: input.afterId,
           includeAnswerKey: true,
           requireAnswerKey: true,
@@ -401,10 +406,14 @@ export class ImportProviderQuestionsUseCase {
                   examinationExternalId,
                 ) ?? null;
             } else {
-              examination =
-                await this.provider.getExamination(
-                  examinationExternalId,
-                );
+              try {
+                examination =
+                  await this.provider.getExamination(
+                    examinationExternalId,
+                  );
+              } catch {
+                examination = null;
+              }
 
               examinationCache.set(
                 examinationExternalId,
