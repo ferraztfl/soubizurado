@@ -578,6 +578,27 @@ function normalizeTextParts(
     .trim();
 }
 
+function isAnswerKeyBoilerplate(
+  value: string,
+): boolean {
+  const normalized =
+    value.trim();
+
+  return (
+    /^\d{2}\/\d{2}\/\d{2},\s+\d{2}:\d{2}$/.test(
+      normalized,
+    ) ||
+    normalized.startsWith(
+      "Gran Cursos Questões -",
+    ) ||
+    normalized ===
+      GRAN_SIMULADO_URL ||
+    /^\d+\/\d+$/.test(
+      normalized,
+    )
+  );
+}
+
 function parseAnswerKey(
   pages: readonly PdfPage[],
 ): Map<number, string> {
@@ -595,6 +616,12 @@ function parseAnswerKey(
         )
         .map(
           (span) => span.text,
+        )
+        .filter(
+          (value) =>
+            !isAnswerKeyBoilerplate(
+              value,
+            ),
         ),
     )
     .join(" ");
