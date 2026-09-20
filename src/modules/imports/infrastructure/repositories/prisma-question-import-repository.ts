@@ -9,6 +9,7 @@ import {
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import type {
+  EnqueueImportedMediaInput,
   ImportJobCounts,
   PersistImportedQuestionInput,
   PersistImportedQuestionResult,
@@ -803,6 +804,64 @@ export class PrismaQuestionImportRepository
           questionId:
             question.id,
         };
+      },
+    );
+  }
+
+  public async enqueueMedia(
+    input: EnqueueImportedMediaInput,
+  ): Promise<void> {
+    if (input.media.length === 0) {
+      return;
+    }
+
+    await this.prisma.$transaction(
+      async (transaction) => {
+        const importItem =
+          await transaction.importItem.findUnique(
+            {
+              where: {
+                jobId_externalId: {
+                  jobId:
+                    input.jobId,
+                  externalId:
+                    input.externalId,
+                },
+              },
+              select: {
+                id: true,
+              },
+            },
+          );
+
+        if (!importItem) {
+          throw new Error(
+            `Import item not found while enqueueing media: ${input.jobId}/${input.externalId}.`,
+          );
+        }
+
+        await transaction.importMediaTask.createMany(
+          {
+            data:
+              input.media.map(
+                (media) => ({
+                  importItemId:
+                    importItem.id,
+                  questionId:
+                    input.questionId,
+                  sourceUrl:
+                    media.sourceUrl,
+                  role:
+                    media.role,
+                  alternativeLabel:
+                    media.alternativeLabel,
+                  position:
+                    media.position,
+                }),
+              ),
+            skipDuplicates: true,
+          },
+        );
       },
     );
   }

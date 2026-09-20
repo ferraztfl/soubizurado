@@ -14,6 +14,27 @@ export type ImportedAnswerKeyStatus =
   | "DEFINED"
   | "VERIFIED";
 
+export type ImportedMediaRole =
+  | "QUESTION_ATTACHMENT"
+  | "ALTERNATIVE_IMAGE";
+
+export type PersistImportedMediaInput =
+  Readonly<{
+    sourceUrl: string;
+    role: ImportedMediaRole;
+    alternativeLabel: string;
+    position: number;
+  }>;
+
+export type EnqueueImportedMediaInput =
+  Readonly<{
+    jobId: string;
+    externalId: string;
+    questionId: string | null;
+    media:
+      readonly PersistImportedMediaInput[];
+  }>;
+
 export type PersistImportedQuestionInput =
   Readonly<{
     jobId: string;
@@ -50,6 +71,8 @@ export type PersistImportedQuestionInput =
       contentHash: string;
       position: number;
     }>[];
+    media:
+      readonly PersistImportedMediaInput[];
     examination:
       | ProviderExaminationMetadata
       | null;
@@ -107,6 +130,10 @@ export interface QuestionImportRepository {
   persistQuestion(
     input: PersistImportedQuestionInput,
   ): Promise<PersistImportedQuestionResult>;
+
+  enqueueMedia(
+    input: EnqueueImportedMediaInput,
+  ): Promise<void>;
 
   recordReview(
     input: RecordImportReviewInput,

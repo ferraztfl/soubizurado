@@ -10,6 +10,7 @@ import type {
   QuestionProviderListResult,
 } from "../ports/question-provider";
 import type {
+  EnqueueImportedMediaInput,
   QuestionImportRepository,
   PersistImportedQuestionInput,
   PersistImportedQuestionResult,
@@ -96,6 +97,9 @@ class FakeImportRepository
   public reviews:
     RecordImportReviewInput[] = [];
 
+  public enqueuedMedia:
+    EnqueueImportedMediaInput[] = [];
+
   public persistResult:
     PersistImportedQuestionResult = {
       status: "IMPORTED",
@@ -121,6 +125,12 @@ class FakeImportRepository
     this.persisted.push(input);
 
     return this.persistResult;
+  }
+
+  public async enqueueMedia(
+    input: EnqueueImportedMediaInput,
+  ): Promise<void> {
+    this.enqueuedMedia.push(input);
   }
 
   public async recordReview(
@@ -310,8 +320,10 @@ describe("ImportProviderQuestionsUseCase", () => {
     );
   });
 
-  it("routes image-bearing questions to review until media persistence is ready", async () => {
-    const provider = new FakeProvider();
+  it("persists questions with referenced media and enqueues their assets", async () => {
+    const provider =
+      new FakeProvider();
+
     provider.page = {
       ...provider.page,
       items: [
@@ -319,7 +331,7 @@ describe("ImportProviderQuestionsUseCase", () => {
           ...provider.page.items[0],
           hasImages: true,
           attachmentUrls: [
-            "https://example.test/image.png",
+            "https://example.test/question.png",
           ],
         },
       ],
@@ -334,20 +346,180 @@ describe("ImportProviderQuestionsUseCase", () => {
         repository,
       );
 
-    const result = await useCase.execute({
-      limit: 1,
+    const result =
+      await useCase.execute({
+        limit: 1,
+      });
+
+    expect(result).toMatchObject({
+      imported: 1,
+      reviewRequired: 0,
+      failed: 0,
     });
 
-    expect(result.reviewRequired).toBe(1);
-    expect(repository.persisted).toHaveLength(
-      0,
-    );
-    expect(repository.reviews).toHaveLength(
-      1,
-    );
+    expect(
+      repository.persisted,
+    ).toHaveLength(1);
+
+    expect(
+      repository.persisted[0]?.media,
+    ).toEqual([
+      {
+        sourceUrl:
+          "https://example.test/question.png",
+        role:
+          "QUESTION_ATTACHMENT",
+        alternativeLabel: "",
+        position: 0,
+      },
+    ]);
+
+    expect(
+      repository.enqueuedMedia,
+    ).toEqual([
+      {
+        jobId: "job-1",
+        externalId: "q-1",
+        questionId:
+          "550e8400-e29b-41d4-a716-446655440000",
+        media: [
+          {
+            sourceUrl:
+              "https://example.test/question.png",
+            role:
+              "QUESTION_ATTACHMENT",
+            alternativeLabel: "",
+            position: 0,
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("allows an image-only alternative when a media reference is present", async () => {
+    const provider =
+      new FakeProvider();
+
+    provider.page = {
+      ...provider.page,
+      items: [
+        {
+          ...provider.page.items[0],
+          hasImages: true,
+          alternatives: [
+            {
+              label: "A",
+              contentHtml:
+                "<p>Alternativa A</p>",
+              imageUrls: [],
+            },
+            {
+              label: "B",
+              contentHtml: "",
+              imageUrls: [
+                "https://example.test/b.png",
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const repository =
+      new FakeImportRepository();
+
+    const useCase =
+      new ImportProviderQuestionsUseCase(
+        provider,
+        repository,
+      );
+
+    const result =
+      await useCase.execute({
+        limit: 1,
+      });
+
+    expect(result).toMatchObject({
+      imported: 1,
+      reviewRequired: 0,
+      failed: 0,
+    });
+
+    expect(
+      repository.persisted[0]?.media,
+    ).toEqual([
+      {
+        sourceUrl:
+          "https://example.test/b.png",
+        role:
+          "ALTERNATIVE_IMAGE",
+        alternativeLabel: "B",
+        position: 0,
+      },
+    ]);
+
+    expect(
+      repository.enqueuedMedia,
+    ).toHaveLength(1);
+  });
+
+  it("keeps visual questions without a usable media reference in review", async () => {
+    const provider =
+      new FakeProvider();
+
+    provider.page = {
+      ...provider.page,
+      items: [
+        {
+          ...provider.page.items[0],
+          hasImages: true,
+          attachmentUrls: [],
+          alternatives:
+            provider.page
+              .items[0]!
+              .alternatives.map(
+                (alternative) => ({
+                  ...alternative,
+                  imageUrls: [],
+                }),
+              ),
+        },
+      ],
+    };
+
+    const repository =
+      new FakeImportRepository();
+
+    const useCase =
+      new ImportProviderQuestionsUseCase(
+        provider,
+        repository,
+      );
+
+    const result =
+      await useCase.execute({
+        limit: 1,
+      });
+
+    expect(result).toMatchObject({
+      imported: 0,
+      reviewRequired: 1,
+      failed: 0,
+    });
+
+    expect(
+      repository.persisted,
+    ).toHaveLength(0);
+
+    expect(
+      repository.enqueuedMedia,
+    ).toHaveLength(0);
+
     expect(
       repository.reviews[0]?.reason,
-    ).toBe("MEDIA_NOT_PERSISTED_YET");
+    ).toBe(
+      "MEDIA_REFERENCE_MISSING",
+    );
   });
 
   it("counts exact duplicates reported by persistence without creating another question", async () => {

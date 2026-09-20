@@ -191,6 +191,38 @@ function buildPersistenceInput(
       }),
     );
 
+  const media = [
+    ...candidate.attachmentUrls.map(
+      (sourceUrl, position) => ({
+        sourceUrl:
+          sourceUrl.trim(),
+        role:
+          "QUESTION_ATTACHMENT" as const,
+        alternativeLabel: "",
+        position,
+      }),
+    ),
+    ...candidate.alternatives.flatMap(
+      (alternative) =>
+        alternative.imageUrls.map(
+          (sourceUrl, position) => ({
+            sourceUrl:
+              sourceUrl.trim(),
+            role:
+              "ALTERNATIVE_IMAGE" as const,
+            alternativeLabel:
+              normalizeAlternativeLabel(
+                alternative.label,
+              ),
+            position,
+          }),
+        ),
+    ),
+  ].filter(
+    (item) =>
+      item.sourceUrl.length > 0,
+  );
+
   let correctTrueFalse: boolean | null =
     null;
 
@@ -217,8 +249,24 @@ function buildPersistenceInput(
     if (
       alternatives.length < 2 ||
       alternatives.some(
-        (alternative) =>
-          !alternative.content,
+        (alternative) => {
+          const providerAlternative =
+            candidate.alternatives[
+              alternative.position
+            ];
+
+          return (
+            !alternative.content &&
+            !providerAlternative
+              ?.imageUrls
+              .some(
+                (sourceUrl) =>
+                  sourceUrl
+                    .trim()
+                    .length > 0,
+              )
+          );
+        },
       ) ||
       alternatives.filter(
         (alternative) =>
@@ -265,7 +313,16 @@ function buildPersistenceInput(
               alternative.content,
           }),
         ),
-      mediaHashes: [],
+      mediaHashes:
+        media.map((item) =>
+          sha256(
+            [
+              item.role,
+              item.alternativeLabel,
+              item.sourceUrl,
+            ].join("\u0000"),
+          ),
+        ),
     });
 
   return {
@@ -304,6 +361,7 @@ function buildPersistenceInput(
     topicName:
       candidate.topic ?? null,
     supportContents,
+    media,
     examination,
   };
 }
@@ -373,7 +431,27 @@ export class ImportProviderQuestionsUseCase {
         );
 
         try {
-          if (candidate.hasImages) {
+          const hasMediaReferences =
+            candidate.attachmentUrls.some(
+              (sourceUrl) =>
+                sourceUrl
+                  .trim()
+                  .length > 0,
+            ) ||
+            candidate.alternatives.some(
+              (alternative) =>
+                alternative.imageUrls.some(
+                  (sourceUrl) =>
+                    sourceUrl
+                      .trim()
+                      .length > 0,
+                ),
+            );
+
+          if (
+            candidate.hasImages &&
+            !hasMediaReferences
+          ) {
             counts.reviewRequired += 1;
 
             await this.repository.recordReview({
@@ -385,7 +463,7 @@ export class ImportProviderQuestionsUseCase {
               payloadHash:
                 itemPayloadHash,
               reason:
-                "MEDIA_NOT_PERSISTED_YET",
+                "MEDIA_REFERENCE_MISSING",
             });
 
             continue;
@@ -459,6 +537,22 @@ export class ImportProviderQuestionsUseCase {
             await this.repository.persistQuestion(
               persistenceInput,
             );
+
+          if (
+            persistenceInput.media.length >
+            0
+          ) {
+            await this.repository.enqueueMedia({
+              jobId:
+                job.id,
+              externalId:
+                candidate.externalId,
+              questionId:
+                persisted.questionId,
+              media:
+                persistenceInput.media,
+            });
+          }
 
           if (
             persisted.status ===
