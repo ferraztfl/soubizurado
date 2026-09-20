@@ -229,6 +229,105 @@ describe("QuestApiProvider", () => {
     );
   });
 
+  it("lists current examinations so imports do not depend on stale documentation ids", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            total: 2,
+            page: 1,
+            per_page: 2,
+            items: [
+              {
+                id: "exam-100",
+                orgao: "Órgão A",
+                cargo: "Cargo A",
+                ano: "2025",
+                banca: "FGV",
+                alternative_type:
+                  "MULTIPLA_ESCOLHA",
+                total_questoes: 80,
+              },
+              {
+                id: "exam-200",
+                orgao: "Órgão B",
+                cargo: "Cargo B",
+                ano: "2025",
+                banca: "CEBRASPE",
+                alternative_type:
+                  "CERTO_ERRADO",
+                total_questoes: 20,
+              },
+            ],
+          },
+          meta: {
+            correlationId: "exams-1",
+            timestamp:
+              "2026-09-20T00:00:00.000Z",
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type":
+              "application/json",
+          },
+        },
+      ),
+    );
+
+    const provider = new QuestApiProvider({
+      apiKey: "qk_test",
+      fetcher,
+    });
+
+    await expect(
+      provider.listExaminations({
+        limit: 2,
+        year: "2025",
+      }),
+    ).resolves.toEqual({
+      total: 2,
+      correlationId: "exams-1",
+      items: [
+        {
+          externalId: "exam-100",
+          organization: "Órgão A",
+          careerPosition: "Cargo A",
+          year: 2025,
+          board: "FGV",
+          alternativeType:
+            "MULTIPLA_ESCOLHA",
+          totalQuestions: 80,
+        },
+        {
+          externalId: "exam-200",
+          organization: "Órgão B",
+          careerPosition: "Cargo B",
+          year: 2025,
+          board: "CEBRASPE",
+          alternativeType:
+            "CERTO_ERRADO",
+          totalQuestions: 20,
+        },
+      ],
+    });
+
+    const requestUrl = String(
+      fetcher.mock.calls[0]?.[0],
+    );
+
+    expect(requestUrl).toContain(
+      "/v1/provas?",
+    );
+    expect(requestUrl).toContain(
+      "ano=2025",
+    );
+    expect(requestUrl).toContain(
+      "per_page=2",
+    );
+  });
+
   it("loads lightweight examination metadata by external id", async () => {
     const fetcher = vi.fn().mockResolvedValue(
       new Response(
