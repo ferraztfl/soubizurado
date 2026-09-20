@@ -227,3 +227,18 @@ As of 2026-09-19, the published Quest API documentation lists `alternative_type`
 The broad `GET /v2/questoes` search also returned HTTP 503 with `search_quest_api não respondeu em 4000ms` even with matter/year filters. For operational resilience, the adapter supports direct question lookup via `GET /v2/questoes/{id}`, which bypasses the catalog search path and can be used to validate local persistence independently of search availability.
 
 Provider outages or metadata lookup failures must never make already-imported Sou Bizurado questions unavailable to students.
+
+
+### Exam-first Quest API ingestion
+
+When the global question search is unavailable, the preferred fallback is exam-first ingestion:
+
+1. discover a current exam through `GET /v1/provas`;
+2. fetch its complete question payload through `GET /v1/provas/{id}`;
+3. fetch `GET /v1/provas/{id}/gabarito`;
+4. join answer keys locally by provider question id;
+5. send the resulting candidates through the same Sou Bizurado normalization, deduplication and persistence pipeline.
+
+The CLI supports this mode with `npm run import:quest-api -- --prova=<provider-exam-id>`.
+
+This mode still materializes questions locally; the provider is never required during student runtime.
