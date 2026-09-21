@@ -11,6 +11,7 @@ import { ApplicationError } from "@/shared/errors/application-error";
 import { ERROR_CODES } from "@/shared/errors/error-code";
 import { PageHeader } from "@/shared/ui/page-header";
 
+import { QuestionMedia } from "../_components/question-media";
 import { QuestionAnswerPanel } from "./_components/question-answer-panel";
 
 import styles from "./question-detail.module.css";
@@ -110,6 +111,11 @@ export default async function QuestionDetailPage({
           <div className={styles.statement}>
             {question.statement}
           </div>
+
+          <QuestionMedia
+            media={question.media}
+            fallbackAlt="Imagem da questao"
+          />
 
           <QuestionAnswerPanel
             question={question}

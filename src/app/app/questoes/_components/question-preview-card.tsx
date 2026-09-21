@@ -4,6 +4,8 @@ import type {
   PublicQuestionDto,
 } from "@/modules/question-bank/application/dto/public-question";
 
+import { QuestionMedia } from "./question-media";
+
 import styles from "./question-preview-card.module.css";
 
 type QuestionPreviewCardProps = Readonly<{
@@ -26,6 +28,18 @@ export function QuestionPreviewCard({
     question.examination?.board?.name ??
     null;
 
+  const previewMedia =
+    (question.media ?? [])
+      .filter((media) =>
+        media.mimeType.startsWith(
+          "image/",
+        ),
+      )
+      .slice(
+        0,
+        1,
+      );
+
   return (
     <article className={styles.card}>
       <div className={styles.meta}>
@@ -45,6 +59,12 @@ export function QuestionPreviewCard({
       </div>
 
       <h2>{question.statement}</h2>
+
+      <QuestionMedia
+        media={previewMedia}
+        variant="compact"
+        fallbackAlt="Imagem da questao"
+      />
 
       <div className={styles.taxonomy}>
         <span>

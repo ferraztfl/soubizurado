@@ -16,6 +16,8 @@ import {
   submitStudyAnswerAction,
 } from "@/modules/study/presentation/actions/study-answer-actions";
 
+import { QuestionMedia } from "../../_components/question-media";
+
 import styles from "./question-answer-panel.module.css";
 
 type QuestionAnswerPanelProps = Readonly<{
@@ -198,7 +200,16 @@ export function QuestionAnswerPanel({
                   <span
                     className={styles.optionText}
                   >
-                    {alternative.content}
+                    <span>
+                      {alternative.content}
+                    </span>
+
+                    <QuestionMedia
+                      media={alternative.media}
+                      variant="alternative"
+                      allowDocumentLinks={false}
+                      fallbackAlt={`Imagem da alternativa ${alternative.label}`}
+                    />
                   </span>
 
                   {correct ? (

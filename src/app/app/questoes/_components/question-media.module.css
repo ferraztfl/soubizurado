@@ -1,0 +1,59 @@
+.list {
+  display: grid;
+  width: 100%;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.item {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 560px;
+  object-fit: contain;
+  border-radius: 0.75rem;
+}
+
+.compact {
+  margin-top: 0.75rem;
+}
+
+.compact .image {
+  max-height: 220px;
+}
+
+.alternative {
+  margin-top: 0.65rem;
+}
+
+.alternative .image {
+  max-height: 320px;
+}
+
+.document,
+.documentLink {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.document {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.documentLink {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
