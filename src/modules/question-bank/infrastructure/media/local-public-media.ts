@@ -20,16 +20,12 @@ function escapesRoot(
 export function resolveLocalPublicMediaPath(
   input: Readonly<{
     rootDirectory: string;
-    bucket: string;
     storageKey: string;
   }>,
 ): string {
-  if (
-    !input.bucket.trim() ||
-    !input.storageKey.trim()
-  ) {
+  if (!input.storageKey.trim()) {
     throw new Error(
-      "Invalid local media location.",
+      "Invalid local media storage key.",
     );
   }
 
@@ -38,48 +34,26 @@ export function resolveLocalPublicMediaPath(
       input.rootDirectory,
     );
 
-  const bucketDirectory =
-    resolve(
-      rootDirectory,
-      input.bucket,
-    );
-
-  const bucketRelative =
-    relative(
-      rootDirectory,
-      bucketDirectory,
-    );
-
-  if (
-    escapesRoot(
-      bucketRelative,
-    )
-  ) {
-    throw new Error(
-      "Media bucket escapes storage root.",
-    );
-  }
-
   const filePath =
     resolve(
-      bucketDirectory,
+      rootDirectory,
       input.storageKey,
     );
 
-  const fileRelative =
+  const relativePath =
     relative(
-      bucketDirectory,
+      rootDirectory,
       filePath,
     );
 
   if (
-    !fileRelative ||
+    !relativePath ||
     escapesRoot(
-      fileRelative,
+      relativePath,
     )
   ) {
     throw new Error(
-      "Media storage key escapes bucket.",
+      "Media storage key escapes storage root.",
     );
   }
 

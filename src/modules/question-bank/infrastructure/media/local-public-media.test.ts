@@ -16,7 +16,7 @@ describe(
   "resolveLocalPublicMediaPath",
   () => {
     it(
-      "resolves a content-addressed file inside its bucket",
+      "resolves the storage key directly below the storage root",
       () => {
         const root =
           resolve(
@@ -27,15 +27,12 @@ describe(
           resolveLocalPublicMediaPath({
             rootDirectory:
               root,
-            bucket:
-              "question-media",
             storageKey:
               "sha256/aa/bb/file.png",
           }),
         ).toBe(
           resolve(
             root,
-            "question-media",
             "sha256/aa/bb/file.png",
           ),
         );
@@ -43,37 +40,33 @@ describe(
     );
 
     it(
-      "rejects a bucket escaping the storage root",
+      "rejects a storage key escaping the storage root",
       () => {
         expect(() =>
           resolveLocalPublicMediaPath({
             rootDirectory:
               "data-private/media-store",
-            bucket:
-              "../outside",
             storageKey:
-              "file.png",
+              "../../secret.txt",
           }),
         ).toThrow(
-          "Media bucket escapes storage root.",
+          "Media storage key escapes storage root.",
         );
       },
     );
 
     it(
-      "rejects a storage key escaping its bucket",
+      "rejects an empty storage key",
       () => {
         expect(() =>
           resolveLocalPublicMediaPath({
             rootDirectory:
               "data-private/media-store",
-            bucket:
-              "question-media",
             storageKey:
-              "../../secret.txt",
+              "   ",
           }),
         ).toThrow(
-          "Media storage key escapes bucket.",
+          "Invalid local media storage key.",
         );
       },
     );

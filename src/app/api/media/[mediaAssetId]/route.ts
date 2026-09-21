@@ -5,8 +5,8 @@ import {
   resolve,
 } from "node:path";
 
-import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 import { resolveLocalPublicMediaPath } from "@/modules/question-bank/infrastructure/media/local-public-media";
+import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 export const runtime =
   "nodejs";
@@ -62,8 +62,6 @@ export async function GET(
       select: {
         storageProvider:
           true,
-        bucket:
-          true,
         storageKey:
           true,
         mimeType:
@@ -90,8 +88,6 @@ export async function GET(
               .MEDIA_STORAGE_LOCAL_ROOT ??
               "data-private/media-store",
           ),
-        bucket:
-          asset.bucket,
         storageKey:
           asset.storageKey,
       });
@@ -113,11 +109,9 @@ export async function GET(
   ) {
     if (
       error &&
-      typeof error ===
-        "object" &&
+      typeof error === "object" &&
       "code" in error &&
-      error.code ===
-        "ENOENT"
+      error.code === "ENOENT"
     ) {
       return notFound();
     }
