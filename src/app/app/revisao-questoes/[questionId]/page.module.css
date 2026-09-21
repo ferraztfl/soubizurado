@@ -36,6 +36,90 @@
   font-weight: 700;
 }
 
+.noticeSuccess,
+.noticeError {
+  padding: 14px 16px;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.editor {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 16px;
+}
+
+.editorTitle {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.editorDescription {
+  margin: 8px 0 0;
+  line-height: 1.55;
+  opacity: 0.72;
+}
+
+.formRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.field {
+  flex: 1;
+  display: grid;
+  gap: 7px;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(127, 127, 127, 0.32);
+  border-radius: 10px;
+  background: inherit;
+  color: inherit;
+}
+
+.saveButton,
+.publishButton {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.saveButton {
+  background: rgba(127, 127, 127, 0.16);
+  color: inherit;
+}
+
+.publishButton {
+  background: #111827;
+  color: #ffffff;
+}
+
+.publishButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.publishHint {
+  margin: -6px 0 0;
+  font-size: 0.83rem;
+  line-height: 1.45;
+  opacity: 0.68;
+}
+
 .reviewBox {
   padding: 18px;
   border: 1px solid rgba(127, 127, 127, 0.25);
@@ -45,6 +129,10 @@
 .reviewBox ul {
   margin: 10px 0 0;
   padding-left: 20px;
+}
+
+.reviewBox p {
+  margin: 10px 0 0;
 }
 
 .meta {
@@ -110,4 +198,20 @@
 .empty {
   font-style: italic;
   opacity: 0.6;
+}
+
+@media (max-width: 700px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .formRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .saveButton,
+  .publishButton {
+    width: 100%;
+  }
 }

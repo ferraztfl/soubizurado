@@ -1,9 +1,23 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import {
+  notFound,
+} from "next/navigation";
 
-import { QuestionMedia } from "../../questoes/_components/question-media";
+import {
+  validateQuestionForPublication,
+} from "@/modules/question-bank/domain/question-publication-policy";
+import {
+  getPrismaClient,
+} from "@/shared/infrastructure/database/prisma";
 
-import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
+import {
+  QuestionMedia,
+} from "../../questoes/_components/question-media";
+
+import {
+  publishQuestionAction,
+  saveQuestionTopicAction,
+} from "./actions";
 
 import styles from "./page.module.css";
 
@@ -13,22 +27,76 @@ export const dynamic =
 type PageProps =
   Readonly<{
     params:
-      | Readonly<{
+      Promise<
+        Readonly<{
           questionId: string;
         }>
-      | Promise<
-          Readonly<{
-            questionId: string;
-          }>
-        >;
+      >;
+
+    searchParams:
+      Promise<
+        Readonly<{
+          error?: string;
+          saved?: string;
+        }>
+      >;
   }>;
+
+const issueLabels:
+  Readonly<Record<string, string>> = {
+    STATEMENT_REQUIRED:
+      "Enunciado obrigatório.",
+
+    SOURCE_REQUIRED:
+      "Origem obrigatória.",
+
+    DISCIPLINE_REQUIRED:
+      "Disciplina obrigatória.",
+
+    TOPIC_REQUIRED:
+      "Tópico obrigatório.",
+
+    ALTERNATIVE_CONTENT_REQUIRED:
+      "Existe alternativa sem conteúdo textual.",
+
+    MULTIPLE_CHOICE_SINGLE_CORRECT_REQUIRED:
+      "A questão deve possuir exatamente uma alternativa correta.",
+
+    TRUE_FALSE_CORRECT_ANSWER_REQUIRED:
+      "O gabarito de Certo/Errado precisa estar definido.",
+
+    TRUE_FALSE_ALTERNATIVES_NOT_ALLOWED:
+      "Questões de Certo/Errado não podem possuir alternativas.",
+  };
+
+const errorMessages:
+  Readonly<Record<string, string>> = {
+    "topic-required":
+      "Selecione um tópico antes de salvar.",
+
+    "invalid-topic":
+      "O tópico selecionado não pertence à disciplina da questão ou está inativo.",
+
+    "answer-key":
+      "O gabarito ainda não está pronto para publicação.",
+
+    "publication-blocked":
+      "A questão ainda possui pendências e não pode ser publicada.",
+
+    "question-unavailable":
+      "A questão não está mais disponível para revisão.",
+  };
 
 export default async function ReviewQuestionPage(
   props: PageProps,
 ) {
   const {
     questionId,
-  } = await props.params;
+  } =
+    await props.params;
+
+  const searchParams =
+    await props.searchParams;
 
   const prisma =
     getPrismaClient();
@@ -36,8 +104,11 @@ export default async function ReviewQuestionPage(
   const question =
     await prisma.question.findFirst({
       where: {
-        id: questionId,
-        status: "IN_REVIEW",
+        id:
+          questionId,
+
+        status:
+          "IN_REVIEW",
       },
 
       select: {
@@ -45,6 +116,7 @@ export default async function ReviewQuestionPage(
         statement: true,
         type: true,
         answerKeyStatus: true,
+        correctTrueFalse: true,
         sourceId: true,
         disciplineId: true,
         topicId: true,
@@ -57,7 +129,10 @@ export default async function ReviewQuestionPage(
 
         topic: {
           select: {
+            id: true,
             name: true,
+            disciplineId: true,
+            isActive: true,
           },
         },
 
@@ -77,7 +152,8 @@ export default async function ReviewQuestionPage(
 
         supportLinks: {
           orderBy: {
-            position: "asc",
+            position:
+              "asc",
           },
 
           select: {
@@ -94,7 +170,8 @@ export default async function ReviewQuestionPage(
 
         mediaLinks: {
           orderBy: {
-            position: "asc",
+            position:
+              "asc",
           },
 
           select: {
@@ -114,7 +191,8 @@ export default async function ReviewQuestionPage(
 
         alternatives: {
           orderBy: {
-            position: "asc",
+            position:
+              "asc",
           },
 
           select: {
@@ -126,7 +204,8 @@ export default async function ReviewQuestionPage(
 
             mediaLinks: {
               orderBy: {
-                position: "asc",
+                position:
+                  "asc",
               },
 
               select: {
@@ -151,6 +230,82 @@ export default async function ReviewQuestionPage(
   if (!question) {
     notFound();
   }
+
+  const topics =
+    question.disciplineId
+      ? await prisma.topic.findMany({
+          where: {
+            disciplineId:
+              question.disciplineId,
+
+            isActive:
+              true,
+          },
+
+          orderBy: {
+            name:
+              "asc",
+          },
+
+          select: {
+            id: true,
+            name: true,
+          },
+        })
+      : [];
+
+  const publicationIssues =
+    validateQuestionForPublication({
+      statement:
+        question.statement,
+
+      sourceId:
+        question.sourceId,
+
+      disciplineId:
+        question.disciplineId,
+
+      topicId:
+        question.topicId,
+
+      type:
+        question.type,
+
+      correctTrueFalse:
+        question.correctTrueFalse,
+
+      alternatives:
+        question.alternatives.map(
+          (alternative) => ({
+            content:
+              alternative.content,
+
+            isCorrect:
+              alternative.isCorrect,
+          }),
+        ),
+    });
+
+  const taxonomyIsValid =
+    Boolean(
+      question.topic &&
+      question.topicId &&
+      question.disciplineId &&
+      question.topic.disciplineId ===
+        question.disciplineId &&
+      question.topic.isActive,
+    );
+
+  const answerKeyIsReady =
+    question.answerKeyStatus ===
+      "DEFINED" ||
+    question.answerKeyStatus ===
+      "VERIFIED";
+
+  const canPublish =
+    publicationIssues.length === 0 &&
+    taxonomyIsValid &&
+    answerKeyIsReady;
 
   const questionMedia =
     question.mediaLinks.map(
@@ -178,37 +333,13 @@ export default async function ReviewQuestionPage(
       }),
     );
 
-  const publicationIssues: string[] =
-    [];
-
-  if (!question.sourceId) {
-    publicationIssues.push(
-      "Origem não definida",
-    );
-  }
-
-  if (!question.disciplineId) {
-    publicationIssues.push(
-      "Disciplina não definida",
-    );
-  }
-
-  if (!question.topicId) {
-    publicationIssues.push(
-      "Tópico obrigatório",
-    );
-  }
-
-  if (
-    question.alternatives.some(
-      (alternative) =>
-        !alternative.content.trim(),
-    )
-  ) {
-    publicationIssues.push(
-      "Existe alternativa sem conteúdo textual",
-    );
-  }
+  const errorMessage =
+    searchParams.error
+      ? errorMessages[
+          searchParams.error
+        ] ??
+        "Não foi possível concluir a operação."
+      : null;
 
   return (
     <main className={styles.page}>
@@ -222,11 +353,11 @@ export default async function ReviewQuestionPage(
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>
-            Preview interno
+            Revisão administrativa
           </p>
 
           <h1>
-            Questão em revisão
+            Revisar questão
           </h1>
         </div>
 
@@ -235,20 +366,171 @@ export default async function ReviewQuestionPage(
         </span>
       </header>
 
+      {searchParams.saved === "1" ? (
+        <div className={styles.noticeSuccess}>
+          Tópico salvo com sucesso.
+        </div>
+      ) : null}
+
+      {errorMessage ? (
+        <div className={styles.noticeError}>
+          {errorMessage}
+        </div>
+      ) : null}
+
+      <section className={styles.editor}>
+        <div>
+          <h2 className={styles.editorTitle}>
+            Classificação e publicação
+          </h2>
+
+          <p
+            className={
+              styles.editorDescription
+            }
+          >
+            Selecione um tópico da disciplina
+            desta questão. A publicação só será
+            liberada quando todas as regras do
+            banco de questões forem atendidas.
+          </p>
+        </div>
+
+        <form
+          action={
+            saveQuestionTopicAction
+          }
+          className={styles.formRow}
+        >
+          <input
+            type="hidden"
+            name="questionId"
+            value={question.id}
+          />
+
+          <label className={styles.field}>
+            <span>
+              Tópico de{" "}
+              {question.discipline?.name ??
+                "disciplina não definida"}
+            </span>
+
+            <select
+              name="topicId"
+              defaultValue={
+                question.topicId ??
+                ""
+              }
+              className={styles.select}
+              required
+            >
+              <option value="">
+                Selecione um tópico
+              </option>
+
+              {topics.map(
+                (topic) => (
+                  <option
+                    key={topic.id}
+                    value={topic.id}
+                  >
+                    {topic.name}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+
+          <button
+            type="submit"
+            className={styles.saveButton}
+          >
+            Salvar tópico
+          </button>
+        </form>
+
+        {topics.length === 0 ? (
+          <p className={styles.publishHint}>
+            Ainda não existem tópicos ativos
+            cadastrados para esta disciplina.
+          </p>
+        ) : null}
+
+        <form
+          action={
+            publishQuestionAction
+          }
+        >
+          <input
+            type="hidden"
+            name="questionId"
+            value={question.id}
+          />
+
+          <button
+            type="submit"
+            className={
+              styles.publishButton
+            }
+            disabled={!canPublish}
+          >
+            Publicar questão
+          </button>
+        </form>
+
+        {!canPublish ? (
+          <p className={styles.publishHint}>
+            Resolva as pendências abaixo para
+            habilitar a publicação.
+          </p>
+        ) : (
+          <p className={styles.publishHint}>
+            A questão está pronta. Ao publicar,
+            o gabarito será marcado como
+            VERIFIED.
+          </p>
+        )}
+      </section>
+
       <section className={styles.reviewBox}>
         <strong>
           Pendências para publicação
         </strong>
 
-        <ul>
-          {publicationIssues.map(
-            (issue) => (
-              <li key={issue}>
-                {issue}
-              </li>
-            ),
-          )}
-        </ul>
+        {publicationIssues.length >
+        0 ? (
+          <ul>
+            {publicationIssues.map(
+              (issue) => (
+                <li key={issue}>
+                  {issueLabels[
+                    issue
+                  ] ?? issue}
+                </li>
+              ),
+            )}
+          </ul>
+        ) : (
+          <p>
+            Nenhuma pendência da política de
+            publicação.
+          </p>
+        )}
+
+        {!answerKeyIsReady ? (
+          <p>
+            O gabarito ainda não está
+            definido.
+          </p>
+        ) : null}
+
+        {!taxonomyIsValid &&
+        question.topicId ? (
+          <p>
+            A classificação de tópico é
+            inconsistente com a disciplina.
+          </p>
+        ) : null}
       </section>
 
       <section className={styles.meta}>
@@ -282,8 +564,15 @@ export default async function ReviewQuestionPage(
         <section className={styles.support}>
           {question.supportLinks.map(
             (link) => (
-              <p key={link.supportContent.id}>
-                {link.supportContent.content}
+              <p
+                key={
+                  link.supportContent.id
+                }
+              >
+                {
+                  link.supportContent
+                    .content
+                }
               </p>
             ),
           )}
@@ -313,16 +602,20 @@ export default async function ReviewQuestionPage(
                       `/api/media/${link.mediaAsset.id}`,
 
                     mimeType:
-                      link.mediaAsset.mimeType,
+                      link.mediaAsset
+                        .mimeType,
 
                     width:
-                      link.mediaAsset.width,
+                      link.mediaAsset
+                        .width,
 
                     height:
-                      link.mediaAsset.height,
+                      link.mediaAsset
+                        .height,
 
                     altText:
-                      link.mediaAsset.altText,
+                      link.mediaAsset
+                        .altText,
 
                     position:
                       link.position,
@@ -342,7 +635,9 @@ export default async function ReviewQuestionPage(
                     }
                   >
                     <strong>
-                      {alternative.label}
+                      {
+                        alternative.label
+                      }
                     </strong>
 
                     {alternative.isCorrect ? (
@@ -358,7 +653,9 @@ export default async function ReviewQuestionPage(
 
                   {alternative.content.trim() ? (
                     <p>
-                      {alternative.content}
+                      {
+                        alternative.content
+                      }
                     </p>
                   ) : (
                     <p
