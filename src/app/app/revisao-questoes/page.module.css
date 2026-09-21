@@ -1,0 +1,90 @@
+.page {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.65;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.description {
+  margin: 8px 0 0;
+  opacity: 0.75;
+}
+
+.count {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.list {
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid rgba(127, 127, 127, 0.22);
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  border-color: currentColor;
+}
+
+.cardTop,
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.cardTop {
+  justify-content: space-between;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.status {
+  font-weight: 700;
+}
+
+.warning {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .header {
+    flex-direction: column;
+  }
+}
