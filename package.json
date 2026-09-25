@@ -30,7 +30,8 @@
     "import:status": "npx --yes tsx scripts/import-status.ts",
     "media:status": "npx --yes tsx scripts/media-queue-status.ts",
     "media:process": "npx --yes tsx scripts/process-media-queue.ts",
-    "media:failures": "npx --yes tsx scripts/media-failures.ts"
+    "media:failures": "npx --yes tsx scripts/media-failures.ts",
+    "taxonomy:seed": "npx --yes tsx scripts/seed-taxonomy.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

@@ -48,6 +48,12 @@ enum QuestionLicenseStatus {
   RESTRICTED
 }
 
+enum TaxonomyAliasSource {
+  SEED
+  MANUAL
+  IMPORT
+}
+
 enum ImportJobStatus {
   PENDING
   RUNNING
@@ -82,6 +88,7 @@ model Profile {
   roles               UserRole[]
   studyAnswerAttempts StudyAnswerAttempt[]
   studyFavorites      StudyFavorite[]
+  taxonomyRevisions   TaxonomyRevision[]
 
   @@map("profiles")
 }
@@ -99,7 +106,10 @@ model UserRole {
   @@map("user_roles")
 }
 
-model Discipline {
+/// Broad knowledge area (ENEM/BNCC), e.g. "Ciências Humanas e suas
+/// Tecnologias". Groups disciplines; it is not a level of the
+/// Discipline -> Area -> Topic -> Subtopic hierarchy.
+model KnowledgeArea {
   id          String   @id @default(uuid()) @db.Uuid
   name        String   @db.VarChar(160)
   slug        String   @unique @db.VarChar(180)
@@ -109,11 +119,33 @@ model Discipline {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  disciplines Discipline[]
+  questions   Question[]
+
+  @@index([isActive, sortOrder])
+  @@map("knowledge_areas")
+}
+
+model Discipline {
+  id              String   @id @default(uuid()) @db.Uuid
+  knowledgeAreaId String?  @map("knowledge_area_id") @db.Uuid
+  name            String   @db.VarChar(160)
+  slug            String   @unique @db.VarChar(180)
+  description     String?  @db.Text
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  knowledgeArea KnowledgeArea? @relation(fields: [knowledgeAreaId], references: [id], onDelete: Restrict)
+
   areas     Area[]
   topics    Topic[]
   questions Question[]
+  aliases   DisciplineAlias[]
 
   @@index([isActive, sortOrder])
+  @@index([knowledgeAreaId, isActive, sortOrder])
   @@map("disciplines")
 }
 
@@ -132,8 +164,10 @@ model Area {
 
   topics    Topic[]
   questions Question[]
+  aliases   AreaAlias[]
 
   @@unique([disciplineId, slug])
+  @@unique([id, disciplineId])
   @@index([disciplineId, isActive, sortOrder])
   @@map("areas")
 }
@@ -151,12 +185,14 @@ model Topic {
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
-  area       Area?      @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  area       Area?      @relation(fields: [areaId, disciplineId], references: [id, disciplineId], onDelete: Restrict, onUpdate: Restrict)
 
   subtopics Subtopic[]
   questions Question[]
+  aliases   TopicAlias[]
 
   @@unique([disciplineId, slug])
+  @@unique([id, disciplineId])
   @@index([disciplineId, isActive, sortOrder])
   @@index([areaId, isActive, sortOrder])
   @@map("topics")
@@ -176,8 +212,10 @@ model Subtopic {
   topic Topic @relation(fields: [topicId], references: [id], onDelete: Restrict)
 
   questions Question[]
+  aliases   SubtopicAlias[]
 
   @@unique([topicId, slug])
+  @@unique([id, topicId])
   @@index([topicId, isActive, sortOrder])
   @@map("subtopics")
 }
@@ -194,6 +232,87 @@ model Tag {
 
   @@index([isActive])
   @@map("tags")
+}
+
+/// Alternative name resolving to one canonical discipline.
+/// normalizedName comes from normalizeTaxonomyTerm and is globally
+/// unique, like Discipline.slug.
+model DisciplineAlias {
+  id             String              @id @default(uuid()) @db.Uuid
+  disciplineId   String              @map("discipline_id") @db.Uuid
+  name           String              @db.VarChar(180)
+  normalizedName String              @unique @map("normalized_name") @db.VarChar(200)
+  source         TaxonomyAliasSource @default(MANUAL)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  @@index([disciplineId])
+  @@map("discipline_aliases")
+}
+
+/// Alias scoped to the owning discipline; the composite key guarantees
+/// disciplineId always matches the area discipline.
+model AreaAlias {
+  id             String              @id @default(uuid()) @db.Uuid
+  areaId         String              @map("area_id") @db.Uuid
+  disciplineId   String              @map("discipline_id") @db.Uuid
+  name           String              @db.VarChar(180)
+  normalizedName String              @map("normalized_name") @db.VarChar(200)
+  source         TaxonomyAliasSource @default(MANUAL)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  area Area @relation(fields: [areaId, disciplineId], references: [id, disciplineId], onDelete: Cascade)
+
+  @@unique([disciplineId, normalizedName])
+  @@index([areaId])
+  @@map("area_aliases")
+}
+
+model TopicAlias {
+  id             String              @id @default(uuid()) @db.Uuid
+  topicId        String              @map("topic_id") @db.Uuid
+  disciplineId   String              @map("discipline_id") @db.Uuid
+  name           String              @db.VarChar(180)
+  normalizedName String              @map("normalized_name") @db.VarChar(200)
+  source         TaxonomyAliasSource @default(MANUAL)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  topic Topic @relation(fields: [topicId, disciplineId], references: [id, disciplineId], onDelete: Cascade)
+
+  @@unique([disciplineId, normalizedName])
+  @@index([topicId])
+  @@map("topic_aliases")
+}
+
+model SubtopicAlias {
+  id             String              @id @default(uuid()) @db.Uuid
+  subtopicId     String              @map("subtopic_id") @db.Uuid
+  topicId        String              @map("topic_id") @db.Uuid
+  name           String              @db.VarChar(180)
+  normalizedName String              @map("normalized_name") @db.VarChar(200)
+  source         TaxonomyAliasSource @default(MANUAL)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  subtopic Subtopic @relation(fields: [subtopicId, topicId], references: [id, topicId], onDelete: Cascade)
+
+  @@unique([topicId, normalizedName])
+  @@index([subtopicId])
+  @@map("subtopic_aliases")
+}
+
+/// Monotonic taxonomy version. Classification results record the
+/// version they were produced against.
+model TaxonomyRevision {
+  id                 String   @id @default(uuid()) @db.Uuid
+  version            Int      @unique
+  summary            String   @db.Text
+  createdByProfileId String?  @map("created_by_profile_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  createdBy Profile? @relation(fields: [createdByProfileId], references: [id], onDelete: SetNull)
+
+  @@map("taxonomy_revisions")
 }
 
 model ExaminingBoard {
@@ -303,6 +422,7 @@ model Question {
   correctTrueFalse     Boolean?                @map("correct_true_false")
   sourceId             String?                 @map("source_id") @db.Uuid
   examinationId        String?                 @map("examination_id") @db.Uuid
+  knowledgeAreaId      String?                 @map("knowledge_area_id") @db.Uuid
   disciplineId         String?                 @map("discipline_id") @db.Uuid
   areaId               String?                 @map("area_id") @db.Uuid
   topicId              String?                 @map("topic_id") @db.Uuid
@@ -311,12 +431,15 @@ model Question {
   createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  source      QuestionSource? @relation(fields: [sourceId], references: [id], onDelete: Restrict)
-  examination Examination?    @relation(fields: [examinationId], references: [id], onDelete: Restrict)
-  discipline  Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
-  area        Area?           @relation(fields: [areaId], references: [id], onDelete: Restrict)
-  topic       Topic?          @relation(fields: [topicId], references: [id], onDelete: Restrict)
-  subtopic    Subtopic?       @relation(fields: [subtopicId], references: [id], onDelete: Restrict)
+  source        QuestionSource? @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  examination   Examination?    @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  knowledgeArea KnowledgeArea?  @relation(fields: [knowledgeAreaId], references: [id], onDelete: Restrict)
+  discipline    Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  /// Composite keys keep area/topic inside the question discipline and
+  /// the subtopic inside the question topic at the database level.
+  area          Area?           @relation(fields: [areaId, disciplineId], references: [id, disciplineId], onDelete: Restrict, onUpdate: Restrict)
+  topic         Topic?          @relation(fields: [topicId, disciplineId], references: [id, disciplineId], onDelete: Restrict, onUpdate: Restrict)
+  subtopic      Subtopic?       @relation(fields: [subtopicId, topicId], references: [id, topicId], onDelete: Restrict, onUpdate: Restrict)
 
   alternatives        QuestionAlternative[]
   explanation         QuestionExplanation?
@@ -336,6 +459,7 @@ model Question {
   @@index([status, topicId])
   @@index([status, subtopicId])
   @@index([status, examinationId])
+  @@index([status, knowledgeAreaId])
   @@index([sourceId])
   @@index([contentHash])
   @@map("questions")
