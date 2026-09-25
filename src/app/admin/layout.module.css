@@ -1,0 +1,255 @@
+﻿.shell {
+  min-height: 100dvh;
+  background: #f5f6f8;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 50;
+  width: 248px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 14px 16px;
+  overflow-y: auto;
+  border-right: 1px solid var(--sb-border);
+  background: #fff;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 2px 8px 18px;
+  text-decoration: none;
+}
+
+.logo {
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+}
+
+.adminBadge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand-strong);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.groupLabel {
+  padding: 0 10px 5px;
+  color: var(--sb-text-subtle);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.navItem,
+.navItemDisabled {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.navItem {
+  color: var(--sb-text-muted);
+  text-decoration: none;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.navItem:hover {
+  background: var(--sb-surface-muted);
+  color: var(--sb-text-strong);
+}
+
+.navItem:first-of-type {
+  background: var(--sb-sidebar-active);
+  color: var(--sb-brand-strong);
+}
+
+.navItemDisabled {
+  color: var(--sb-text-subtle);
+  cursor: default;
+  opacity: 0.62;
+}
+
+.navDot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border: 2px solid #c3c7cf;
+  border-radius: 50%;
+}
+
+.navItem:first-of-type .navDot {
+  border-color: var(--sb-brand);
+  background: var(--sb-brand);
+  box-shadow: 0 0 0 4px rgba(212, 18, 0, 0.08);
+}
+
+.sidebarBottom {
+  display: grid;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--sb-border);
+}
+
+.adminProfile {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--sb-brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.adminData {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.adminData strong {
+  color: var(--sb-text-strong);
+  font-size: 10px;
+}
+
+.adminData span {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--sb-text-subtle);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studentLink {
+  color: var(--sb-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.studentLink:hover {
+  color: var(--sb-brand-strong);
+}
+
+.workspace {
+  min-height: 100dvh;
+  margin-left: 248px;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 30px;
+  border-bottom: 1px solid var(--sb-border);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+}
+
+.topbar > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.topbarEyebrow {
+  color: var(--sb-text-subtle);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.topbar strong {
+  color: var(--sb-text-strong);
+  font-size: 13px;
+}
+
+.secureBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--sb-border);
+  border-radius: 999px;
+  background: var(--sb-surface);
+  color: var(--sb-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.secureBadge span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sb-success);
+  box-shadow: 0 0 0 4px rgba(22, 134, 92, 0.1);
+}
+
+.content {
+  width: min(100%, 1360px);
+  margin: 0 auto;
+  padding: 30px 30px 56px;
+}
+
+@media (max-width: 980px) {
+  .sidebar {
+    display: none;
+  }
+
+  .workspace {
+    margin-left: 0;
+  }
+
+  .content {
+    padding: 24px 18px 48px;
+  }
+}
+
