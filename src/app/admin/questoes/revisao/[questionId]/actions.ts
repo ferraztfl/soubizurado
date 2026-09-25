@@ -257,6 +257,285 @@ export async function saveQuestionClassificationAction(
   );
 }
 
+export async function applyClassificationSuggestionAction(
+  formData: FormData,
+): Promise<void> {
+  const admin =
+    await requireAdminUser();
+
+  const questionId =
+    readRequiredString(
+      formData,
+      "questionId",
+    );
+
+  const taskId =
+    readRequiredString(
+      formData,
+      "taskId",
+    );
+
+  if (!questionId) {
+    redirect(
+      "/admin/questoes/revisao",
+    );
+  }
+
+  if (!taskId) {
+    redirect(
+      reviewUrl(
+        questionId,
+        "error=suggestion-unavailable",
+      ),
+    );
+  }
+
+  const prisma =
+    getPrismaClient();
+
+  const [task, question] =
+    await Promise.all([
+      prisma.questionClassificationTask.findFirst({
+        where: {
+          id:
+            taskId,
+          questionId,
+          status: {
+            in: [
+              "COMPLETED",
+              "REVIEW_REQUIRED",
+            ],
+          },
+          appliedAt:
+            null,
+          suggestedTopicId: {
+            not: null,
+          },
+        },
+
+        select: {
+          id: true,
+          suggestedDisciplineId: true,
+          suggestedTopicId: true,
+          suggestedSubtopicId: true,
+        },
+      }),
+
+      prisma.question.findFirst({
+        where: {
+          id:
+            questionId,
+          status:
+            "IN_REVIEW",
+        },
+
+        select: {
+          id: true,
+          disciplineId: true,
+          knowledgeAreaId: true,
+        },
+      }),
+    ]);
+
+  if (
+    !task ||
+    !task.suggestedDisciplineId ||
+    !task.suggestedTopicId
+  ) {
+    redirect(
+      reviewUrl(
+        questionId,
+        "error=suggestion-unavailable",
+      ),
+    );
+  }
+
+  if (
+    !question ||
+    !question.disciplineId
+  ) {
+    redirect(
+      reviewUrl(
+        questionId,
+        "error=question-unavailable",
+      ),
+    );
+  }
+
+  // Re-validate everything against the CURRENT taxonomy: the
+  // suggestion may be old and entries may have been deactivated.
+  const topic =
+    await prisma.topic.findFirst({
+      where: {
+        id:
+          task.suggestedTopicId,
+        disciplineId:
+          task.suggestedDisciplineId,
+        isActive:
+          true,
+        discipline: {
+          isActive:
+            true,
+          knowledgeAreaId: {
+            not: null,
+          },
+        },
+        OR: [
+          {
+            areaId:
+              null,
+          },
+          {
+            area: {
+              isActive:
+                true,
+            },
+          },
+        ],
+      },
+
+      select: {
+        id: true,
+        areaId: true,
+        discipline: {
+          select: {
+            id: true,
+            knowledgeAreaId: true,
+          },
+        },
+        subtopics: {
+          where: {
+            id:
+              task.suggestedSubtopicId ??
+              undefined,
+            isActive:
+              true,
+          },
+          select: {
+            id: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+  const sameDiscipline =
+    topic?.discipline.id ===
+    question.disciplineId;
+
+  // A discipline change must stay inside the question knowledge area.
+  const sameKnowledgeArea =
+    question.knowledgeAreaId !== null &&
+    topic?.discipline.knowledgeAreaId ===
+      question.knowledgeAreaId;
+
+  if (
+    !topic ||
+    (!sameDiscipline &&
+      !sameKnowledgeArea)
+  ) {
+    redirect(
+      reviewUrl(
+        questionId,
+        "error=invalid-topic",
+      ),
+    );
+  }
+
+  const subtopicId =
+    task.suggestedSubtopicId &&
+    topic.subtopics[0]?.id ===
+      task.suggestedSubtopicId
+      ? task.suggestedSubtopicId
+      : null;
+
+  const applied =
+    await prisma.$transaction(
+      async (transaction) => {
+        const updated =
+          await transaction.question.updateMany({
+            where: {
+              id:
+                question.id,
+              status:
+                "IN_REVIEW",
+              disciplineId:
+                question.disciplineId,
+            },
+
+            data: {
+              disciplineId:
+                topic.discipline.id,
+              knowledgeAreaId:
+                topic.discipline.knowledgeAreaId,
+              areaId:
+                topic.areaId,
+              topicId:
+                topic.id,
+              subtopicId,
+            },
+          });
+
+        if (
+          updated.count !== 1
+        ) {
+          return false;
+        }
+
+        const marked =
+          await transaction.questionClassificationTask.updateMany({
+            where: {
+              id:
+                task.id,
+              appliedAt:
+                null,
+            },
+
+            data: {
+              appliedAt:
+                new Date(),
+              appliedByProfileId:
+                admin.profileId,
+            },
+          });
+
+        if (
+          marked.count !== 1
+        ) {
+          throw new Error(
+            "Classification suggestion was applied concurrently.",
+          );
+        }
+
+        return true;
+      },
+    );
+
+  if (!applied) {
+    redirect(
+      reviewUrl(
+        questionId,
+        "error=question-unavailable",
+      ),
+    );
+  }
+
+  revalidatePath(
+    reviewUrl(questionId),
+  );
+
+  revalidatePath(
+    "/admin/questoes/revisao",
+  );
+
+  redirect(
+    reviewUrl(
+      questionId,
+      "saved=suggestion",
+    ),
+  );
+}
+
 export async function publishQuestionAction(
   formData: FormData,
 ): Promise<void> {

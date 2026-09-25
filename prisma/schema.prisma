@@ -54,6 +54,14 @@ enum TaxonomyAliasSource {
   IMPORT
 }
 
+enum QuestionClassificationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  REVIEW_REQUIRED
+  FAILED
+}
+
 enum ImportJobStatus {
   PENDING
   RUNNING
@@ -85,10 +93,11 @@ model Profile {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  roles               UserRole[]
-  studyAnswerAttempts StudyAnswerAttempt[]
-  studyFavorites      StudyFavorite[]
-  taxonomyRevisions   TaxonomyRevision[]
+  roles                  UserRole[]
+  studyAnswerAttempts    StudyAnswerAttempt[]
+  studyFavorites         StudyFavorite[]
+  taxonomyRevisions      TaxonomyRevision[]
+  appliedClassifications QuestionClassificationTask[]
 
   @@map("profiles")
 }
@@ -144,6 +153,8 @@ model Discipline {
   questions Question[]
   aliases   DisciplineAlias[]
 
+  classificationSuggestions QuestionClassificationTask[]
+
   @@index([isActive, sortOrder])
   @@index([knowledgeAreaId, isActive, sortOrder])
   @@map("disciplines")
@@ -165,6 +176,8 @@ model Area {
   topics    Topic[]
   questions Question[]
   aliases   AreaAlias[]
+
+  classificationSuggestions QuestionClassificationTask[]
 
   @@unique([disciplineId, slug])
   @@unique([id, disciplineId])
@@ -191,6 +204,8 @@ model Topic {
   questions Question[]
   aliases   TopicAlias[]
 
+  classificationSuggestions QuestionClassificationTask[]
+
   @@unique([disciplineId, slug])
   @@unique([id, disciplineId])
   @@index([disciplineId, isActive, sortOrder])
@@ -213,6 +228,8 @@ model Subtopic {
 
   questions Question[]
   aliases   SubtopicAlias[]
+
+  classificationSuggestions QuestionClassificationTask[]
 
   @@unique([topicId, slug])
   @@unique([id, topicId])
@@ -454,6 +471,8 @@ model Question {
   mediaLinks QuestionMediaLink[]
   mediaTasks ImportMediaTask[]
 
+  classificationTasks QuestionClassificationTask[]
+
   @@index([status, type])
   @@index([status, disciplineId])
   @@index([status, topicId])
@@ -559,6 +578,49 @@ model QuestionOccurrence {
   @@index([examinationId])
   @@index([sourceId, externalExaminationId])
   @@map("question_occurrences")
+}
+
+/// Persistent, auditable classification queue. Each task stores the
+/// provider output (rawResult) and the suggestion resolved to canonical
+/// taxonomy ids by the backend. Suggestions are never applied to the
+/// question automatically; appliedAt records a reviewer applying one.
+model QuestionClassificationTask {
+  id                    String                       @id @default(uuid()) @db.Uuid
+  questionId            String                       @map("question_id") @db.Uuid
+  status                QuestionClassificationStatus @default(PENDING)
+  attempts              Int                          @default(0)
+  nextAttemptAt         DateTime?                    @map("next_attempt_at") @db.Timestamptz(6)
+  provider              String                       @db.VarChar(60)
+  model                 String?                      @db.VarChar(120)
+  classifierVersion     String                       @map("classifier_version") @db.VarChar(40)
+  taxonomyVersion       Int                          @map("taxonomy_version")
+  confidence            Decimal?                     @db.Decimal(5, 4)
+  suggestedDisciplineId String?                      @map("suggested_discipline_id") @db.Uuid
+  suggestedAreaId       String?                      @map("suggested_area_id") @db.Uuid
+  suggestedTopicId      String?                      @map("suggested_topic_id") @db.Uuid
+  suggestedSubtopicId   String?                      @map("suggested_subtopic_id") @db.Uuid
+  suggestedTags         String[]                     @default([]) @map("suggested_tags") @db.VarChar(120)
+  rawResult             Json?                        @map("raw_result")
+  errorMessage          String?                      @map("error_message") @db.Text
+  completedAt           DateTime?                    @map("completed_at") @db.Timestamptz(6)
+  appliedAt             DateTime?                    @map("applied_at") @db.Timestamptz(6)
+  appliedByProfileId    String?                      @map("applied_by_profile_id") @db.Uuid
+  createdAt             DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question            Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  suggestedDiscipline Discipline? @relation(fields: [suggestedDisciplineId], references: [id], onDelete: Restrict)
+  suggestedArea       Area?       @relation(fields: [suggestedAreaId], references: [id], onDelete: Restrict)
+  suggestedTopic      Topic?      @relation(fields: [suggestedTopicId], references: [id], onDelete: Restrict)
+  suggestedSubtopic   Subtopic?   @relation(fields: [suggestedSubtopicId], references: [id], onDelete: Restrict)
+  appliedBy           Profile?    @relation(fields: [appliedByProfileId], references: [id], onDelete: SetNull)
+
+  @@unique([questionId, classifierVersion, taxonomyVersion])
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([questionId, createdAt])
+  @@index([suggestedDisciplineId])
+  @@index([suggestedTopicId])
+  @@map("question_classification_tasks")
 }
 
 model ImportJob {

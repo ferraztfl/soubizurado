@@ -10,6 +10,7 @@ export const REVIEW_QUEUE_PAGE_SIZE = 25;
 
 export type ReviewTopicFilter = "missing" | "assigned" | "all";
 export type ReviewMediaFilter = "with" | "without" | "all";
+export type ReviewSuggestionFilter = "with" | "all";
 
 export type ReviewQueueQuery = Readonly<{
   page: number;
@@ -18,6 +19,7 @@ export type ReviewQueueQuery = Readonly<{
   disciplineId?: string;
   topic: ReviewTopicFilter;
   media: ReviewMediaFilter;
+  suggestion: ReviewSuggestionFilter;
 }>;
 
 export type ReviewQueueHrefInput = Readonly<{
@@ -26,6 +28,7 @@ export type ReviewQueueHrefInput = Readonly<{
   disciplineId?: string;
   topic?: ReviewTopicFilter;
   media?: ReviewMediaFilter;
+  suggestion?: ReviewSuggestionFilter;
 }>;
 
 const UUID_PATTERN =
@@ -91,6 +94,7 @@ export function parseReviewQueueSearchParams(
       : {}),
     topic: parseOption(params.topic, ["missing", "assigned", "all"], "missing"),
     media: parseOption(params.media, ["with", "without", "all"], "all"),
+    suggestion: parseOption(params.suggestion, ["with", "all"], "all"),
   };
 }
 
@@ -113,6 +117,10 @@ export function buildReviewQueueHref(
 
   if (input.media && input.media !== "all") {
     params.set("media", input.media);
+  }
+
+  if (input.suggestion === "with") {
+    params.set("suggestion", "with");
   }
 
   if (input.page && input.page > 1) {

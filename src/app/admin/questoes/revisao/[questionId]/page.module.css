@@ -226,3 +226,56 @@
     width: 100%;
   }
 }
+.suggestion {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid #f1d4cf;
+  border-radius: 16px;
+  background: var(--sb-brand-subtle);
+}
+
+.suggestionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.suggestionMeta {
+  margin: 4px 0 0;
+  color: var(--sb-text-muted);
+  font-size: 0.8rem;
+}
+
+.suggestionBadgeOk,
+.suggestionBadgeReview {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.suggestionBadgeOk {
+  background: var(--sb-success-soft);
+  color: var(--sb-success);
+}
+
+.suggestionBadgeReview {
+  background: rgba(196, 128, 0, 0.12);
+  color: #8a5a00;
+}
+
+.suggestionPath {
+  margin: 0;
+  color: var(--sb-text-strong);
+  font-weight: 700;
+}
+
+.suggestionRationale {
+  margin: 0;
+  color: var(--sb-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}

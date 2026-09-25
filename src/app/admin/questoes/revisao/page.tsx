@@ -26,6 +26,16 @@ const LEGACY_DISCIPLINE_SLUGS =
     LEGACY_ENEM_KNOWLEDGE_AREA_SLUGS,
   );
 
+const hasOpenSuggestion: Prisma.QuestionWhereInput = {
+  classificationTasks: {
+    some: {
+      status: { in: ["COMPLETED", "REVIEW_REQUIRED"] },
+      appliedAt: null,
+      suggestedTopicId: { not: null },
+    },
+  },
+};
+
 const hasMedia: Prisma.QuestionWhereInput = {
   OR: [
     {
@@ -86,11 +96,14 @@ export default async function ReviewQuestionsPage({
           },
         }
       : {}),
-    ...(query.media === "with"
-      ? hasMedia
-      : query.media === "without"
-        ? { NOT: hasMedia }
-        : {}),
+    AND: [
+      query.media === "with"
+        ? hasMedia
+        : query.media === "without"
+          ? { NOT: hasMedia }
+          : {},
+      query.suggestion === "with" ? hasOpenSuggestion : {},
+    ],
   };
 
   const [
@@ -159,6 +172,20 @@ export default async function ReviewQuestionsPage({
           select: { mediaLinks: true },
         },
 
+        classificationTasks: {
+          where: {
+            status: { in: ["COMPLETED", "REVIEW_REQUIRED"] },
+            appliedAt: null,
+            suggestedTopicId: { not: null },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: {
+            confidence: true,
+            suggestedTopic: { select: { name: true } },
+          },
+        },
+
         alternatives: {
           select: {
             content: true,
@@ -214,6 +241,7 @@ export default async function ReviewQuestionsPage({
       disciplineId: query.disciplineId,
       topic: query.topic,
       media: query.media,
+      suggestion: query.suggestion,
       page: targetPage,
     });
 
@@ -306,6 +334,14 @@ export default async function ReviewQuestionsPage({
           </select>
         </label>
 
+        <label>
+          <span>Sugestão</span>
+          <select name="suggestion" defaultValue={query.suggestion}>
+            <option value="all">Todas</option>
+            <option value="with">Com sugestão</option>
+          </select>
+        </label>
+
         <div className={styles.filterActions}>
           <button type="submit">Filtrar</button>
           <Link href="/admin/questoes/revisao">Limpar</Link>
@@ -393,6 +429,15 @@ export default async function ReviewQuestionsPage({
                         Sem tópico
                       </span>
                     )}
+
+                    {question.classificationTasks[0]?.suggestedTopic ? (
+                      <span className={styles.badgeSuggestion}>
+                        Sugestão: {question.classificationTasks[0].suggestedTopic.name}
+                        {question.classificationTasks[0].confidence !== null
+                          ? ` (${Math.round(Number(question.classificationTasks[0].confidence) * 100)}%)`
+                          : ""}
+                      </span>
+                    ) : null}
 
                     {question.answerKeyStatus === "MISSING" ? (
                       <span className={styles.badgeWarning}>

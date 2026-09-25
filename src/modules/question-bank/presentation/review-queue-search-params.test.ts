@@ -14,6 +14,7 @@ describe("parseReviewQueueSearchParams", () => {
       pageSize: 25,
       topic: "missing",
       media: "all",
+      suggestion: "all",
     });
   });
 
@@ -24,6 +25,7 @@ describe("parseReviewQueueSearchParams", () => {
         discipline: disciplineId.toUpperCase(),
         topic: "assigned",
         media: "with",
+        suggestion: "with",
         page: "3",
       }),
     ).toEqual({
@@ -33,6 +35,7 @@ describe("parseReviewQueueSearchParams", () => {
       disciplineId,
       topic: "assigned",
       media: "with",
+      suggestion: "with",
     });
   });
 
@@ -42,6 +45,7 @@ describe("parseReviewQueueSearchParams", () => {
         discipline: "not-a-uuid",
         topic: "everything",
         media: "sometimes",
+        suggestion: "maybe",
         page: "-2",
       }),
     ).toEqual({
@@ -49,6 +53,7 @@ describe("parseReviewQueueSearchParams", () => {
       pageSize: 25,
       topic: "missing",
       media: "all",
+      suggestion: "all",
     });
   });
 
@@ -75,10 +80,11 @@ describe("buildReviewQueueHref", () => {
         disciplineId,
         topic: "all",
         media: "without",
+        suggestion: "with",
         page: 2,
       }),
     ).toBe(
-      `/admin/questoes/revisao?q=fun%C3%A7%C3%A3o&discipline=${disciplineId}&topic=all&media=without&page=2`,
+      `/admin/questoes/revisao?q=fun%C3%A7%C3%A3o&discipline=${disciplineId}&topic=all&media=without&suggestion=with&page=2`,
     );
   });
 });

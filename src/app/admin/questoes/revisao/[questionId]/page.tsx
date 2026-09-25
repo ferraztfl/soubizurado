@@ -21,6 +21,7 @@ import {
 } from "@/modules/question-bank/presentation/question-classification-choice";
 
 import {
+  applyClassificationSuggestionAction,
   publishQuestionAction,
   saveQuestionClassificationAction,
 } from "./actions";
@@ -29,6 +30,28 @@ import styles from "./page.module.css";
 
 export const dynamic =
   "force-dynamic";
+
+function readRationale(
+  rawResult: unknown,
+): string | null {
+  if (
+    !rawResult ||
+    typeof rawResult !== "object" ||
+    !("provider" in rawResult)
+  ) {
+    return null;
+  }
+
+  const provider =
+    rawResult.provider;
+
+  return provider &&
+    typeof provider === "object" &&
+    "rationale" in provider &&
+    typeof provider.rationale === "string"
+    ? provider.rationale.slice(0, 400)
+    : null;
+}
 
 // Indents subtopics under their topic inside a native <select>.
 const SUBTOPIC_PREFIX =
@@ -87,6 +110,9 @@ const issueLabels:
 
 const errorMessages:
   Readonly<Record<string, string>> = {
+    "suggestion-unavailable":
+      "A sugestão não está mais disponível ou já foi aplicada.",
+
     "topic-required":
       "Selecione um tópico antes de salvar.",
 
@@ -399,6 +425,75 @@ export default async function ReviewQuestionPage(
       .filter(Boolean)
       .join(" › ");
 
+  // Latest unapplied suggestion from the classification queue.
+  const suggestion =
+    await prisma.questionClassificationTask.findFirst({
+      where: {
+        questionId:
+          question.id,
+        status: {
+          in: [
+            "COMPLETED",
+            "REVIEW_REQUIRED",
+          ],
+        },
+        appliedAt:
+          null,
+      },
+
+      orderBy: {
+        createdAt:
+          "desc",
+      },
+
+      select: {
+        id: true,
+        status: true,
+        confidence: true,
+        provider: true,
+        model: true,
+        suggestedTags: true,
+        rawResult: true,
+        suggestedDiscipline: {
+          select: {
+            name: true,
+          },
+        },
+        suggestedArea: {
+          select: {
+            name: true,
+          },
+        },
+        suggestedTopic: {
+          select: {
+            name: true,
+          },
+        },
+        suggestedSubtopic: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+  const suggestionPath =
+    suggestion
+      ? [
+          suggestion.suggestedDiscipline?.name,
+          suggestion.suggestedArea?.name,
+          suggestion.suggestedTopic?.name,
+          suggestion.suggestedSubtopic?.name,
+        ]
+          .filter(Boolean)
+          .join(" \u203a ")
+      : "";
+
+  const suggestionRationale =
+    readRationale(
+      suggestion?.rawResult,
+    );
+
   const publicationIssues =
     validateQuestionForPublication({
       statement:
@@ -515,6 +610,97 @@ export default async function ReviewQuestionPage(
         <div className={styles.noticeSuccess}>
           Classificação salva com sucesso.
         </div>
+      ) : null}
+
+      {searchParams.saved === "suggestion" ? (
+        <div className={styles.noticeSuccess}>
+          Sugestão aplicada. Confira a
+          classificação antes de publicar.
+        </div>
+      ) : null}
+
+      {suggestion ? (
+        <section className={styles.suggestion}>
+          <div className={styles.suggestionHeader}>
+            <div>
+              <h2 className={styles.editorTitle}>
+                Sugestão automática
+              </h2>
+
+              <p className={styles.suggestionMeta}>
+                {suggestion.provider}
+                {suggestion.model
+                  ? ` \u00b7 ${suggestion.model}`
+                  : ""}
+                {suggestion.confidence !== null
+                  ? ` \u00b7 confiança ${Math.round(
+                      Number(suggestion.confidence) *
+                        100,
+                    )}%`
+                  : ""}
+              </p>
+            </div>
+
+            <span
+              className={
+                suggestion.status ===
+                "COMPLETED"
+                  ? styles.suggestionBadgeOk
+                  : styles.suggestionBadgeReview
+              }
+            >
+              {suggestion.status ===
+              "COMPLETED"
+                ? "Alta confiança"
+                : "Revisar com atenção"}
+            </span>
+          </div>
+
+          {suggestion.suggestedTopic ? (
+            <p className={styles.suggestionPath}>
+              {suggestionPath}
+            </p>
+          ) : (
+            <p className={styles.suggestionPath}>
+              {suggestion.suggestedDiscipline
+                ? `${suggestion.suggestedDiscipline.name} \u203a tópico não identificado`
+                : "Nenhuma classificação identificada."}
+            </p>
+          )}
+
+          {suggestionRationale ? (
+            <p className={styles.suggestionRationale}>
+              {suggestionRationale}
+            </p>
+          ) : null}
+
+          {suggestion.suggestedTopic ? (
+            <form
+              action={
+                applyClassificationSuggestionAction
+              }
+            >
+              <input
+                type="hidden"
+                name="questionId"
+                value={question.id}
+              />
+
+              <input
+                type="hidden"
+                name="taskId"
+                value={suggestion.id}
+              />
+
+              <button
+                type="submit"
+                className={styles.saveButton}
+              >
+                Aplicar sugestão
+              </button>
+            </form>
+          ) : null}
+        </section>
       ) : null}
 
       {errorMessage ? (

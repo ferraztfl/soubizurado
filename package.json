@@ -32,7 +32,10 @@
     "media:process": "npx --yes tsx scripts/process-media-queue.ts",
     "media:failures": "npx --yes tsx scripts/media-failures.ts",
     "taxonomy:seed": "npx --yes tsx scripts/seed-taxonomy.ts",
-    "taxonomy:backfill-legacy": "npx --yes tsx scripts/backfill-legacy-taxonomy.ts"
+    "taxonomy:backfill-legacy": "npx --yes tsx scripts/backfill-legacy-taxonomy.ts",
+    "classification:enqueue": "npx --yes tsx scripts/classification-enqueue.ts",
+    "classification:process": "npx --yes tsx scripts/classification-process.ts",
+    "classification:status": "npx --yes tsx scripts/classification-status.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
