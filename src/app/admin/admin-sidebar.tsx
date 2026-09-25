@@ -8,6 +8,7 @@ import styles from "./layout.module.css";
 
 type AdminSidebarProps = Readonly<{
   email: string;
+  onNavigate?: () => void;
 }>;
 
 type NavigationItem = Readonly<{
@@ -91,6 +92,7 @@ function isActivePath(
 
 export function AdminSidebar({
   email,
+  onNavigate,
 }: AdminSidebarProps) {
   const pathname = usePathname();
 
@@ -100,6 +102,7 @@ export function AdminSidebar({
         <Link
           href="/admin"
           className={styles.brand}
+          onClick={onNavigate}
           aria-label="Sou Bizurado Backoffice"
         >
           <Image
@@ -156,6 +159,7 @@ export function AdminSidebar({
                   <Link
                     key={item.label}
                     href={item.href}
+                    onClick={onNavigate}
                     className={`${styles.navItem} ${
                       active
                         ? styles.navItemActive
@@ -204,6 +208,7 @@ export function AdminSidebar({
         <Link
           href="/app"
           className={styles.studentLink}
+          onClick={onNavigate}
         >
           Voltar para área do aluno
         </Link>

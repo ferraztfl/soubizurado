@@ -13,12 +13,16 @@ type MobileNavigationDrawerProps = Readonly<{
   children: ReactNode;
   open: boolean;
   onClose: () => void;
+  id?: string;
+  label?: string;
 }>;
 
 export function MobileNavigationDrawer({
   children,
   open,
   onClose,
+  id = "student-mobile-navigation",
+  label = "Menu principal",
 }: MobileNavigationDrawerProps) {
   const closeButtonRef =
     useRef<HTMLButtonElement>(null);
@@ -83,11 +87,11 @@ export function MobileNavigationDrawer({
       />
 
       <aside
-        id="student-mobile-navigation"
+        id={id}
         className={styles.drawer}
         role="dialog"
         aria-modal="true"
-        aria-label="Menu principal"
+        aria-label={label}
       >
         <header className={styles.drawerHeader}>
           <button

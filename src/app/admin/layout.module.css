@@ -1,20 +1,28 @@
-﻿.shell {
+.shell {
   min-height: 100dvh;
   background: #f5f6f8;
 }
 
-.sidebar {
+.desktopSidebar {
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 50;
   width: 248px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 20px 14px 16px;
   overflow-y: auto;
   border-right: 1px solid var(--sb-border);
   background: #fff;
+}
+
+.sidebar {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.desktopSidebar .sidebar {
+  padding: 20px 14px 16px;
 }
 
 .brand {
@@ -38,7 +46,7 @@
   border-radius: 999px;
   background: var(--sb-brand-soft);
   color: var(--sb-brand-strong);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -59,7 +67,7 @@
 .groupLabel {
   padding: 0 10px 5px;
   color: var(--sb-text-subtle);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -73,7 +81,7 @@
   gap: 10px;
   padding: 0 10px;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 680;
 }
 
@@ -150,21 +158,21 @@
 
 .adminData strong {
   color: var(--sb-text-strong);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .adminData span {
   margin-top: 2px;
   overflow: hidden;
   color: var(--sb-text-subtle);
-  font-size: 8px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .studentLink {
   color: var(--sb-text-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   text-decoration: none;
 }
@@ -193,23 +201,60 @@
   backdrop-filter: blur(14px);
 }
 
-.topbar > div:first-child {
+.topbarTitle {
+  min-width: 0;
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 3px;
 }
 
+.menuButton {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 11px;
+  background: var(--sb-surface);
+  cursor: pointer;
+  transition:
+    background var(--sb-motion-fast) var(--sb-ease),
+    border-color var(--sb-motion-fast) var(--sb-ease);
+}
+
+.menuButton span {
+  width: 17px;
+  height: 2px;
+  display: block;
+  border-radius: 999px;
+  background: var(--sb-text-strong);
+}
+
+.menuButton:hover {
+  border-color: #efc7c3;
+  background: var(--sb-brand-subtle);
+}
+
 .topbarEyebrow {
   color: var(--sb-text-subtle);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
 .topbar strong {
+  overflow: hidden;
   color: var(--sb-text-strong);
-  font-size: 13px;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .secureBadge {
@@ -221,8 +266,9 @@
   border-radius: 999px;
   background: var(--sb-surface);
   color: var(--sb-text-muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .secureBadge span {
@@ -239,8 +285,8 @@
   padding: 30px 30px 56px;
 }
 
-@media (max-width: 980px) {
-  .sidebar {
+@media (max-width: 1099px) {
+  .desktopSidebar {
     display: none;
   }
 
@@ -248,9 +294,38 @@
     margin-left: 0;
   }
 
+  .topbar {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 0 18px;
+  }
+
+  .menuButton {
+    display: flex;
+  }
+
   .content {
     padding: 24px 18px 48px;
   }
 }
 
+@media (max-width: 560px) {
+  .topbar {
+    padding: 0 14px;
+  }
 
+  .secureBadge {
+    display: none;
+  }
+
+  .content {
+    padding: 20px 14px 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navItem,
+  .menuButton {
+    transition: none;
+  }
+}
