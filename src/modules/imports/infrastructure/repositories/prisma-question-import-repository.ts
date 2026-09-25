@@ -6,6 +6,10 @@ import {
   Prisma,
   type PrismaClient,
 } from "@/generated/prisma/client";
+import {
+  normalizeTaxonomyTerm,
+  toTaxonomySlug,
+} from "@/modules/taxonomy/domain/taxonomy-term";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import type {
@@ -276,10 +280,8 @@ async function resolveTaxonomy(
       where: {
         slug: disciplineSlug,
       },
-      update: {
-        name: disciplineName,
-        isActive: true,
-      },
+      // Never rename or reactivate curated taxonomy from provider data.
+      update: {},
       create: {
         name: disciplineName,
         slug: disciplineSlug,
@@ -296,29 +298,32 @@ async function resolveTaxonomy(
     };
   }
 
-  const topicSlug = slugify(
-    topicName,
-    200,
-  );
-
+  // Topics are controlled taxonomy: resolve by canonical slug or alias,
+  // never create them from provider data. Unresolved topics stay null
+  // and the question goes through editorial review.
   const topic =
-    await transaction.topic.upsert({
+    await transaction.topic.findFirst({
       where: {
-        disciplineId_slug: {
-          disciplineId:
-            discipline.id,
-          slug: topicSlug,
-        },
-      },
-      update: {
-        name: topicName,
-        isActive: true,
-      },
-      create: {
         disciplineId:
           discipline.id,
-        name: topicName,
-        slug: topicSlug,
+        isActive: true,
+        OR: [
+          {
+            slug: toTaxonomySlug(
+              topicName,
+            ),
+          },
+          {
+            aliases: {
+              some: {
+                normalizedName:
+                  normalizeTaxonomyTerm(
+                    topicName,
+                  ),
+              },
+            },
+          },
+        ],
       },
       select: {
         id: true,
@@ -327,7 +332,7 @@ async function resolveTaxonomy(
 
   return {
     disciplineId: discipline.id,
-    topicId: topic.id,
+    topicId: topic?.id ?? null,
   };
 }
 
