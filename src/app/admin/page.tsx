@@ -109,7 +109,7 @@ export default async function AdminHomePage() {
         </div>
 
         <Link
-          href="/app/revisao-questoes"
+          href="/admin/questoes/revisao"
           className={styles.primaryAction}
         >
           <span>
@@ -262,7 +262,7 @@ export default async function AdminHomePage() {
 
           <div className={styles.panelFooter}>
             <Link
-              href="/app/revisao-questoes"
+              href="/admin/questoes/revisao"
               className={styles.secondaryAction}
             >
               Abrir fila de revisão
@@ -288,7 +288,7 @@ export default async function AdminHomePage() {
 
           <div className={styles.quickActions}>
             <Link
-              href="/app/revisao-questoes"
+              href="/admin/questoes/revisao"
               className={styles.quickAction}
             >
               <div>

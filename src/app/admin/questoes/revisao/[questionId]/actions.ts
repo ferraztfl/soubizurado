@@ -42,7 +42,7 @@ function reviewUrl(
   query?: string,
 ): string {
   const base =
-    `/app/revisao-questoes/${questionId}`;
+    `/admin/questoes/revisao/${questionId}`;
 
   return query
     ? `${base}?${query}`
@@ -68,7 +68,7 @@ export async function saveQuestionTopicAction(
 
   if (!questionId) {
     redirect(
-      "/app/revisao-questoes",
+      "/admin/questoes/revisao",
     );
   }
 
@@ -138,27 +138,45 @@ export async function saveQuestionTopicAction(
     );
   }
 
-  await prisma.question.update({
-    where: {
-      id:
-        question.id,
-    },
+  const result =
+    await prisma.question.updateMany({
+      where: {
+        id:
+          question.id,
 
-    data: {
-      topicId:
-        topic.id,
+        status:
+          "IN_REVIEW",
 
-      subtopicId:
-        null,
-    },
-  });
+        disciplineId:
+          question.disciplineId,
+      },
+
+      data: {
+        topicId:
+          topic.id,
+
+        subtopicId:
+          null,
+      },
+    });
+
+  if (
+    result.count !== 1
+  ) {
+    redirect(
+      reviewUrl(
+        questionId,
+        "error=question-unavailable",
+      ),
+    );
+  }
 
   revalidatePath(
     reviewUrl(questionId),
   );
 
   revalidatePath(
-    "/app/revisao-questoes",
+    "/admin/questoes/revisao",
   );
 
   redirect(
@@ -182,7 +200,7 @@ export async function publishQuestionAction(
 
   if (!questionId) {
     redirect(
-      "/app/revisao-questoes",
+      "/admin/questoes/revisao",
     );
   }
 
@@ -342,7 +360,7 @@ export async function publishQuestionAction(
   );
 
   revalidatePath(
-    "/app/revisao-questoes",
+    "/admin/questoes/revisao",
   );
 
   redirect(

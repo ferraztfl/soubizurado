@@ -36,7 +36,7 @@ const navigationGroups: readonly NavigationGroup[] = [
     items: [
       {
         label: "Revisão editorial",
-        href: "/app/revisao-questoes",
+        href: "/admin/questoes/revisao",
       },
       {
         label: "Todas as questões",
