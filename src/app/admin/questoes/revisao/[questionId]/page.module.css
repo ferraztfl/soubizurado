@@ -48,8 +48,9 @@
   display: grid;
   gap: 18px;
   padding: 22px;
-  border: 1px solid rgba(127, 127, 127, 0.25);
+  border: 1px solid var(--sb-border);
   border-radius: 16px;
+  background: var(--sb-surface);
 }
 
 .editorTitle {
@@ -81,10 +82,11 @@
   width: 100%;
   min-height: 44px;
   padding: 0 12px;
-  border: 1px solid rgba(127, 127, 127, 0.32);
+  border: 1px solid var(--sb-border-strong);
   border-radius: 10px;
-  background: inherit;
-  color: inherit;
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font: inherit;
 }
 
 .saveButton,
@@ -99,13 +101,22 @@
 }
 
 .saveButton {
-  background: rgba(127, 127, 127, 0.16);
-  color: inherit;
+  border: 1px solid var(--sb-border-strong);
+  background: var(--sb-surface);
+  color: var(--sb-text-strong);
+}
+
+.saveButton:hover {
+  background: var(--sb-surface-muted);
 }
 
 .publishButton {
-  background: #111827;
+  background: var(--sb-brand);
   color: #ffffff;
+}
+
+.publishButton:not(:disabled):hover {
+  background: var(--sb-brand-strong);
 }
 
 .publishButton:disabled {

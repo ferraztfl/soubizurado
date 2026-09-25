@@ -14,6 +14,9 @@ import {
   validateQuestionForPublication,
 } from "@/modules/question-bank/domain/question-publication-policy";
 import {
+  parseQuestionClassificationChoice,
+} from "@/modules/question-bank/presentation/question-classification-choice";
+import {
   getPrismaClient,
 } from "@/shared/infrastructure/database/prisma";
 
@@ -49,7 +52,7 @@ function reviewUrl(
     : base;
 }
 
-export async function saveQuestionTopicAction(
+export async function saveQuestionClassificationAction(
   formData: FormData,
 ): Promise<void> {
   await requireAdminUser();
@@ -60,19 +63,20 @@ export async function saveQuestionTopicAction(
       "questionId",
     );
 
-  const topicId =
-    readRequiredString(
-      formData,
-      "topicId",
-    );
-
   if (!questionId) {
     redirect(
       "/admin/questoes/revisao",
     );
   }
 
-  if (!topicId) {
+  const choice =
+    parseQuestionClassificationChoice(
+      formData.get(
+        "classification",
+      ),
+    );
+
+  if (!choice) {
     redirect(
       reviewUrl(
         questionId,
@@ -111,25 +115,97 @@ export async function saveQuestionTopicAction(
     );
   }
 
-  const topic =
-    await prisma.topic.findFirst({
-      where: {
-        id:
-          topicId,
-
-        disciplineId:
-          question.disciplineId,
-
-        isActive:
-          true,
+  // Only active entries of the question discipline are accepted; an
+  // inactive assunto blocks its topics too.
+  const activeTopicWhere = {
+    disciplineId:
+      question.disciplineId,
+    isActive:
+      true,
+    OR: [
+      {
+        areaId:
+          null,
       },
-
-      select: {
-        id: true,
+      {
+        area: {
+          isActive:
+            true,
+        },
       },
-    });
+    ],
+  };
 
-  if (!topic) {
+  let classification:
+    | Readonly<{
+        areaId: string | null;
+        topicId: string;
+        subtopicId: string | null;
+      }>
+    | null = null;
+
+  if (choice.kind === "topic") {
+    const topic =
+      await prisma.topic.findFirst({
+        where: {
+          id:
+            choice.topicId,
+          ...activeTopicWhere,
+        },
+
+        select: {
+          id: true,
+          areaId: true,
+        },
+      });
+
+    // Choosing a topic clears any previous subtopic.
+    classification = topic
+      ? {
+          areaId:
+            topic.areaId,
+          topicId:
+            topic.id,
+          subtopicId:
+            null,
+        }
+      : null;
+  } else {
+    const subtopic =
+      await prisma.subtopic.findFirst({
+        where: {
+          id:
+            choice.subtopicId,
+          isActive:
+            true,
+          topic:
+            activeTopicWhere,
+        },
+
+        select: {
+          id: true,
+          topic: {
+            select: {
+              id: true,
+              areaId: true,
+            },
+          },
+        },
+      });
+
+    classification = subtopic
+      ? {
+          areaId:
+            subtopic.topic.areaId,
+          topicId:
+            subtopic.topic.id,
+          subtopicId:
+            subtopic.id,
+        }
+      : null;
+  }
+
+  if (!classification) {
     redirect(
       reviewUrl(
         questionId,
@@ -151,13 +227,7 @@ export async function saveQuestionTopicAction(
           question.disciplineId,
       },
 
-      data: {
-        topicId:
-          topic.id,
-
-        subtopicId:
-          null,
-      },
+      data: classification,
     });
 
   if (

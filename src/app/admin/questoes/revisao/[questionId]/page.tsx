@@ -16,14 +16,23 @@ import {
 } from "@/app/app/questoes/_components/question-media";
 
 import {
+  encodeSubtopicChoice,
+  encodeTopicChoice,
+} from "@/modules/question-bank/presentation/question-classification-choice";
+
+import {
   publishQuestionAction,
-  saveQuestionTopicAction,
+  saveQuestionClassificationAction,
 } from "./actions";
 
 import styles from "./page.module.css";
 
 export const dynamic =
   "force-dynamic";
+
+// Indents subtopics under their topic inside a native <select>.
+const SUBTOPIC_PREFIX =
+  "\u00a0\u00a0\u21b3 ";
 
 type PageProps =
   Readonly<{
@@ -127,8 +136,27 @@ export default async function ReviewQuestionPage(
         sourceId: true,
         disciplineId: true,
         topicId: true,
+        subtopicId: true,
+
+        knowledgeArea: {
+          select: {
+            name: true,
+          },
+        },
 
         discipline: {
+          select: {
+            name: true,
+          },
+        },
+
+        area: {
+          select: {
+            name: true,
+          },
+        },
+
+        subtopic: {
           select: {
             name: true,
           },
@@ -238,7 +266,8 @@ export default async function ReviewQuestionPage(
     notFound();
   }
 
-  const topics =
+  // Active taxonomy of the question discipline, grouped by assunto.
+  const taxonomyTopics =
     question.disciplineId
       ? await prisma.topic.findMany({
           where: {
@@ -247,19 +276,128 @@ export default async function ReviewQuestionPage(
 
             isActive:
               true,
+
+            OR: [
+              {
+                areaId:
+                  null,
+              },
+              {
+                area: {
+                  isActive:
+                    true,
+                },
+              },
+            ],
           },
 
-          orderBy: {
-            name:
-              "asc",
-          },
+          orderBy: [
+            {
+              sortOrder:
+                "asc",
+            },
+            {
+              name:
+                "asc",
+            },
+          ],
 
           select: {
             id: true,
             name: true,
+
+            area: {
+              select: {
+                id: true,
+                name: true,
+                sortOrder: true,
+              },
+            },
+
+            subtopics: {
+              where: {
+                isActive:
+                  true,
+              },
+
+              orderBy: [
+                {
+                  sortOrder:
+                    "asc",
+                },
+                {
+                  name:
+                    "asc",
+                },
+              ],
+
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         })
       : [];
+
+  type TopicGroup = {
+    name: string;
+    sortOrder: number;
+    topics: typeof taxonomyTopics;
+  };
+
+  const topicGroupMap =
+    new Map<string, TopicGroup>();
+
+  for (const topic of taxonomyTopics) {
+    const key =
+      topic.area?.id ?? "";
+
+    const group =
+      topicGroupMap.get(key) ?? {
+        name:
+          topic.area?.name ??
+          "Sem assunto",
+        sortOrder:
+          topic.area?.sortOrder ??
+          Number.MAX_SAFE_INTEGER,
+        topics: [],
+      };
+
+    group.topics.push(topic);
+    topicGroupMap.set(key, group);
+  }
+
+  const topicGroups =
+    [...topicGroupMap.values()].sort(
+      (left, right) =>
+        left.sortOrder -
+          right.sortOrder ||
+        left.name.localeCompare(
+          right.name,
+          "pt-BR",
+        ),
+    );
+
+  const currentChoice =
+    question.subtopicId
+      ? encodeSubtopicChoice(
+          question.subtopicId,
+        )
+      : question.topicId
+        ? encodeTopicChoice(
+            question.topicId,
+          )
+        : "";
+
+  const classificationPath =
+    [
+      question.area?.name,
+      question.topic?.name,
+      question.subtopic?.name,
+    ]
+      .filter(Boolean)
+      .join(" › ");
 
   const publicationIssues =
     validateQuestionForPublication({
@@ -375,7 +513,7 @@ export default async function ReviewQuestionPage(
 
       {searchParams.saved === "1" ? (
         <div className={styles.noticeSuccess}>
-          Tópico salvo com sucesso.
+          Classificação salva com sucesso.
         </div>
       ) : null}
 
@@ -396,16 +534,17 @@ export default async function ReviewQuestionPage(
               styles.editorDescription
             }
           >
-            Selecione um tópico da disciplina
-            desta questão. A publicação só será
-            liberada quando todas as regras do
-            banco de questões forem atendidas.
+            Escolha o tópico ou, quando possível,
+            o subtópico da disciplina desta questão.
+            A publicação só é liberada quando todas
+            as regras do banco de questões forem
+            atendidas.
           </p>
         </div>
 
         <form
           action={
-            saveQuestionTopicAction
+            saveQuestionClassificationAction
           }
           className={styles.formRow}
         >
@@ -417,32 +556,56 @@ export default async function ReviewQuestionPage(
 
           <label className={styles.field}>
             <span>
-              Tópico de{" "}
+              Classificação em{" "}
               {question.discipline?.name ??
                 "disciplina não definida"}
             </span>
 
             <select
-              name="topicId"
+              name="classification"
               defaultValue={
-                question.topicId ??
-                ""
+                currentChoice
               }
               className={styles.select}
               required
             >
               <option value="">
-                Selecione um tópico
+                Selecione um tópico ou subtópico
               </option>
 
-              {topics.map(
-                (topic) => (
-                  <option
-                    key={topic.id}
-                    value={topic.id}
+              {topicGroups.map(
+                (group) => (
+                  <optgroup
+                    key={group.name}
+                    label={group.name}
                   >
-                    {topic.name}
-                  </option>
+                    {group.topics.flatMap(
+                      (topic) => [
+                        <option
+                          key={topic.id}
+                          value={encodeTopicChoice(
+                            topic.id,
+                          )}
+                        >
+                          {topic.name}
+                        </option>,
+
+                        ...topic.subtopics.map(
+                          (subtopic) => (
+                            <option
+                              key={subtopic.id}
+                              value={encodeSubtopicChoice(
+                                subtopic.id,
+                              )}
+                            >
+                              {SUBTOPIC_PREFIX}
+                              {subtopic.name}
+                            </option>
+                          ),
+                        ),
+                      ],
+                    )}
+                  </optgroup>
                 ),
               )}
             </select>
@@ -452,14 +615,16 @@ export default async function ReviewQuestionPage(
             type="submit"
             className={styles.saveButton}
           >
-            Salvar tópico
+            Salvar classificação
           </button>
         </form>
 
-        {topics.length === 0 ? (
+        {taxonomyTopics.length === 0 ? (
           <p className={styles.publishHint}>
-            Ainda não existem tópicos ativos
-            cadastrados para esta disciplina.
+            Esta disciplina ainda não possui
+            tópicos ativos. Questões nas
+            disciplinas antigas do ENEM aguardam
+            reclassificação de disciplina.
           </p>
         ) : null}
 
@@ -541,6 +706,13 @@ export default async function ReviewQuestionPage(
       </section>
 
       <section className={styles.meta}>
+        {question.knowledgeArea ? (
+          <span>
+            Área:{" "}
+            {question.knowledgeArea.name}
+          </span>
+        ) : null}
+
         <span>
           Disciplina:{" "}
           {question.discipline?.name ??
@@ -548,9 +720,9 @@ export default async function ReviewQuestionPage(
         </span>
 
         <span>
-          Tópico:{" "}
-          {question.topic?.name ??
-            "Não definido"}
+          Classificação:{" "}
+          {classificationPath ||
+            "Não definida"}
         </span>
 
         <span>
