@@ -90,7 +90,7 @@
   color: var(--sb-text-strong);
 }
 
-.navItem:first-of-type {
+.navItemActive {
   background: var(--sb-sidebar-active);
   color: var(--sb-brand-strong);
 }
@@ -109,7 +109,7 @@
   border-radius: 50%;
 }
 
-.navItem:first-of-type .navDot {
+.navItemActive .navDot {
   border-color: var(--sb-brand);
   background: var(--sb-brand);
   box-shadow: 0 0 0 4px rgba(212, 18, 0, 0.08);
@@ -252,4 +252,5 @@
     padding: 24px 18px 48px;
   }
 }
+
 

@@ -8,6 +8,10 @@ import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
+function formatCount(value: number): string {
+  return value.toLocaleString("pt-BR");
+}
+
 export default async function AdminHomePage() {
   const prisma = getPrismaClient();
 
@@ -62,44 +66,45 @@ export default async function AdminHomePage() {
     {
       label: "Total de questões",
       value: total,
+      detail: "Base cadastrada",
+      tone: "neutral",
     },
     {
       label: "Em revisão",
       value: inReview,
-    },
-    {
-      label: "Publicadas",
-      value: published,
-    },
-    {
-      label: "Rascunhos",
-      value: draft,
-    },
-    {
-      label: "Arquivadas",
-      value: archived,
+      detail: "Aguardando validação",
+      tone: "attention",
     },
     {
       label: "Sem tópico",
       value: missingTopic,
+      detail: "Classificação pendente",
+      tone: "critical",
     },
-  ];
+    {
+      label: "Publicadas",
+      value: published,
+      detail: "Disponíveis aos alunos",
+      tone: "success",
+    },
+  ] as const;
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <div>
+        <div className={styles.headerCopy}>
           <p className={styles.eyebrow}>
-            Backoffice
+            Banco de questões
           </p>
 
           <h1>
-            Administração
+            Visão geral
           </h1>
 
           <p className={styles.description}>
-            Gestão editorial do banco de questões,
-            importações, taxonomia e publicação.
+            Acompanhe a saúde editorial da base,
+            priorize pendências e acesse as
+            principais operações do backoffice.
           </p>
         </div>
 
@@ -107,7 +112,16 @@ export default async function AdminHomePage() {
           href="/app/revisao-questoes"
           className={styles.primaryAction}
         >
-          Revisar questões
+          <span>
+            Revisar questões
+          </span>
+
+          <span
+            className={styles.actionArrow}
+            aria-hidden="true"
+          >
+            →
+          </span>
         </Link>
       </header>
 
@@ -118,79 +132,293 @@ export default async function AdminHomePage() {
         {metrics.map((metric) => (
           <article
             key={metric.label}
-            className={styles.metricCard}
+            className={`${styles.metricCard} ${
+              styles[metric.tone]
+            }`}
           >
-            <span>
-              {metric.label}
-            </span>
+            <div className={styles.metricHeading}>
+              <span className={styles.metricLabel}>
+                {metric.label}
+              </span>
 
-            <strong>
-              {metric.value.toLocaleString("pt-BR")}
+              <span
+                className={styles.metricIndicator}
+                aria-hidden="true"
+              />
+            </div>
+
+            <strong className={styles.metricValue}>
+              {formatCount(metric.value)}
             </strong>
+
+            <span className={styles.metricDetail}>
+              {metric.detail}
+            </span>
           </article>
         ))}
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}>
+      <section className={styles.workspaceGrid}>
+        <article className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <p className={styles.sectionEyebrow}>
+                Fluxo editorial
+              </p>
+
+              <h2>
+                Prioridades
+              </h2>
+            </div>
+
+            <span className={styles.panelMeta}>
+              Atualizado em tempo real
+            </span>
+          </div>
+
+          <div className={styles.priorityList}>
+            <div className={styles.priorityItem}>
+              <div
+                className={`${styles.priorityIcon} ${styles.priorityIconCritical}`}
+                aria-hidden="true"
+              >
+                1
+              </div>
+
+              <div className={styles.priorityContent}>
+                <div className={styles.priorityTitleRow}>
+                  <strong>
+                    Classificação taxonômica
+                  </strong>
+
+                  <span className={styles.priorityBadge}>
+                    Prioridade alta
+                  </span>
+                </div>
+
+                <p>
+                  Questões ativas ainda sem tópico
+                  canônico definido.
+                </p>
+              </div>
+
+              <strong className={styles.priorityCount}>
+                {formatCount(missingTopic)}
+              </strong>
+            </div>
+
+            <div className={styles.priorityItem}>
+              <div
+                className={`${styles.priorityIcon} ${styles.priorityIconAttention}`}
+                aria-hidden="true"
+              >
+                2
+              </div>
+
+              <div className={styles.priorityContent}>
+                <div className={styles.priorityTitleRow}>
+                  <strong>
+                    Revisão editorial
+                  </strong>
+                </div>
+
+                <p>
+                  Questões aguardando validação antes
+                  da publicação.
+                </p>
+              </div>
+
+              <strong className={styles.priorityCount}>
+                {formatCount(inReview)}
+              </strong>
+            </div>
+
+            <div className={styles.priorityItem}>
+              <div
+                className={styles.priorityIcon}
+                aria-hidden="true"
+              >
+                3
+              </div>
+
+              <div className={styles.priorityContent}>
+                <div className={styles.priorityTitleRow}>
+                  <strong>
+                    Rascunhos
+                  </strong>
+                </div>
+
+                <p>
+                  Registros que ainda não entraram
+                  na fila editorial.
+                </p>
+              </div>
+
+              <strong className={styles.priorityCount}>
+                {formatCount(draft)}
+              </strong>
+            </div>
+          </div>
+
+          <div className={styles.panelFooter}>
+            <Link
+              href="/app/revisao-questoes"
+              className={styles.secondaryAction}
+            >
+              Abrir fila de revisão
+              <span aria-hidden="true">
+                →
+              </span>
+            </Link>
+          </div>
+        </article>
+
+        <aside className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <p className={styles.sectionEyebrow}>
+                Atalhos
+              </p>
+
+              <h2>
+                Operações rápidas
+              </h2>
+            </div>
+          </div>
+
+          <div className={styles.quickActions}>
+            <Link
+              href="/app/revisao-questoes"
+              className={styles.quickAction}
+            >
+              <div>
+                <strong>
+                  Revisar questões
+                </strong>
+
+                <span>
+                  Classificar e publicar
+                </span>
+              </div>
+
+              <span
+                className={styles.quickActionArrow}
+                aria-hidden="true"
+              >
+                →
+              </span>
+            </Link>
+
+            <div className={styles.quickActionDisabled}>
+              <div>
+                <strong>
+                  Nova questão
+                </strong>
+
+                <span>
+                  Cadastro manual
+                </span>
+              </div>
+
+              <span className={styles.comingSoon}>
+                Em breve
+              </span>
+            </div>
+
+            <div className={styles.quickActionDisabled}>
+              <div>
+                <strong>
+                  Importações
+                </strong>
+
+                <span>
+                  PDF, JSON, CSV e XLSX
+                </span>
+              </div>
+
+              <span className={styles.comingSoon}>
+                Em breve
+              </span>
+            </div>
+
+            <div className={styles.quickActionDisabled}>
+              <div>
+                <strong>
+                  Taxonomia
+                </strong>
+
+                <span>
+                  Disciplinas, áreas e tópicos
+                </span>
+              </div>
+
+              <span className={styles.comingSoon}>
+                Em breve
+              </span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section className={styles.baseStatus}>
+        <div className={styles.baseStatusHeading}>
           <div>
-            <p className={styles.eyebrow}>
-              Operação editorial
+            <p className={styles.sectionEyebrow}>
+              Estado da base
             </p>
 
             <h2>
-              Banco de questões
+              Distribuição editorial
             </h2>
           </div>
+
+          <span>
+            {formatCount(total)} registros
+          </span>
         </div>
 
-        <div className={styles.actionsGrid}>
-          <Link
-            href="/app/revisao-questoes"
-            className={styles.actionCard}
-          >
-            <strong>
-              Revisão de questões
-            </strong>
-
+        <div className={styles.baseStats}>
+          <div>
             <span>
-              Classifique, valide e publique questões
-              que aguardam revisão.
+              Rascunhos
             </span>
-          </Link>
 
-          <div className={styles.actionCardMuted}>
             <strong>
-              Cadastro manual
+              {formatCount(draft)}
             </strong>
-
-            <span>
-              Próxima etapa do Backoffice.
-            </span>
           </div>
 
-          <div className={styles.actionCardMuted}>
-            <strong>
-              Central de importações
-            </strong>
-
+          <div>
             <span>
-              PDF, JSON, CSV e XLSX.
+              Em revisão
             </span>
+
+            <strong>
+              {formatCount(inReview)}
+            </strong>
           </div>
 
-          <div className={styles.actionCardMuted}>
-            <strong>
-              Taxonomia
-            </strong>
-
+          <div>
             <span>
-              Disciplinas, áreas, tópicos e subtópicos.
+              Publicadas
             </span>
+
+            <strong>
+              {formatCount(published)}
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              Arquivadas
+            </span>
+
+            <strong>
+              {formatCount(archived)}
+            </strong>
           </div>
         </div>
       </section>
     </main>
   );
 }
-
