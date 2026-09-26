@@ -10,7 +10,7 @@ import {
   countCatalog,
   validateCanonicalTaxonomyCatalog,
 } from "../src/modules/taxonomy/domain/canonical-taxonomy-catalog";
-import { ENEM_CANONICAL_TAXONOMY_V1 } from "../src/modules/taxonomy/infrastructure/catalog/enem-canonical-taxonomy-v1";
+import { CANONICAL_TAXONOMY } from "../src/modules/taxonomy/infrastructure/catalog/canonical-taxonomy";
 import {
   applyTaxonomySeedPlan,
   loadTaxonomySnapshot,
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   }
 
   const apply = process.argv.slice(2).includes("--apply");
-  const catalog = ENEM_CANONICAL_TAXONOMY_V1;
+  const catalog = CANONICAL_TAXONOMY;
 
   const catalogIssues = validateCanonicalTaxonomyCatalog(catalog);
 
