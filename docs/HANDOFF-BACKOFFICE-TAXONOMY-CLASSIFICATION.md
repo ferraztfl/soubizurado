@@ -453,3 +453,15 @@ Vale sobre §1/§12 onde divergir.
   Decisão: manter `labelled`. A lista de Detalhes ajuda a IA a escolher o Subtópico; ENEM não pode ser
   restrito a uma Matéria (regras erram a Matéria do ENEM em 20–35%). Ferramentas: `classification:calibrate-ai`
   (paga, somente leitura) e `classification:calibrate-rules` (grátis).
+
+### 13.4 Leitor V/F e importação por JSON (26/09/2026, tarde)
+- **Leitor `AOCP_VF`** (`aocp-true-false-parser.ts`): cadernos Instituto AOCP "julgue como VERDADEIRO ou
+  FALSO" (UFBA 2016). Gabarito com todos os cargos → cargo = linha da capa que casa com um único bloco.
+  Testado com os PDFs reais (85/85). Prévia pronta no upload `85838b76-…` — **importação não confirmada**.
+- **Importação por JSON** (`soubizurado.exam.v1`): `exam-json.ts` + `analyze-exam-json.ts`; imagens =
+  página + caixa 0–1000, recortadas do PDF com `pdftoppm`. Prompts e esquema para um app no Google AI
+  Studio em `docs/importacao-json/`. Próximo passo possível: embutir a conversão (Gemini com PDF) no /admin.
+- Simulados exportados da Gran Cursos (ex.: "INSTITUTO AOCP - 2010 - COM GABARITO.pdf") **não** são
+  importados (regra de fontes); usar como lista para baixar as provas oficiais.
+- Testes de "IA treinada": Naive Bayes 31%; vizinhos TF-IDF 42% (93% de acerto com confiança ≥0,7, cobrindo
+  11%). Candidato a camada grátis antes do Gemini; embeddings locais (Ollama) ainda não medidos.
