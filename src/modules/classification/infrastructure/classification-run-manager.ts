@@ -106,6 +106,23 @@ export async function enqueueUnclassifiedQuestions(): Promise<number> {
   });
 }
 
+const MAX_RETRY_WAIT_MS = 10 * 60_000;
+
+/** Time until the earliest pending retry of this version, or null if none. */
+async function millisecondsUntilNextRetry(classifierVersion: string): Promise<number | null> {
+  const next = await getPrismaClient().questionClassificationTask.findFirst({
+    where: { classifierVersion, status: "PENDING" },
+    orderBy: { nextAttemptAt: "asc" },
+    select: { nextAttemptAt: true },
+  });
+
+  if (!next) {
+    return null;
+  }
+
+  return next.nextAttemptAt ? next.nextAttemptAt.getTime() - Date.now() : 0;
+}
+
 async function loop(current: MutableState): Promise<void> {
   try {
     const budget = readClassificationBudget();
@@ -147,7 +164,16 @@ async function loop(current: MutableState): Promise<void> {
       current.estimatedCostUsd = estimateCostUsd(budget, current);
 
       if (batch.claimed === 0) {
-        current.endReason = "Fila concluída.";
+        // Transient failures (e.g. "fetch failed") are retried with a
+        // backoff: wait for them instead of ending with work left.
+        const waitMs = await millisecondsUntilNextRetry(batch.classifierVersion);
+
+        if (waitMs !== null && waitMs <= MAX_RETRY_WAIT_MS) {
+          await new Promise((resolve) => setTimeout(resolve, Math.max(waitMs, 1_000)));
+          continue;
+        }
+
+        current.endReason = waitMs === null ? "Fila concluída." : "Restam tarefas com nova tentativa agendada para mais tarde.";
         return;
       }
 
