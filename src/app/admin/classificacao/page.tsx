@@ -13,7 +13,7 @@ import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import { SubmitButton } from "../_components/submit-button";
 import { startClassificationRunAction, stopClassificationRunAction } from "./actions";
-import { AutoRefresh } from "./auto-refresh";
+import { AutoRefresh } from "../_components/auto-refresh";
 import styles from "./classificacao.module.css";
 
 export const dynamic = "force-dynamic";

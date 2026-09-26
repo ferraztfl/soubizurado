@@ -85,9 +85,33 @@ export function detectMetadata(coverText: string): DetectedExamMetadata {
     lines.find((line) => /secretaria|pol[ií]cia|assembleia|tribunal|minist[ée]rio/i.test(line)) ??
     null;
 
+  // AOCP covers print the role right above "Nível", after the booklet
+  // code ("M1397001N") or the notice line; it may span two lines
+  // ("POLICIAL PENAL" + "(FEMININO E MASCULINO)").
+  const levelIndex = lines.findIndex((line) => /^n[ií]vel$/i.test(line));
+  const roleLines: string[] = [];
+
+  for (let index = levelIndex - 1; index >= 0 && roleLines.length < 2; index -= 1) {
+    const line = lines[index]!;
+    const isRole =
+      line.length >= 3 &&
+      line.length <= 90 &&
+      line === line.toLocaleUpperCase("pt-BR") &&
+      /[A-ZÀ-Ý]{3,}/.test(line) &&
+      !/^[A-Z]\d{6,8}[A-Z]?$/.test(line) &&
+      !/edital|portaria|governo|concurso/i.test(line) &&
+      line !== organizationLine;
+
+    if (!isRole) {
+      break;
+    }
+
+    roleLines.unshift(line);
+  }
+
   return {
     organization: organizationLine,
-    careerPosition: null,
+    careerPosition: levelIndex > 0 && roleLines.length > 0 ? roleLines.join(" ") : null,
     year: year ? Number(year) : null,
     level: level ? level[0]!.toUpperCase() + level.slice(1).toLowerCase() : null,
     notice: noticeLine,

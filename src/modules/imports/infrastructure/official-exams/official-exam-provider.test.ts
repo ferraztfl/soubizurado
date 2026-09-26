@@ -162,7 +162,21 @@ describe("board and metadata detection", () => {
       year: 2023,
       level: "Médio",
       organization: "PMPE – POLÍCIA MILITAR DE PERNAMBUCO",
+      careerPosition: "SOLDADO DA POLÍCIA MILITAR",
     });
+  });
+
+  it("reads the role printed above the level, after the booklet code", () => {
+    expect(
+      detectMetadata(
+        "T1932001N\nGOVERNO DO ESTADO DE MINAS GERAIS SEJUSP SECRETARIA DE ESTADO DE JUSTIÇA\nEDITAL DE CONCURSO PÚBLICO SEJUSP N° 01/2025\nPOLICIAL PENAL\n(FEMININO E MASCULINO)\nNível\nMÉDIO",
+      ).careerPosition,
+    ).toBe("POLICIAL PENAL (FEMININO E MASCULINO)");
+    expect(
+      detectMetadata("PMPE – POLÍCIA MILITAR DE PERNAMBUCO\nT1402002N\n2° TENENTE DA POLÍCIA MILITAR\nNível\nSUPERIOR")
+        .careerPosition,
+    ).toBe("2° TENENTE DA POLÍCIA MILITAR");
+    expect(detectMetadata("Prova sem nível na capa").careerPosition).toBeNull();
   });
 
   it("removes aggregator watermarks", () => {

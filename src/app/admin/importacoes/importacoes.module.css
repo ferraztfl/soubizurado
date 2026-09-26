@@ -25,6 +25,12 @@
   gap: 20px;
 }
 
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .eyebrow {
   margin: 0;
   color: var(--sb-brand);

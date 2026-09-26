@@ -57,9 +57,14 @@ export default async function ImportsPage() {
           </p>
         </div>
 
-        <Link href="/admin/importacoes/nova" className={styles.primaryButton}>
-          Nova importação
-        </Link>
+        <div className={styles.headerActions}>
+          <Link href="/admin/importacoes/lote" className={styles.secondaryButton}>
+            Importação em lote
+          </Link>
+          <Link href="/admin/importacoes/nova" className={styles.primaryButton}>
+            Nova importação
+          </Link>
+        </div>
       </header>
 
       <section className={styles.card}>

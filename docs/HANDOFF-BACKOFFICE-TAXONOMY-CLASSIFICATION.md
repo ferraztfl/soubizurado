@@ -465,3 +465,15 @@ Vale sobre §1/§12 onde divergir.
   importados (regra de fontes); usar como lista para baixar as provas oficiais.
 - Testes de "IA treinada": Naive Bayes 31%; vizinhos TF-IDF 42% (93% de acerto com confiança ≥0,7, cobrindo
   11%). Candidato a camada grátis antes do Gemini; embeddings locais (Ollama) ainda não medidos.
+
+### 13.5 Importação em lote (26/09/2026, fim da tarde)
+- `/admin/importacoes/lote`: pasta de entrada `data-private/imports/lote-entrada/` (subpasta por prova ou
+  `prova.pdf` + `prova-gabarito.pdf`; gabarito único na raiz vale para subpastas sem gabarito). "Ler pasta"
+  analisa em segundo plano (manifesto em `data-private/imports/lotes/<id>/lote.json`, originais movidos para
+  `…/originais`); "Importar todas as prontas" importa em sequência e classifica uma vez no fim.
+- Confirmação compartilhada: `confirm-official-exam-import.ts` (usada pela prévia individual e pelo lote;
+  agora também recusa no servidor análises com pendências).
+- Capa AOCP: cargo detectado nas linhas acima de "Nível" (ex.: "SOLDADO DA POLÍCIA MILITAR").
+- Teste real: Libras (V/F, pronta 85/85) e PMPE Soldado 2023 (pronta 54/60) — **analisadas, não importadas**
+  (último lote `e1f017a0-…`; Libras no lote `29e4901e-…`).
+- Estado do lote em memória do processo (um lote por vez); em hospedagem serverless precisaria de fila externa.
