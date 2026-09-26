@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   try {
     await execFileAsync(
       "pdftohtml",
-      ["-xml", "-hidden", "-nodrm", "-i", "-enc", "UTF-8", resolve(prova), "document"],
+      ["-xml", "-hidden", "-nodrm", "-enc", "UTF-8", resolve(prova), "document"],
       { cwd: workspace, windowsHide: true, maxBuffer: 1024 * 1024 * 16 },
     );
 

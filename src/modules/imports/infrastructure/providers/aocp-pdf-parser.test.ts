@@ -110,8 +110,8 @@ describe("parseAocpExam", () => {
       "O termo destacado em “É através do amor” pode ser substituído por",
     );
     expect(question?.alternatives).toEqual([
-      { label: "A", content: "“porque temos”, _ad_ _referendum_ ." },
-      { label: "B", content: "“por que temos”." },
+      { label: "A", content: "“porque temos”, _ad_ _referendum_ .", images: [] },
+      { label: "B", content: "“por que temos”.", images: [] },
     ]);
     expect(question?.refersToHighlight).toBe(true);
   });
@@ -154,6 +154,60 @@ describe("booklets with blocks and optional languages", () => {
       [1, 1, "Língua Estrangeira - Espanhol"],
       [2, 0, "Estatística"],
     ]);
+    expect(validateAocpExam(exam)).toEqual([]);
+  });
+});
+
+function image(top: number, left: number, src: string, size = 120): string {
+  return `<image top="${top}" left="${left}" width="${size}" height="${size}" src="${src}"/>`;
+}
+
+const IMAGE_XML = `<?xml version="1.0"?>
+<pdf2xml>
+${FONTS}
+${page(1, "")}
+${[2, 3, 4].map((number) => page(number, [
+  image(60, 700, `logo-${number}.png`, 60),
+  ...(number === 2
+    ? [
+        text(88, 64, 1, "<b>Estatística</b>"),
+        text(120, 64, 3, "<b>Observe o gráfico.</b>"),
+        image(140, 90, "grafico.png"),
+        text(300, 64, 2, "<b>1 </b>"),
+        text(320, 64, 3, "<b>Com base no gráfico, a média é</b>"),
+        image(340, 64, "tabela.png"),
+        text(480, 64, 2, "(A) "),
+        image(480, 94, "alternativa-a.png", 60),
+        text(560, 64, 2, "(B) "),
+        text(559, 94, 3, "Dez."),
+        image(700, 470, "tiny.png", 10),
+      ]
+    : []),
+].join("\n"))).join("\n")}
+</pdf2xml>`;
+
+describe("images", () => {
+  const exam = parseAocpExam(readAocpLines(IMAGE_XML));
+  const [question] = exam.questions;
+
+  it("attaches images to support text, statement and alternatives", () => {
+    expect(question?.supportText).toBe("**Observe o gráfico.**");
+    expect(question?.supportImages).toEqual(["grafico.png"]);
+    expect(question?.images).toEqual(["tabela.png"]);
+    expect(question?.alternatives).toEqual([
+      { label: "A", content: "", images: ["alternativa-a.png"] },
+      { label: "B", content: "Dez.", images: [] },
+    ]);
+  });
+
+  it("drops repeated logos and tiny images, and accepts image-only alternatives", () => {
+    const all = [
+      ...(question?.images ?? []),
+      ...(question?.supportImages ?? []),
+      ...(question?.alternatives.flatMap((alternative) => alternative.images) ?? []),
+    ];
+
+    expect(all.some((name) => name.startsWith("logo-") || name === "tiny.png")).toBe(false);
     expect(validateAocpExam(exam)).toEqual([]);
   });
 });

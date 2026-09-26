@@ -12,7 +12,12 @@
  * - support texts: text aligned to the column margin that appears
  *   outside a question; it applies to the following questions of the
  *   same section until another support text or section starts;
- * - "Redação" sections end the objective part.
+ * - "Redação" sections end the objective part;
+ * - images (pdftohtml `<image>`) follow the same reading order: inside
+ *   a statement they belong to the question, indented inside an
+ *   alternative to that alternative, otherwise to the support text.
+ *   Tiny images and images repeated at the same spot on several pages
+ *   (logos) are dropped.
  *
  * Pure functions only; no file system, no database.
  */
@@ -26,11 +31,14 @@ export type AocpLine = Readonly<{
   text: string;
   column: 0 | 1;
   columnLeft: number;
+  /** Extracted image file name (relative to the pdftohtml output). */
+  image: string | null;
 }>;
 
 export type AocpAlternative = Readonly<{
   label: string;
   content: string;
+  images: readonly string[];
 }>;
 
 export type AocpQuestion = Readonly<{
@@ -50,8 +58,12 @@ export type AocpQuestion = Readonly<{
   refersToHighlight: boolean;
   section: string | null;
   statement: string;
+  /** Images placed inside the statement. */
+  images: readonly string[];
   alternatives: readonly AocpAlternative[];
   supportText: string | null;
+  /** Images that belong to the support text shared with this question. */
+  supportImages: readonly string[];
   page: number;
 }>;
 
@@ -73,6 +85,8 @@ export function answerFor(
 }
 
 const HEADER_MAX_TOP = 75;
+const MIN_IMAGE_SIDE = 24;
+const REPEATED_IMAGE_PAGES = 3;
 const FOOTER_MIN_RATIO = 0.93;
 const SAME_LINE_TOLERANCE = 4;
 const ALTERNATIVE_LABEL = /^\(([A-E])\)\s*(.*)$/;
@@ -156,14 +170,45 @@ export function readAocpLines(xml: string): AocpLine[] {
         text: content,
         column,
         columnLeft: 0,
+        image: null,
       });
+    }
+
+    for (const image of page[4]!.matchAll(
+      /<image top="(\d+)" left="(\d+)" width="(\d+)" height="(\d+)" src="([^"]+)"/g,
+    )) {
+      const top = Number(image[1]);
+      const left = Number(image[2]);
+      const imageWidth = Number(image[3]);
+      const imageHeight = Number(image[4]);
+
+      if (
+        imageWidth < MIN_IMAGE_SIDE ||
+        imageHeight < MIN_IMAGE_SIDE ||
+        top > height * FOOTER_MIN_RATIO
+      ) {
+        continue;
+      }
+
+      pageLines.push({
+        page: pageNumber,
+        top,
+        left,
+        size: 0,
+        bold: false,
+        text: "",
+        column: left < width / 2 ? 0 : 1,
+        columnLeft: 0,
+        image: decodeEntities(image[5]!),
+        imageBox: `${Math.round(left / 4)}:${Math.round(top / 4)}:${imageWidth}:${imageHeight}`,
+      } as AocpLine & { imageBox: string });
     }
 
     // Column margin = smallest left offset used in that column.
     const margins = [0, 1].map((column) =>
       Math.min(
         ...pageLines
-          .filter((line) => line.column === column)
+          .filter((line) => line.column === column && !line.image)
           .map((line) => line.left),
       ),
     );
@@ -199,7 +244,9 @@ export function readAocpLines(xml: string): AocpLine[] {
       const withMargin = { ...line, columnLeft: margins[line.column]! };
 
       if (
+        !line.image &&
         previous &&
+        !previous.image &&
         previous.page === line.page &&
         previous.column === line.column &&
         Math.abs(previous.top - line.top) <= SAME_LINE_TOLERANCE &&
@@ -217,7 +264,26 @@ export function readAocpLines(xml: string): AocpLine[] {
     }
   }
 
-  return lines;
+  // Drop logos/decorations printed at the same spot on many pages.
+  const boxPages = new Map<string, Set<number>>();
+
+  for (const line of lines) {
+    const box = (line as AocpLine & { imageBox?: string }).imageBox;
+
+    if (box) {
+      boxPages.set(box, (boxPages.get(box) ?? new Set()).add(line.page));
+    }
+  }
+
+  return lines
+    .filter((line) => {
+      const box = (line as AocpLine & { imageBox?: string }).imageBox;
+      return !box || (boxPages.get(box)?.size ?? 0) < REPEATED_IMAGE_PAGES;
+    })
+    .map((line) => {
+      const { imageBox: _imageBox, ...rest } = line as AocpLine & { imageBox?: string };
+      return rest;
+    });
 }
 
 function joinFragments(left: string, right: string, separator: string): string {
@@ -235,9 +301,11 @@ type MutableQuestion = {
   number: number;
   variant: number;
   block: string | null;
+  images: string[];
+  supportImages: string[];
   section: string | null;
   statement: string;
-  alternatives: { label: string; content: string }[];
+  alternatives: { label: string; content: string; images: string[] }[];
   supportText: string | null;
   page: number;
 };
@@ -277,18 +345,25 @@ export function parseAocpExam(
   let state: State = "between";
   let supportParts: string[] = [];
   let supportText: string | null = null;
+  let pendingSupportImages: string[] = [];
+  let supportImages: string[] = [];
   let question: MutableQuestion | null = null;
 
   const closeSupport = () => {
     if (state === "support") {
       const text = supportParts.filter(Boolean).join("\n\n").trim();
-      supportText = text || supportText;
+
+      if (text || pendingSupportImages.length > 0) {
+        supportText = text || null;
+        supportImages = pendingSupportImages;
+      }
     }
   };
 
   const startSupport = (line: AocpLine) => {
     state = "support";
-    supportParts = [line.bold ? `**${line.text}**` : line.text];
+    supportParts = line.image ? [] : [line.bold ? `**${line.text}**` : line.text];
+    pendingSupportImages = line.image ? [line.image] : [];
   };
 
   const appendSupport = (line: AocpLine) => {
@@ -303,11 +378,29 @@ export function parseAocpExam(
   };
 
   for (const line of lines) {
+    if (line.image) {
+      const indented = line.left - line.columnLeft >= 12;
+      const currentAlternative = question?.alternatives[question.alternatives.length - 1];
+
+      if (state === "statement" && question) {
+        question.images.push(line.image);
+      } else if (state === "alternative" && currentAlternative && indented) {
+        currentAlternative.images.push(line.image);
+      } else if ((state as State) === "support") {
+        pendingSupportImages.push(line.image);
+      } else {
+        startSupport(line);
+      }
+
+      continue;
+    }
+
     if (line.bold && BLOCK_HEADING.test(line.text) && line.size >= headingSize) {
       closeSupport();
       block = line.text;
       section = null;
       supportText = null;
+      supportImages = [];
       state = "between";
       question = null;
       continue;
@@ -323,6 +416,7 @@ export function parseAocpExam(
       section = line.text;
       sections.push(section);
       supportText = null;
+      supportImages = [];
       state = "between";
       question = null;
       continue;
@@ -339,8 +433,10 @@ export function parseAocpExam(
         block,
         section,
         statement: "",
+        images: [],
         alternatives: [],
         supportText,
+        supportImages: [...supportImages],
         page: line.page,
       };
       questions.push(question);
@@ -351,7 +447,7 @@ export function parseAocpExam(
     const alternative = question ? ALTERNATIVE_LABEL.exec(line.text) : null;
 
     if (question && alternative && (state === "statement" || state === "alternative")) {
-      question.alternatives.push({ label: alternative[1]!, content: alternative[2] ?? "" });
+      question.alternatives.push({ label: alternative[1]!, content: alternative[2] ?? "", images: [] });
       state = "alternative";
       continue;
     }
@@ -380,7 +476,10 @@ export function parseAocpExam(
     questions: questions.map((item) => ({
       ...item,
       refersToHighlight: HIGHLIGHT_REFERENCE.test(item.statement),
-      alternatives: item.alternatives.map((alternative) => ({ ...alternative })),
+      alternatives: item.alternatives.map((alternative) => ({
+        ...alternative,
+        images: [...alternative.images],
+      })),
     })),
   };
 }
@@ -445,7 +544,7 @@ export function validateAocpExam(
     }
 
     for (const alternative of question.alternatives) {
-      if (!alternative.content.trim()) {
+      if (!alternative.content.trim() && alternative.images.length === 0) {
         issues.push(`${label}: alternativa ${alternative.label} vazia.`);
       }
     }
