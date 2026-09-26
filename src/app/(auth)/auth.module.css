@@ -1,0 +1,148 @@
+.header {
+  margin-bottom: 30px;
+}
+
+.header h1 {
+  margin: 0;
+  color: var(--sb-ink-800);
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+}
+
+.header p {
+  margin: 11px 0 0;
+  color: var(--sb-gray-600);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  color: #343740;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.field input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 15px;
+  border: 1px solid var(--sb-gray-300);
+  border-radius: 12px;
+  outline: none;
+  background: var(--sb-gray-50);
+  color: var(--sb-ink-800);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.field input::placeholder {
+  color: #a5a9b1;
+}
+
+.field input:focus {
+  border-color: rgba(212, 18, 0, 0.62);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(212, 18, 0, 0.08);
+}
+
+.hint {
+  color: var(--sb-gray-500);
+  font-size: 11px;
+}
+
+.submit {
+  min-height: 52px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--sb-red);
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(212, 18, 0, 0.18);
+  transition:
+    transform 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.submit:hover {
+  background: var(--sb-red-dark);
+  box-shadow: 0 13px 30px rgba(170, 18, 5, 0.22);
+  transform: translateY(-1px);
+}
+
+.submit:active {
+  transform: translateY(0);
+}
+
+.message {
+  margin: 0 0 22px;
+  padding: 13px 15px;
+  border-radius: 11px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.success {
+  border: 1px solid #bfe5d3;
+  background: #effaf5;
+  color: #23714f;
+}
+
+.error {
+  border: 1px solid #f2c7c3;
+  background: #fff3f2;
+  color: #9c3128;
+}
+
+.alternative {
+  margin: 28px 0 0;
+  color: var(--sb-gray-600);
+  text-align: center;
+  font-size: 13px;
+}
+
+.alternative a {
+  color: var(--sb-red);
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.alternative a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 520px) {
+  .header {
+    margin-bottom: 26px;
+  }
+
+  .header h1 {
+    font-size: 30px;
+  }
+
+  .header p {
+    font-size: 13px;
+  }
+
+  .field input,
+  .submit {
+    min-height: 50px;
+  }
+}

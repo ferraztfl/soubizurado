@@ -1,0 +1,833 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AppRole {
+  STUDENT
+  EDITOR
+  MODERATOR
+  ADMIN
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+enum QuestionStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuestionAnswerKeyStatus {
+  MISSING
+  DEFINED
+  VERIFIED
+}
+
+enum QuestionSourceType {
+  OFFICIAL_EXAM
+  PROVIDER_API
+  ORIGINAL
+  LICENSED
+  OTHER
+}
+
+enum QuestionLicenseStatus {
+  UNKNOWN
+  PUBLIC_DOMAIN
+  AUTHORIZED
+  LICENSED
+  RESTRICTED
+}
+
+enum TaxonomyAliasSource {
+  SEED
+  MANUAL
+  IMPORT
+}
+
+enum QuestionClassificationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  REVIEW_REQUIRED
+  FAILED
+}
+
+enum ImportJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+}
+
+enum ImportItemStatus {
+  RECEIVED
+  IMPORTED
+  DUPLICATE
+  REVIEW_REQUIRED
+  FAILED
+}
+
+enum ImportMediaTaskStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Profile {
+  id          String   @id @default(uuid()) @db.Uuid
+  authUserId  String   @unique @map("auth_user_id") @db.Uuid
+  displayName String?  @map("display_name") @db.VarChar(120)
+  avatarUrl   String?  @map("avatar_url") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  roles                  UserRole[]
+  studyAnswerAttempts    StudyAnswerAttempt[]
+  studyFavorites         StudyFavorite[]
+  taxonomyRevisions      TaxonomyRevision[]
+  appliedClassifications QuestionClassificationTask[]
+
+  @@map("profiles")
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Uuid
+  profileId String   @map("profile_id") @db.Uuid
+  role      AppRole
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, role])
+  @@index([role])
+  @@map("user_roles")
+}
+
+/// Broad knowledge area (ENEM/BNCC), e.g. "Ciências Humanas e suas
+/// Tecnologias". Groups disciplines; it is not a level of the
+/// Discipline -> Area -> Topic -> Subtopic hierarchy.
+model KnowledgeArea {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(160)
+  slug        String   @unique @db.VarChar(180)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  disciplines Discipline[]
+  questions   Question[]
+
+  @@index([isActive, sortOrder])
+  @@map("knowledge_areas")
+}
+
+model Discipline {
+  id              String   @id @default(uuid()) @db.Uuid
+  knowledgeAreaId String?  @map("knowledge_area_id") @db.Uuid
+  name            String   @db.VarChar(160)
+  slug            String   @unique @db.VarChar(180)
+  description     String?  @db.Text
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  knowledgeArea KnowledgeArea? @relation(fields: [knowledgeAreaId], references: [id], onDelete: Restrict)
+
+  areas     Area[]
+  topics    Topic[]
+  questions Question[]
+  aliases   DisciplineAlias[]
+
+  classificationSuggestions QuestionClassificationTask[]
+
+  @@index([isActive, sortOrder])
+  @@index([knowledgeAreaId, isActive, sortOrder])
+  @@map("disciplines")
+}
+
+model Area {
+  id           String   @id @default(uuid()) @db.Uuid
+  disciplineId String   @map("discipline_id") @db.Uuid
+  name         String   @db.VarChar(160)
+  slug         String   @db.VarChar(180)
+  description  String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+
+  topics    Topic[]
+  questions Question[]
+  aliases   AreaAlias[]
+
+  classificationSuggestions QuestionClassificationTask[]
+
+  @@unique([disciplineId, slug])
+  @@unique([id, disciplineId])
+  @@index([disciplineId, isActive, sortOrder])
+  @@map("areas")
+}
+
+model Topic {
+  id           String   @id @default(uuid()) @db.Uuid
+  disciplineId String   @map("discipline_id") @db.Uuid
+  areaId       String?  @map("area_id") @db.Uuid
+  name         String   @db.VarChar(180)
+  slug         String   @db.VarChar(200)
+  description  String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  area       Area?      @relation(fields: [areaId, disciplineId], references: [id, disciplineId], onDelete: Restrict, onUpdate: Restrict)
+
+  subtopics Subtopic[]
+  questions Question[]
+  aliases   TopicAlias[]
+
+  classificationSuggestions QuestionClassificationTask[]
+
+  @@unique([disciplineId, slug])
+  @@unique([id, disciplineId])
+  @@index([disciplineId, isActive, sortOrder])
+  @@index([areaId, isActive, sortOrder])
+  @@map("topics")
+}
+
+model Subtopic {
+  id          String   @id @default(uuid()) @db.Uuid
+  topicId     String   @map("topic_id") @db.Uuid
+  name        String   @db.VarChar(180)
+  slug        String   @db.VarChar(200)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  questions Question[]
+  aliases   SubtopicAlias[]
+
+  classificationSuggestions QuestionClassificationTask[]
+
+  @@unique([topicId, slug])
+  @@unique([id, topicId])
+  @@index([topicId, isActive, sortOrder])
+  @@map("subtopics")
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(120)
+  slug      String   @unique @db.VarChar(140)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  questionTags QuestionTag[]
+
+  @@index([isActive])
+  @@map("tags")
+}
+
+/// Alternative name resolving to one canonical discipline.
+/// normalizedName comes from normalizeTaxonomyTerm and is globally
+/// unique, like Discipline.slug.
+model DisciplineAlias {
+  id             String              @id @default(uuid()) @db.Uuid
+  disciplineId   String              @map("discipline_id") @db.Uuid
+  name           String              @db.VarChar(180)
+  normalizedName String              @unique @map("normalized_name") @db.VarChar(200)
+  source         TaxonomyAliasSource @default(MANUAL)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  @@index([disciplineId])
+  @@map("discipline_aliases")
+}
+
+/// Alias scoped to the owning discipline; the composite key guarantees
+/// disciplineId always matches the area discipline.
+model AreaAlias {
+  id             String              @id @default(uuid()) @db.Uuid
+  areaId         String              @map("area_id") @db.Uuid
+  disciplineId   String              @map("discipline_id") @db.Uuid
+  name           String              @db.VarChar(180)
+  normalizedName String              @map("normalized_name") @db.VarChar(200)
+  source         TaxonomyAliasSource @default(MANUAL)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  area Area @relation(fields: [areaId, disciplineId], references: [id, disciplineId], onDelete: Cascade)
+
+  @@unique([disciplineId, normalizedName])
+  @@index([areaId])
+  @@map("area_aliases")
+}
+
+model TopicAlias {
+  id             String              @id @default(uuid()) @db.Uuid
+  topicId        String              @map("topic_id") @db.Uuid
+  disciplineId   String              @map("discipline_id") @db.Uuid
+  name           String              @db.VarChar(180)
+  normalizedName String              @map("normalized_name") @db.VarChar(200)
+  source         TaxonomyAliasSource @default(MANUAL)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  topic Topic @relation(fields: [topicId, disciplineId], references: [id, disciplineId], onDelete: Cascade)
+
+  @@unique([disciplineId, normalizedName])
+  @@index([topicId])
+  @@map("topic_aliases")
+}
+
+model SubtopicAlias {
+  id             String              @id @default(uuid()) @db.Uuid
+  subtopicId     String              @map("subtopic_id") @db.Uuid
+  topicId        String              @map("topic_id") @db.Uuid
+  name           String              @db.VarChar(180)
+  normalizedName String              @map("normalized_name") @db.VarChar(200)
+  source         TaxonomyAliasSource @default(MANUAL)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  subtopic Subtopic @relation(fields: [subtopicId, topicId], references: [id, topicId], onDelete: Cascade)
+
+  @@unique([topicId, normalizedName])
+  @@index([subtopicId])
+  @@map("subtopic_aliases")
+}
+
+/// Monotonic taxonomy version. Classification results record the
+/// version they were produced against.
+model TaxonomyRevision {
+  id                 String   @id @default(uuid()) @db.Uuid
+  version            Int      @unique
+  summary            String   @db.Text
+  createdByProfileId String?  @map("created_by_profile_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  createdBy Profile? @relation(fields: [createdByProfileId], references: [id], onDelete: SetNull)
+
+  @@map("taxonomy_revisions")
+}
+
+model ExaminingBoard {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @db.VarChar(180)
+  acronym    String?  @db.VarChar(40)
+  slug       String   @unique @db.VarChar(200)
+  websiteUrl String?  @map("website_url") @db.Text
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  examinations Examination[]
+
+  @@index([isActive, name])
+  @@map("examining_boards")
+}
+
+model PublicOrganization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(200)
+  acronym   String?  @db.VarChar(40)
+  slug      String   @unique @db.VarChar(220)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  examinations Examination[]
+
+  @@index([isActive, name])
+  @@map("public_organizations")
+}
+
+model CareerPosition {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(180)
+  slug        String   @unique @db.VarChar(200)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  examinations Examination[]
+
+  @@index([isActive, name])
+  @@map("career_positions")
+}
+
+model Examination {
+  id               String    @id @default(uuid()) @db.Uuid
+  boardId          String?   @map("board_id") @db.Uuid
+  organizationId   String?   @map("organization_id") @db.Uuid
+  careerPositionId String?   @map("career_position_id") @db.Uuid
+  title            String    @db.VarChar(240)
+  slug             String    @unique @db.VarChar(260)
+  year             Int?      @db.SmallInt
+  stateCode        String?   @map("state_code") @db.Char(2)
+  noticeNumber     String?   @map("notice_number") @db.VarChar(80)
+  examDate         DateTime? @map("exam_date") @db.Date
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  board          ExaminingBoard?     @relation(fields: [boardId], references: [id], onDelete: Restrict)
+  organization   PublicOrganization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  careerPosition CareerPosition?     @relation(fields: [careerPositionId], references: [id], onDelete: Restrict)
+
+  questions   Question[]
+  occurrences QuestionOccurrence[]
+
+  @@index([boardId, year])
+  @@index([organizationId, year])
+  @@index([careerPositionId, year])
+  @@index([isActive, year])
+  @@map("examinations")
+}
+
+model QuestionSource {
+  id            String                @id @default(uuid()) @db.Uuid
+  sourceType    QuestionSourceType    @map("source_type")
+  name          String                @db.VarChar(200)
+  reference     String?               @unique @db.VarChar(250)
+  url           String?               @db.Text
+  licenseStatus QuestionLicenseStatus @default(UNKNOWN) @map("license_status")
+  licenseName   String?               @map("license_name") @db.VarChar(160)
+  licenseNotes  String?               @map("license_notes") @db.Text
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  questions   Question[]
+  occurrences QuestionOccurrence[]
+  importJobs  ImportJob[]
+
+  @@index([sourceType, licenseStatus])
+  @@map("question_sources")
+}
+
+model Question {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  type                 QuestionType
+  status               QuestionStatus          @default(DRAFT)
+  answerKeyStatus      QuestionAnswerKeyStatus @default(MISSING) @map("answer_key_status")
+  statement            String                  @db.Text
+  contentHash          String?                 @map("content_hash") @db.Char(64)
+  canonicalFingerprint String?                 @unique @map("canonical_fingerprint") @db.Char(64)
+  normalizationVersion Int                     @default(1) @map("normalization_version")
+  correctTrueFalse     Boolean?                @map("correct_true_false")
+  sourceId             String?                 @map("source_id") @db.Uuid
+  examinationId        String?                 @map("examination_id") @db.Uuid
+  knowledgeAreaId      String?                 @map("knowledge_area_id") @db.Uuid
+  disciplineId         String?                 @map("discipline_id") @db.Uuid
+  areaId               String?                 @map("area_id") @db.Uuid
+  topicId              String?                 @map("topic_id") @db.Uuid
+  subtopicId           String?                 @map("subtopic_id") @db.Uuid
+  publishedAt          DateTime?               @map("published_at") @db.Timestamptz(6)
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  source        QuestionSource? @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  examination   Examination?    @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  knowledgeArea KnowledgeArea?  @relation(fields: [knowledgeAreaId], references: [id], onDelete: Restrict)
+  discipline    Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  /// Composite keys keep area/topic inside the question discipline and
+  /// the subtopic inside the question topic at the database level.
+  area          Area?           @relation(fields: [areaId, disciplineId], references: [id, disciplineId], onDelete: Restrict, onUpdate: Restrict)
+  topic         Topic?          @relation(fields: [topicId, disciplineId], references: [id, disciplineId], onDelete: Restrict, onUpdate: Restrict)
+  subtopic      Subtopic?       @relation(fields: [subtopicId, topicId], references: [id, topicId], onDelete: Restrict, onUpdate: Restrict)
+
+  alternatives        QuestionAlternative[]
+  explanation         QuestionExplanation?
+  questionTags        QuestionTag[]
+  supportLinks        QuestionSupportLink[]
+  occurrences         QuestionOccurrence[]
+  importItems         ImportItem[]
+  duplicateCandidates ImportDuplicateCandidate[] @relation("ImportDuplicateCandidateQuestion")
+  studyAnswerAttempts StudyAnswerAttempt[]
+  studyFavorites      StudyFavorite[]
+
+  mediaLinks QuestionMediaLink[]
+  mediaTasks ImportMediaTask[]
+
+  classificationTasks QuestionClassificationTask[]
+
+  @@index([status, type])
+  @@index([status, disciplineId])
+  @@index([status, topicId])
+  @@index([status, subtopicId])
+  @@index([status, examinationId])
+  @@index([status, knowledgeAreaId])
+  @@index([sourceId])
+  @@index([contentHash])
+  @@map("questions")
+}
+
+model QuestionAlternative {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @map("question_id") @db.Uuid
+  label      String   @db.VarChar(8)
+  content    String   @db.Text
+  position   Int
+  isCorrect  Boolean  @default(false) @map("is_correct")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  studyAnswerAttempts StudyAnswerAttempt[]           @relation("StudyAttemptSelectedAlternative")
+  mediaLinks          QuestionAlternativeMediaLink[]
+
+  @@unique([questionId, label])
+  @@unique([questionId, position])
+  @@index([questionId, isCorrect])
+  @@map("question_alternatives")
+}
+
+model QuestionExplanation {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @unique @map("question_id") @db.Uuid
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_explanations")
+}
+
+model QuestionTag {
+  questionId String   @map("question_id") @db.Uuid
+  tagId      String   @map("tag_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, tagId])
+  @@index([tagId, questionId])
+  @@map("question_tags")
+}
+
+model QuestionSupportContent {
+  id          String   @id @default(uuid()) @db.Uuid
+  content     String   @db.Text
+  contentHash String   @unique @map("content_hash") @db.Char(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  questionLinks QuestionSupportLink[]
+
+  @@map("question_support_contents")
+}
+
+model QuestionSupportLink {
+  questionId       String @map("question_id") @db.Uuid
+  supportContentId String @map("support_content_id") @db.Uuid
+  position         Int
+
+  question       Question               @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  supportContent QuestionSupportContent @relation(fields: [supportContentId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, supportContentId])
+  @@unique([questionId, position])
+  @@index([supportContentId, questionId])
+  @@map("question_support_links")
+}
+
+model QuestionOccurrence {
+  id                     String   @id @default(uuid()) @db.Uuid
+  questionId             String   @map("question_id") @db.Uuid
+  sourceId               String   @map("source_id") @db.Uuid
+  examinationId          String?  @map("examination_id") @db.Uuid
+  externalId             String   @map("external_id") @db.VarChar(180)
+  externalQuestionNumber String?  @map("external_question_number") @db.VarChar(60)
+  externalExaminationId  String?  @map("external_examination_id") @db.VarChar(180)
+  sourceUrl              String?  @map("source_url") @db.Text
+  capturedAt             DateTime @default(now()) @map("captured_at") @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question    Question       @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  source      QuestionSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  examination Examination?   @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+
+  @@unique([sourceId, externalId])
+  @@index([questionId, capturedAt])
+  @@index([examinationId])
+  @@index([sourceId, externalExaminationId])
+  @@map("question_occurrences")
+}
+
+/// Persistent, auditable classification queue. Each task stores the
+/// provider output (rawResult) and the suggestion resolved to canonical
+/// taxonomy ids by the backend. Suggestions are never applied to the
+/// question automatically; appliedAt records a reviewer applying one.
+model QuestionClassificationTask {
+  id                    String                       @id @default(uuid()) @db.Uuid
+  questionId            String                       @map("question_id") @db.Uuid
+  status                QuestionClassificationStatus @default(PENDING)
+  attempts              Int                          @default(0)
+  nextAttemptAt         DateTime?                    @map("next_attempt_at") @db.Timestamptz(6)
+  provider              String                       @db.VarChar(60)
+  model                 String?                      @db.VarChar(120)
+  classifierVersion     String                       @map("classifier_version") @db.VarChar(40)
+  taxonomyVersion       Int                          @map("taxonomy_version")
+  confidence            Decimal?                     @db.Decimal(5, 4)
+  suggestedDisciplineId String?                      @map("suggested_discipline_id") @db.Uuid
+  suggestedAreaId       String?                      @map("suggested_area_id") @db.Uuid
+  suggestedTopicId      String?                      @map("suggested_topic_id") @db.Uuid
+  suggestedSubtopicId   String?                      @map("suggested_subtopic_id") @db.Uuid
+  suggestedTags         String[]                     @default([]) @map("suggested_tags") @db.VarChar(120)
+  rawResult             Json?                        @map("raw_result")
+  errorMessage          String?                      @map("error_message") @db.Text
+  completedAt           DateTime?                    @map("completed_at") @db.Timestamptz(6)
+  appliedAt             DateTime?                    @map("applied_at") @db.Timestamptz(6)
+  appliedByProfileId    String?                      @map("applied_by_profile_id") @db.Uuid
+  createdAt             DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question            Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  suggestedDiscipline Discipline? @relation(fields: [suggestedDisciplineId], references: [id], onDelete: Restrict)
+  suggestedArea       Area?       @relation(fields: [suggestedAreaId], references: [id], onDelete: Restrict)
+  suggestedTopic      Topic?      @relation(fields: [suggestedTopicId], references: [id], onDelete: Restrict)
+  suggestedSubtopic   Subtopic?   @relation(fields: [suggestedSubtopicId], references: [id], onDelete: Restrict)
+  appliedBy           Profile?    @relation(fields: [appliedByProfileId], references: [id], onDelete: SetNull)
+
+  @@unique([questionId, classifierVersion, taxonomyVersion])
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([questionId, createdAt])
+  @@index([suggestedDisciplineId])
+  @@index([suggestedTopicId])
+  @@map("question_classification_tasks")
+}
+
+model ImportJob {
+  id             String          @id @default(uuid()) @db.Uuid
+  sourceId       String          @map("source_id") @db.Uuid
+  provider       String          @db.VarChar(80)
+  status         ImportJobStatus @default(PENDING)
+  cursorStart    String?         @map("cursor_start") @db.VarChar(200)
+  cursorEnd      String?         @map("cursor_end") @db.VarChar(200)
+  requestedLimit Int?            @map("requested_limit")
+  receivedCount  Int             @default(0) @map("received_count")
+  importedCount  Int             @default(0) @map("imported_count")
+  duplicateCount Int             @default(0) @map("duplicate_count")
+  reviewCount    Int             @default(0) @map("review_count")
+  failedCount    Int             @default(0) @map("failed_count")
+  errorMessage   String?         @map("error_message") @db.Text
+  startedAt      DateTime?       @map("started_at") @db.Timestamptz(6)
+  finishedAt     DateTime?       @map("finished_at") @db.Timestamptz(6)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  source QuestionSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  items  ImportItem[]
+
+  @@index([sourceId, createdAt])
+  @@index([status, createdAt])
+  @@map("import_jobs")
+}
+
+model ImportItem {
+  id            String           @id @default(uuid()) @db.Uuid
+  jobId         String           @map("job_id") @db.Uuid
+  externalId    String           @map("external_id") @db.VarChar(180)
+  status        ImportItemStatus @default(RECEIVED)
+  rawPayload    Json             @map("raw_payload")
+  payloadHash   String           @map("payload_hash") @db.Char(64)
+  questionId    String?          @map("question_id") @db.Uuid
+  failureReason String?          @map("failure_reason") @db.Text
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  job                 ImportJob                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  question            Question?                  @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  duplicateCandidates ImportDuplicateCandidate[]
+  mediaLinks          ImportItemMediaLink[]
+
+  mediaTasks ImportMediaTask[]
+
+  @@unique([jobId, externalId])
+  @@index([questionId])
+  @@index([status, createdAt])
+  @@map("import_items")
+}
+
+model ImportDuplicateCandidate {
+  id                  String   @id @default(uuid()) @db.Uuid
+  importItemId        String   @map("import_item_id") @db.Uuid
+  candidateQuestionId String   @map("candidate_question_id") @db.Uuid
+  similarity          Decimal  @db.Decimal(5, 4)
+  reason              String   @db.VarChar(120)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  importItem        ImportItem @relation(fields: [importItemId], references: [id], onDelete: Cascade)
+  candidateQuestion Question   @relation("ImportDuplicateCandidateQuestion", fields: [candidateQuestionId], references: [id], onDelete: Restrict)
+
+  @@unique([importItemId, candidateQuestionId])
+  @@index([candidateQuestionId, similarity])
+  @@map("import_duplicate_candidates")
+}
+
+model ImportMediaTask {
+  id               String                @id @default(uuid()) @db.Uuid
+  importItemId     String                @map("import_item_id") @db.Uuid
+  questionId       String?               @map("question_id") @db.Uuid
+  mediaAssetId     String?               @map("media_asset_id") @db.Uuid
+  sourceUrl        String                @map("source_url") @db.Text
+  role             String                @db.VarChar(40)
+  alternativeLabel String                @default("") @map("alternative_label") @db.VarChar(8)
+  position         Int
+  status           ImportMediaTaskStatus @default(PENDING)
+  attempts         Int                   @default(0)
+  errorMessage     String?               @map("error_message") @db.Text
+  nextAttemptAt    DateTime?             @map("next_attempt_at") @db.Timestamptz(6)
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  importItem ImportItem  @relation(fields: [importItemId], references: [id], onDelete: Cascade)
+  question   Question?   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([importItemId, role, alternativeLabel, position])
+  @@index([status, createdAt])
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([questionId])
+  @@index([mediaAssetId])
+  @@map("import_media_tasks")
+}
+
+model MediaAsset {
+  id              String   @id @default(uuid()) @db.Uuid
+  storageProvider String   @map("storage_provider") @db.VarChar(40)
+  bucket          String   @db.VarChar(160)
+  storageKey      String   @unique @map("storage_key") @db.VarChar(700)
+  mimeType        String   @map("mime_type") @db.VarChar(160)
+  sizeBytes       BigInt   @map("size_bytes") @db.BigInt
+  width           Int?
+  height          Int?
+  altText         String?  @map("alt_text") @db.Text
+  checksum        String   @unique @db.Char(64)
+  sourceUrl       String?  @map("source_url") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  importItemLinks          ImportItemMediaLink[]
+  questionLinks            QuestionMediaLink[]
+  questionAlternativeLinks QuestionAlternativeMediaLink[]
+
+  ingestionTasks ImportMediaTask[]
+
+  @@index([storageProvider, bucket])
+  @@index([mimeType])
+  @@map("media_assets")
+}
+
+model ImportItemMediaLink {
+  id               String   @id @default(uuid()) @db.Uuid
+  importItemId     String   @map("import_item_id") @db.Uuid
+  mediaAssetId     String   @map("media_asset_id") @db.Uuid
+  role             String   @db.VarChar(40)
+  alternativeLabel String   @default("") @map("alternative_label") @db.VarChar(8)
+  position         Int
+  page             Int?
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  importItem ImportItem @relation(fields: [importItemId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([importItemId, mediaAssetId, role, alternativeLabel, position], map: "import_item_media_links_item_asset_role_alt_position_key")
+  @@index([importItemId, role, position])
+  @@index([mediaAssetId])
+  @@map("import_item_media_links")
+}
+
+model QuestionMediaLink {
+  id           String   @id @default(uuid()) @db.Uuid
+  questionId   String   @map("question_id") @db.Uuid
+  mediaAssetId String   @map("media_asset_id") @db.Uuid
+  role         String   @db.VarChar(40)
+  position     Int
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([questionId, role, position])
+  @@index([mediaAssetId])
+  @@map("question_media_links")
+}
+
+model QuestionAlternativeMediaLink {
+  id            String   @id @default(uuid()) @db.Uuid
+  alternativeId String   @map("alternative_id") @db.Uuid
+  mediaAssetId  String   @map("media_asset_id") @db.Uuid
+  position      Int
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  alternative QuestionAlternative @relation(fields: [alternativeId], references: [id], onDelete: Cascade)
+  mediaAsset  MediaAsset          @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@unique([alternativeId, position])
+  @@index([mediaAssetId])
+  @@map("question_alternative_media_links")
+}
+
+model StudyAnswerAttempt {
+  id                    String       @id @default(uuid()) @db.Uuid
+  profileId             String       @map("profile_id") @db.Uuid
+  questionId            String       @map("question_id") @db.Uuid
+  questionType          QuestionType @map("question_type")
+  selectedAlternativeId String?      @map("selected_alternative_id") @db.Uuid
+  selectedTrueFalse     Boolean?     @map("selected_true_false")
+  isCorrect             Boolean      @map("is_correct")
+  responseTimeMs        Int?         @map("response_time_ms")
+  answeredAt            DateTime     @default(now()) @map("answered_at") @db.Timestamptz(6)
+
+  profile             Profile              @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  question            Question             @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  selectedAlternative QuestionAlternative? @relation("StudyAttemptSelectedAlternative", fields: [selectedAlternativeId], references: [id], onDelete: Restrict)
+
+  @@index([profileId, answeredAt])
+  @@index([profileId, questionId, answeredAt])
+  @@index([profileId, isCorrect, answeredAt])
+  @@index([questionId, answeredAt])
+  @@index([selectedAlternativeId])
+  @@map("study_answer_attempts")
+}
+
+model StudyFavorite {
+  profileId  String   @map("profile_id") @db.Uuid
+  questionId String   @map("question_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile  Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, questionId])
+  @@index([profileId, createdAt])
+  @@index([questionId, profileId])
+  @@map("study_favorites")
+}

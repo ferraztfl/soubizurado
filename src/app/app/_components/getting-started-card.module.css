@@ -1,0 +1,83 @@
+.card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.eyebrow {
+  display: block;
+  color: var(--sb-brand);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card h2 {
+  margin: 7px 0 0;
+  color: var(--sb-text-strong);
+  font-size: 17px;
+  font-weight: 770;
+  letter-spacing: -0.02em;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  margin-top: 22px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.number,
+.activeNumber {
+  width: 29px;
+  height: 29px;
+  flex: 0 0 29px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--sb-border);
+  border-radius: 50%;
+  background: var(--sb-surface-muted);
+  color: var(--sb-text-subtle);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.activeNumber {
+  border-color: #efc0bc;
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand);
+}
+
+.step > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step strong {
+  color: var(--sb-text);
+  font-size: 10px;
+}
+
+.step small {
+  color: var(--sb-text-subtle);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+@media (max-width: 767px) {
+  .card {
+    padding: 18px;
+    border-radius: 15px;
+  }
+}

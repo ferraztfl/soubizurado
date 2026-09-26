@@ -1,0 +1,265 @@
+.sidebar {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  color: var(--sb-text);
+}
+
+.brand {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+}
+
+.brandCard {
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.logo {
+  width: 154px;
+  height: auto;
+  object-fit: contain;
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 19px;
+}
+
+.navigationGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groupLabel {
+  padding: 0 12px;
+  color: var(--sb-text-subtle);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.groupItems {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navItem {
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--sb-text-muted);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 680;
+  transition:
+    background var(--sb-motion-fast) var(--sb-ease),
+    border-color var(--sb-motion-fast) var(--sb-ease),
+    color var(--sb-motion-fast) var(--sb-ease);
+}
+
+.navItem:not(.disabled):hover {
+  background: var(--sb-surface-muted);
+  color: var(--sb-text-strong);
+}
+
+.active {
+  border-color: #f4d0cc;
+  background: var(--sb-sidebar-active);
+  color: var(--sb-brand-strong);
+}
+
+.navMarker {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border: 2px solid #c4c8d0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.active .navMarker {
+  border-color: var(--sb-brand);
+  background: var(--sb-brand);
+  box-shadow: 0 0 0 4px rgba(212, 18, 0, 0.09);
+}
+
+.disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.planCard {
+  padding: 12px;
+  border: 1px solid var(--sb-border);
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      150deg,
+      var(--sb-brand-subtle) 0%,
+      #ffffff 76%
+    );
+}
+
+.planHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.planLabel {
+  color: var(--sb-brand);
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.planBadge {
+  padding: 3px 6px;
+  border: 1px solid #f0cbc7;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--sb-brand-strong);
+  font-size: 7px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.planCard strong {
+  display: block;
+  color: var(--sb-text-strong);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.planCard p {
+  margin: 6px 0 7px;
+  color: var(--sb-text-muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.planFooter {
+  color: var(--sb-text-subtle);
+  font-size: 7px;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sb-border);
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #f0cbc7;
+  border-radius: 50%;
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand-strong);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.userData {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.userData strong,
+.userData span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userData strong {
+  color: var(--sb-text-strong);
+  font-size: 9px;
+}
+
+.userData span {
+  margin-top: 2px;
+  color: var(--sb-text-subtle);
+  font-size: 7px;
+}
+
+.logout {
+  flex: 0 0 auto;
+  padding: 6px 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sb-text-muted);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.logout:hover {
+  background: var(--sb-surface-muted);
+  color: var(--sb-brand-strong);
+}
+
+@media (max-width: 1099px) {
+  .sidebar {
+    gap: 24px;
+  }
+
+  .brandCard {
+    min-height: 64px;
+  }
+
+  .logo {
+    width: 164px;
+  }
+
+  .navigation {
+    gap: 18px;
+  }
+
+  .navItem {
+    min-height: 44px;
+    font-size: 13px;
+  }
+
+  .planCard {
+    padding: 14px;
+  }
+}

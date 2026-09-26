@@ -1,0 +1,125 @@
+.page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resultsHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.resultsEyebrow {
+  display: block;
+  color: var(--sb-brand);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.resultsHeader h2 {
+  margin: 6px 0 0;
+  color: var(--sb-text-strong);
+  font-size: 18px;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.range {
+  color: var(--sb-text-subtle);
+  font-size: 9px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.emptyCard {
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.pageLink,
+.pageDisabled {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  border-radius: 9px;
+  font-size: 9px;
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.pageLink {
+  border: 1px solid var(--sb-border-strong);
+  background: var(--sb-surface);
+  color: var(--sb-text);
+}
+
+.pageDisabled {
+  border: 1px solid var(--sb-border);
+  background: var(--sb-surface-muted);
+  color: var(--sb-text-subtle);
+}
+
+.pageStatus {
+  color: var(--sb-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+@media (max-width: 1199px) {
+  .grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 699px) {
+  .page {
+    gap: 18px;
+  }
+
+  .resultsHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pagination {
+    justify-content: space-between;
+  }
+
+  .pageStatus {
+    text-align: center;
+  }
+}
