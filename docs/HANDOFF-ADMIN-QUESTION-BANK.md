@@ -1,5 +1,11 @@
 # Handoff — SouBizurado — Backoffice Administrativo e Banco de Questões
 
+> **Atualização 26/09/2026:** o trabalho posterior a este documento (backoffice, taxonomia
+> canônica aplicada, reclassificação legada, fila de classificação e salvamento em massa) está em
+> `docs/HANDOFF-BACKOFFICE-TAXONOMY-CLASSIFICATION.md`. Comece por lá. As seções abaixo sobre
+> "próximos passos" do backoffice estão superadas.
+
+
 **Data do handoff:** 21/09/2026
 **Branch no momento da geração:** `feature/enem-pdf-ingestion`
 **HEAD no momento da geração:** `20f474a`
