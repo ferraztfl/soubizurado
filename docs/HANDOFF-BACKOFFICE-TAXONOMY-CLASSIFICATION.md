@@ -1,6 +1,6 @@
 # Handoff — Backoffice, Taxonomia Canônica e Classificação Automática
 
-**Atualizado em:** 26/09/2026
+**Atualizado em:** 26/09/2026 (inclui Central de Importações, §10)
 **Branch:** `feature/enem-pdf-ingestion` (contém todas as outras branches, ver §2)
 **Documento anterior:** `docs/HANDOFF-ADMIN-QUESTION-BANK.md` (21/09/2026) — continua válido
 para ingestão, mídia e regras gerais; este documento registra tudo o que veio depois.
@@ -246,3 +246,47 @@ Sem essas variáveis, o padrão é `rule-based`. O texto das questões (conteúd
 - `/admin/questoes` (lista geral), `/admin/questoes/nova`, `/admin/importacoes`, `/admin/taxonomia`, `/admin/midias`, `/admin/usuarios` ainda não existem.
 - Publicação em lote respeitando a política.
 - Deduplicar lógica de consultas Prisma nas páginas admin (hoje direto na página) quando houver repositórios de backoffice.
+
+---
+
+## 10. Central de Importações de provas oficiais (26/09/2026)
+
+Fluxo: `/admin/importacoes` → **Nova importação** (upload do caderno + gabarito oficial em PDF)
+→ análise automática → **prévia** `/admin/importacoes/nova/[uploadId]` → confirmar → questões
+entram `IN_REVIEW` (nunca publicadas) → imagens processadas → classificação enfileirada.
+
+- Arquivos e análise ficam em `data-private/imports/official-exams/<uuid>/` (prova.pdf,
+  gabarito.pdf, workspace/ com imagens extraídas, analysis.json, result.json).
+- Banca detectada pela capa. **Suportada: Instituto AOCP.** Fundatec e Cebraspe são detectadas e a
+  prévia avisa que ainda não há leitor. Marca d'água do PCI Concursos é removida.
+- Anuladas (gabarito "X") aparecem na prévia e **não são importadas**. Variantes de idioma
+  (Inglês/Espanhol com mesma numeração) viram questões distintas (`12-v2`).
+- Imagens do enunciado, das alternativas e do texto de apoio são extraídas (`pdftohtml` sem `-i`),
+  staged em `data-private/media-staging/official-exams/...` e armazenadas pela fila de mídia.
+- Seções → taxonomia por `resolveExamSection` (alias/nome contido/área); a prévia permite ajustar.
+  Seções genéricas ("Noções de Direito") ficam só com a **área**; a revisão oferece todas as
+  disciplinas da área e a sugestão da IA pode definir a disciplina.
+- Questões que citam "termo destacado/sublinhado" são sinalizadas (sublinhado não é extraível).
+- Código: `src/modules/imports/application/official-exams/*`,
+  `src/modules/imports/infrastructure/official-exams/*`, `src/app/admin/importacoes/*`,
+  rota de prévia de imagem `src/app/api/admin/official-exams/[uploadId]/media/[file]`.
+- CLI equivalente: `npm run import:official-exam -- --prova=<pdf> --gabarito=<pdf>` (só analisa;
+  confirmação na prévia).
+- `next.config.ts`: `serverActions.bodySizeLimit` e `proxyClientMaxBodySize` = 40mb (o proxy
+  trunca silenciosamente acima de 10MB). Reiniciar `npm run dev` após mudar o config.
+
+**Importado até agora:** SEJUSP-MG 2025 Policial Penal (AOCP): 58 questões (Q58 anulada; Q20
+retida como `POSSIBLE_DUPLICATE` por ter enunciado idêntico ao de outra questão, com alternativas
+diferentes — falta UI para resolver duplicatas). 58 tarefas de classificação enfileiradas.
+
+**Ainda não importadas (PDFs em `data-private/`):** PMPE 2023 Soldado e 2º Tenente (AOCP, prontos
+para a tela), ALRS 2024 Agente de Polícia Legislativa (Fundatec) e PF 2025 Agente (Cebraspe,
+Certo/Errado; gabarito em `gabarito.pdf` com todos os cargos: Agente = cadernos CB2 1–60,
+CG1 61–96, cargo 16 97–120). Gabaritos da Fundatec e do Cebraspe recebidos são **preliminares**.
+
+**Taxonomia v2 aplicada** (catálogo `canonical-taxonomy.ts`): + Ciências Jurídicas e Tecnologia da
+Informação; 12 disciplinas de concurso; aliases para nomes de seção das bancas.
+
+**Próximos passos:** leitor Fundatec (simples; gabarito traz a disciplina de cada questão);
+leitor Cebraspe (Certo/Errado); tela para resolver `POSSIBLE_DUPLICATE`; mostrar na revisão o aviso
+de "termo destacado" vindo do `rawPayload`; configurar IA com cota adequada para classificar.
