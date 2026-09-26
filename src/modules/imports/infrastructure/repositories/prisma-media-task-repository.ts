@@ -220,6 +220,38 @@ export class PrismaMediaTaskRepository
       sourceUrl: string;
     }>,
   ): Promise<PersistedMediaAsset> {
+    try {
+      return await this.upsertAsset(input);
+    } catch (error) {
+      // Two tasks carrying the same image (e.g. a support text shared by
+      // several questions) can race on create. Content-addressed keys
+      // mean the winner stored identical bytes: reuse its row.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        const existing = await this.findAssetByChecksum(input.checksum);
+
+        if (existing) {
+          return existing;
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  private async upsertAsset(
+    input: Readonly<{
+      checksum: string;
+      storageProvider: string;
+      bucket: string;
+      storageKey: string;
+      mimeType: string;
+      sizeBytes: bigint;
+      sourceUrl: string;
+    }>,
+  ): Promise<PersistedMediaAsset> {
     const asset =
       await this.prisma
         .mediaAsset
