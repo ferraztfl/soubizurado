@@ -42,6 +42,12 @@ const responseSchema = z.object({
 });
 
 const completionSchema = z.object({
+  usage: z
+    .object({
+      prompt_tokens: z.number().int().nonnegative().optional(),
+      completion_tokens: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
   choices: z
     .array(
       z.object({
@@ -203,6 +209,14 @@ export class OpenAiCompatibleQuestionClassifier implements QuestionClassifier {
       tags: parsed.tags ?? [],
       confidence: parsed.confidence,
       rationale: parsed.rationale,
+      ...(completion.usage
+        ? {
+            usage: {
+              inputTokens: completion.usage.prompt_tokens ?? 0,
+              outputTokens: completion.usage.completion_tokens ?? 0,
+            },
+          }
+        : {}),
     };
   }
 }

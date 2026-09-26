@@ -45,15 +45,21 @@ export type ProcessClassificationQueueOutput = Readonly<{
   answeredByRules: number;
   /** Answers produced by the local AI layer (e.g. Ollama). */
   answeredByLocalAi: number;
+  /** Remote (billed) AI answers and the tokens they reported. */
+  remoteAiCalls: number;
+  inputTokens: number;
+  outputTokens: number;
 }>;
 
 type Outcome = Readonly<{
   status: "COMPLETED" | "REVIEW_REQUIRED" | "RETRIED" | "FAILED";
   applied: boolean;
   layer: "RULES" | "LOCAL_AI" | "AI" | null;
+  /** Billed tokens; null when the answer did not come from a remote AI. */
+  usage: Readonly<{ inputTokens: number; outputTokens: number }> | null;
 }>;
 
-const failed: Outcome = { status: "FAILED", applied: false, layer: null };
+const failed: Outcome = { status: "FAILED", applied: false, layer: null, usage: null };
 
 /**
  * Spaces provider calls evenly across concurrent workers: each call
@@ -124,6 +130,7 @@ async function processOne(
 
   let status: "COMPLETED" | "REVIEW_REQUIRED";
   let layer: Outcome["layer"];
+  let usage: Outcome["usage"] = null;
 
   try {
     // The rate limit applies to remote calls only; local layers are free.
@@ -144,6 +151,11 @@ async function processOne(
       input.minimumConfidence,
     );
     layer = providerResult.layer ?? null;
+    // Rules and local answers are free even if they report tokens.
+    usage =
+      layer === "RULES" || layer === "LOCAL_AI"
+        ? null
+        : providerResult.usage ?? { inputTokens: 0, outputTokens: 0 };
 
     await input.repository.completeTask({
       taskId: task.id,
@@ -171,7 +183,7 @@ async function processOne(
 
     return outcome === "FAILED"
       ? failed
-      : { status: "RETRIED", applied: false, layer: null };
+      : { status: "RETRIED", applied: false, layer: null, usage: null };
   }
 
   // Applying is best effort: the suggestion stays stored if it fails.
@@ -188,7 +200,7 @@ async function processOne(
     }
   }
 
-  return { status, applied, layer };
+  return { status, applied, layer, usage };
 }
 
 async function mapWithConcurrency<T, R>(
@@ -282,5 +294,8 @@ export async function processClassificationQueue(
     applied: outcomes.filter((outcome) => outcome.applied).length,
     answeredByRules: outcomes.filter((outcome) => outcome.layer === "RULES").length,
     answeredByLocalAi: outcomes.filter((outcome) => outcome.layer === "LOCAL_AI").length,
+    remoteAiCalls: outcomes.filter((outcome) => outcome.usage !== null).length,
+    inputTokens: outcomes.reduce((sum, outcome) => sum + (outcome.usage?.inputTokens ?? 0), 0),
+    outputTokens: outcomes.reduce((sum, outcome) => sum + (outcome.usage?.outputTokens ?? 0), 0),
   };
 }

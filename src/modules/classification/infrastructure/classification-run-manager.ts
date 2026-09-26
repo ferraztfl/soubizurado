@@ -1,5 +1,6 @@
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
+import { budgetStopReason, estimateCostUsd, readClassificationBudget } from "./classification-budget";
 import { createQuestionClassifier } from "./create-question-classifier";
 import { PrismaClassificationTaskRepository } from "./prisma-classification-task-repository";
 import { runClassificationBatch } from "./run-classification-batch";
@@ -27,6 +28,13 @@ export type ClassificationRunState = Readonly<{
   answeredByLocalAi: number;
   reviewRequired: number;
   failed: number;
+  /** Stop after this many processed questions (null = whole queue). */
+  maxQuestions: number | null;
+  remoteAiCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+  /** Estimated USD cost, null when prices are not configured. */
+  estimatedCostUsd: number | null;
   /** Why the last run ended (empty queue, quota, stop, error). */
   endReason: string | null;
 }>;
@@ -46,6 +54,11 @@ const IDLE: MutableState = {
   answeredByLocalAi: 0,
   reviewRequired: 0,
   failed: 0,
+  maxQuestions: null,
+  remoteAiCalls: 0,
+  inputTokens: 0,
+  outputTokens: 0,
+  estimatedCostUsd: null,
   endReason: null,
 };
 
@@ -95,6 +108,7 @@ export async function enqueueUnclassifiedQuestions(): Promise<number> {
 
 async function loop(current: MutableState): Promise<void> {
   try {
+    const budget = readClassificationBudget();
     current.enqueued = await enqueueUnclassifiedQuestions();
 
     while (true) {
@@ -103,7 +117,23 @@ async function loop(current: MutableState): Promise<void> {
         return;
       }
 
-      const batch = await runClassificationBatch({ limit: BATCH_SIZE });
+      const budgetReason = budgetStopReason(budget, current);
+
+      if (budgetReason) {
+        current.endReason = budgetReason;
+        return;
+      }
+
+      const remaining = current.maxQuestions === null ? BATCH_SIZE : current.maxQuestions - current.processed;
+
+      if (remaining <= 0) {
+        current.endReason = `Limite de ${current.maxQuestions} questões desta execução atingido.`;
+        return;
+      }
+
+      const batch = await runClassificationBatch({
+        limit: Math.min(BATCH_SIZE, remaining, budget.maxAiCallsPerRun - current.remoteAiCalls),
+      });
 
       current.processed += batch.completed + batch.reviewRequired + batch.failed;
       current.applied += batch.applied;
@@ -111,6 +141,10 @@ async function loop(current: MutableState): Promise<void> {
       current.answeredByLocalAi += batch.answeredByLocalAi;
       current.reviewRequired += batch.reviewRequired;
       current.failed += batch.failed;
+      current.remoteAiCalls += batch.remoteAiCalls;
+      current.inputTokens += batch.inputTokens;
+      current.outputTokens += batch.outputTokens;
+      current.estimatedCostUsd = estimateCostUsd(budget, current);
 
       if (batch.claimed === 0) {
         current.endReason = "Fila concluída.";
@@ -132,8 +166,11 @@ async function loop(current: MutableState): Promise<void> {
   }
 }
 
-/** Starts a run unless one is active. Returns false when already running. */
-export function startClassificationRun(): boolean {
+/**
+ * Starts a run unless one is active. Returns false when already running.
+ * `maxQuestions` limits the run (e.g. a pilot of 50); null = all.
+ */
+export function startClassificationRun(maxQuestions: number | null = null): boolean {
   const current = state();
 
   if (current.status !== "IDLE") {
@@ -144,6 +181,7 @@ export function startClassificationRun(): boolean {
     ...IDLE,
     status: "RUNNING",
     startedAt: new Date().toISOString(),
+    maxQuestions,
   });
 
   // Detached on purpose: the request returns while the run continues.

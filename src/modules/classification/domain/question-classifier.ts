@@ -31,6 +31,8 @@ export type ProviderClassification = Readonly<{
   rationale?: string;
   /** Pipeline layer that produced the answer (layered classifier). */
   layer?: "RULES" | "LOCAL_AI" | "AI";
+  /** Tokens billed by a remote provider for this call, when reported. */
+  usage?: Readonly<{ inputTokens: number; outputTokens: number }>;
 }>;
 
 export type ClassifyOptions = Readonly<{

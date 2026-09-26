@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { readClassificationBudget } from "@/modules/classification/infrastructure/classification-budget";
 import { getClassificationRunState } from "@/modules/classification/infrastructure/classification-run-manager";
 import {
   createQuestionClassifier,
@@ -38,6 +39,14 @@ export default async function ClassificationPage(props: PageProps) {
   const searchParams = await props.searchParams;
   const run = getClassificationRunState();
   const prisma = getPrismaClient();
+
+  let budget: ReturnType<typeof readClassificationBudget> | null = null;
+
+  try {
+    budget = readClassificationBudget();
+  } catch {
+    budget = null;
+  }
 
   let classifierLabel = "Não configurado";
   let classifierVersion: string | null = null;
@@ -149,8 +158,17 @@ export default async function ClassificationPage(props: PageProps) {
               </SubmitButton>
             </form>
           ) : (
-            <form action={startClassificationRunAction}>
-              <SubmitButton pendingLabel="Iniciando…" className={styles.primaryButton} disabled={Boolean(configError) || unclassified === 0}>
+            <form action={startClassificationRunAction} className={styles.startForm}>
+              <label className={styles.limitField}>
+                <span>Quantas questões</span>
+                <select name="limit" defaultValue="50">
+                  <option value="50">50 (piloto)</option>
+                  <option value="300">300</option>
+                  <option value="1000">1.000</option>
+                  <option value="all">Todas as pendentes</option>
+                </select>
+              </label>
+              <SubmitButton pendingLabel="Iniciando…" className={styles.primaryButton} disabled={Boolean(configError) || !budget || unclassified === 0}>
                 Classificar pendentes
               </SubmitButton>
             </form>
@@ -190,6 +208,19 @@ export default async function ClassificationPage(props: PageProps) {
           </dl>
         ) : null}
 
+        {run.startedAt ? (
+          <p className={styles.usage}>
+            Consumo desta execução: {numberFormatter.format(run.remoteAiCalls)} chamadas pagas à IA ·{" "}
+            {numberFormatter.format(run.inputTokens)} tokens de entrada · {numberFormatter.format(run.outputTokens)} de
+            saída
+            {run.estimatedCostUsd !== null ? ` · custo estimado ≈ US$ ${run.estimatedCostUsd.toFixed(3)}` : ""}
+            {run.remoteAiCalls > 0
+              ? ` · média ${numberFormatter.format(Math.round((run.inputTokens + run.outputTokens) / run.remoteAiCalls))} tokens por questão`
+              : ""}
+            {run.maxQuestions !== null ? ` · limite desta execução: ${numberFormatter.format(run.maxQuestions)} questões` : ""}
+          </p>
+        ) : null}
+
         {run.endReason && !active ? <p className={styles.endReason}>{run.endReason}</p> : null}
       </section>
 
@@ -203,6 +234,20 @@ export default async function ClassificationPage(props: PageProps) {
           <div>
             <dt>Regras dispensam a IA a partir de</dt>
             <dd>{configError ? "—" : percent(readRulesThreshold())}</dd>
+          </div>
+          <div>
+            <dt>Travas de gasto por execução</dt>
+            <dd>
+              {budget
+                ? [
+                    `até ${numberFormatter.format(budget.maxAiCallsPerRun)} chamadas`,
+                    budget.runBudgetUsd !== null ? `teto ≈ US$ ${budget.runBudgetUsd.toFixed(2)}` : null,
+                    budget.inputPricePerMillion === null ? "preços não configurados (sem estimativa em US$)" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : "Configuração inválida"}
+            </dd>
           </div>
           <div>
             <dt>Gravação automática</dt>
