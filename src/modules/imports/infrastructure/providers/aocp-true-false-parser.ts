@@ -41,7 +41,12 @@ export type TrueFalseAnswer = "V" | "F" | "ANNULLED";
 export const TRUE_FALSE_FORMAT = /julgue[\s\S]{0,60}verdadeiro\s+ou\s+falso/i;
 
 const ITEM_START = /^(\d{1,3})\.\s+(.*)$/;
-const SUPPORT_HEADER = /^texto\s+\d+\s*[–-]\s*itens?\s+(\d{1,3})\s*(?:a|e|-|–)\s*(\d{1,3})/i;
+/**
+ * "Texto 1 – itens 01 a 11", "Texto 1", or "Texto 1 <título>" (title on
+ * the same line). Groups: number, range start, range end, remainder.
+ */
+const SUPPORT_HEADER =
+  /^texto\s+(\d{1,2})\b\s*(?:[–-]\s*(?:itens?|quest[oõ]es)\s+(\d{1,3})\s*(?:a|e|-|–)\s*(\d{1,3}))?\s*(.*)$/i;
 const HIGHLIGHT = /em destaque|sublinhad|grifad|destacad/i;
 /** Items start at the column edge; continuation lines are indented. */
 const ITEM_EDGE_TOLERANCE = 12;
@@ -86,7 +91,7 @@ export function parseSectionRanges(coverText: string): SectionRange[] {
 
 /** Words that usually open a group command. */
 const COMMAND_OPENER =
-  /^(em rela[cç][aã]o|considerando|com base|utilizando|acerca|sobre|de acordo|a respeito|analise|quanto|no que|tendo em vista|segundo|conforme|nos termos|julgue)\b/i;
+  /^(em rela[cç][aã]o|com rela[cç][aã]o|com refer[eê]ncia|considerando|considere|com base|utilizando|acerca|sobre|de acordo|a respeito|analise|quanto|no que|tendo em vista|tendo como|levando em|a partir d|segundo|conforme|nos termos|leia|julgue)\b/i;
 
 /** A bold line that opens a group command rather than a text title. */
 const COMMAND_START = new RegExp(`julgue|${COMMAND_OPENER.source}`, "i");
@@ -124,7 +129,33 @@ function appendText(current: string, next: string): string {
   return `${current} ${next}`;
 }
 
-type Support = { text: string; images: string[]; from: number; to: number };
+type SupportParagraph = { kind: "title" | "author" | "body" | "source"; text: string };
+type Support = {
+  label: string;
+  paragraphs: SupportParagraph[];
+  images: string[];
+  from: number;
+  /** Infinity while the text applies to the following items (no range printed). */
+  to: number;
+  phase: "title" | "author" | "body";
+};
+
+const SOURCE_LINE = /^(dispon[ií]vel em|adaptado de|texto adaptado|fonte:|acesso em|extra[ií]do de)/i;
+
+/** Markdown for the review and student screens: bold title, italic author and source. */
+function renderSupport(support: Support): string {
+  const paragraphs = support.paragraphs
+    .filter((paragraph) => paragraph.text.trim())
+    .map((paragraph) =>
+      paragraph.kind === "title"
+        ? `**${paragraph.text.trim()}**`
+        : paragraph.kind === "author" || paragraph.kind === "source"
+          ? `*${paragraph.text.trim()}*`
+          : paragraph.text.trim(),
+    );
+
+  return paragraphs.length > 0 ? [`**${support.label}**`, ...paragraphs].join("\n\n") : "";
+}
 type MutableItem = {
   number: number;
   section: string | null;
@@ -170,19 +201,72 @@ export function parseAocpTrueFalseExam(
       block.push(candidate.text);
     }
 
-    return COMMAND_START.test(lines[index]!.text) && /julgue/i.test(block.join(" "));
+    // A block right after a finished sentence (e.g. the source line
+    // "... Acesso em: 19/08/2017.") may open with any wording.
+    const previous = lines[index - 1];
+    const afterSentence = Boolean(previous && !previous.image && /[.!?)”"]$/.test(previous.text.trim()));
+
+    return (COMMAND_START.test(lines[index]!.text) || afterSentence) && /julgue/i.test(block.join(" "));
   };
 
-  const appendSupport = (target: Support, line: AocpLine) => {
-    // First-line indent starts a new paragraph.
+  // Title (first line, lowercase lines continue it), then an optional
+  // author line (short, no final punctuation, followed by an indented
+  // paragraph start), then body paragraphs and the source reference.
+  const appendSupport = (target: Support, line: AocpLine, index: number) => {
+    const text = line.text;
     const indented = line.left - line.columnLeft > 15;
+    const last = target.paragraphs[target.paragraphs.length - 1];
 
-    if (!target.text) {
-      target.text = line.text;
-    } else if (indented) {
-      target.text = `${target.text}\n\n${line.text}`;
+    if (SOURCE_LINE.test(text)) {
+      target.paragraphs.push({ kind: "source", text });
+      target.phase = "body";
+      return;
+    }
+
+    if (target.phase === "title") {
+      if (!last) {
+        target.paragraphs.push({ kind: "title", text });
+        return;
+      }
+
+      if (last.kind === "title" && /^[a-zà-ÿ]/.test(text)) {
+        last.text = appendText(last.text, text);
+        return;
+      }
+
+      target.phase = "author";
+    }
+
+    if (target.phase === "author") {
+      target.phase = "body";
+      const next = lines[index + 1];
+      const nextStartsParagraph = Boolean(next && !next.image && next.left - next.columnLeft > 15);
+
+      if (text.split(/\s+/).length <= 6 && !/[.,:;!?]$/.test(text) && nextStartsParagraph) {
+        target.paragraphs.push({ kind: "author", text });
+        return;
+      }
+    }
+
+    // Source references wrap onto lines starting with a date or the rest
+    // of a URL, even when those lines are indented.
+    if (last?.kind === "source" && (!indented || /^[a-z0-9]/.test(text))) {
+      last.text = appendText(last.text, text);
+    } else if (last?.kind === "body" && /^[a-zà-ÿ]/.test(text)) {
+      // A paragraph never starts in lowercase: wrapped URL or sentence.
+      last.text = appendText(last.text, text);
+    } else if (!last || last.kind !== "body" || indented) {
+      target.paragraphs.push({ kind: "body", text });
     } else {
-      target.text = appendText(target.text, line.text);
+      last.text = appendText(last.text, text);
+    }
+  };
+
+  // A text printed without "– itens X a Y" applies until the next text
+  // or section heading.
+  const closeOpenSupport = () => {
+    if (support && support.to === Number.POSITIVE_INFINITY) {
+      support.to = Math.max(support.from, items[items.length - 1]?.number ?? support.from);
     }
   };
 
@@ -203,6 +287,7 @@ export function parseAocpTrueFalseExam(
 
     if (line.bold) {
       if (headingName(line, ranges)) {
+        closeOpenSupport();
         state = "none";
         support = null;
         activeCommand = null;
@@ -213,7 +298,18 @@ export function parseAocpTrueFalseExam(
       const header = line.text.match(SUPPORT_HEADER);
 
       if (header) {
-        support = { text: "", images: [], from: Number(header[1]), to: Number(header[2]) };
+        closeOpenSupport();
+        const nextItem = (items[items.length - 1]?.number ?? 0) + 1;
+        const title = header[4]?.trim() ?? "";
+
+        support = {
+          label: `Texto ${header[1]}`,
+          paragraphs: title ? [{ kind: "title", text: title }] : [],
+          images: [],
+          from: header[2] ? Number(header[2]) : nextItem,
+          to: header[3] ? Number(header[3]) : Number.POSITIVE_INFINITY,
+          phase: "title",
+        };
         supports.push(support);
         state = "support";
         item = null;
@@ -223,7 +319,7 @@ export function parseAocpTrueFalseExam(
       // Inside a shared text, bold lines are its title or emphasis unless
       // they look like a group command.
       if (state === "support" && support && !opensCommand(index)) {
-        appendSupport(support, line);
+        appendSupport(support, line, index);
         continue;
       }
 
@@ -258,13 +354,15 @@ export function parseAocpTrueFalseExam(
     if (state === "item" && item) {
       item.statement = appendText(item.statement, line.text);
     } else if (state === "support" && support) {
-      appendSupport(support, line);
+      appendSupport(support, line, index);
     } else if (state === "command") {
       // Unbolded tail of a command: keep it with the command.
       command = appendText(command, line.text);
       activeCommand = command;
     }
   }
+
+  closeOpenSupport();
 
   return {
     sections: ranges.map((range) => range.name),
@@ -273,7 +371,7 @@ export function parseAocpTrueFalseExam(
 
       return {
         ...entry,
-        supportText: shared?.text.trim() || null,
+        supportText: shared ? renderSupport(shared) || null : null,
         supportImages: shared?.images ?? [],
         refersToHighlight: HIGHLIGHT.test(entry.statement),
       };
