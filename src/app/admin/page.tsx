@@ -1,5 +1,11 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
+import {
+  labelFor,
+  QUESTION_STATUS_LABELS,
+} from "@/modules/question-bank/presentation/question-labels";
+import { buildReviewQueueHref } from "@/modules/question-bank/presentation/review-queue-search-params";
+import { LEGACY_ENEM_KNOWLEDGE_AREA_SLUGS } from "@/modules/taxonomy/application/legacy-enem-taxonomy-backfill";
 import {
   getPrismaClient,
 } from "@/shared/infrastructure/database/prisma";
@@ -8,86 +14,224 @@ import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
+const LEGACY_DISCIPLINE_SLUGS = new Set<string>(
+  LEGACY_ENEM_KNOWLEDGE_AREA_SLUGS,
+);
+
+const STATUS_ORDER = [
+  "DRAFT",
+  "IN_REVIEW",
+  "PUBLISHED",
+  "ARCHIVED",
+] as const;
+
+const openSuggestion = {
+  status: {
+    in: [
+      "COMPLETED" as const,
+      "REVIEW_REQUIRED" as const,
+    ],
+  },
+  appliedAt: null,
+  suggestedTopicId: {
+    not: null,
+  },
+};
+
 function formatCount(value: number): string {
   return value.toLocaleString("pt-BR");
+}
+
+function percent(part: number, total: number): number {
+  return total > 0
+    ? Math.round((part / total) * 100)
+    : 0;
 }
 
 export default async function AdminHomePage() {
   const prisma = getPrismaClient();
 
   const [
-    total,
-    draft,
-    inReview,
-    published,
-    archived,
-    missingTopic,
+    statusGroups,
+    inReviewWithTopic,
+    awaitingDiscipline,
+    withSuggestion,
+    withHighConfidence,
+    reviewByDiscipline,
+    classifiedByDiscipline,
+    lastRun,
   ] = await Promise.all([
-    prisma.question.count(),
+    prisma.question.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    }),
 
     prisma.question.count({
       where: {
-        status: "DRAFT",
+        status: "IN_REVIEW",
+        topicId: { not: null },
+      },
+    }),
+
+    // Legacy ENEM "disciplines" have no knowledge area link.
+    prisma.question.count({
+      where: {
+        status: "IN_REVIEW",
+        topicId: null,
+        discipline: { knowledgeAreaId: null },
+        knowledgeAreaId: { not: null },
       },
     }),
 
     prisma.question.count({
       where: {
         status: "IN_REVIEW",
-      },
-    }),
-
-    prisma.question.count({
-      where: {
-        status: "PUBLISHED",
-      },
-    }),
-
-    prisma.question.count({
-      where: {
-        status: "ARCHIVED",
-      },
-    }),
-
-    prisma.question.count({
-      where: {
         topicId: null,
-        status: {
-          in: [
-            "DRAFT",
-            "IN_REVIEW",
-          ],
+        classificationTasks: { some: openSuggestion },
+      },
+    }),
+
+    prisma.question.count({
+      where: {
+        status: "IN_REVIEW",
+        topicId: null,
+        classificationTasks: {
+          some: {
+            ...openSuggestion,
+            status: "COMPLETED",
+          },
         },
+      },
+    }),
+
+    prisma.question.groupBy({
+      by: ["disciplineId"],
+      where: { status: "IN_REVIEW" },
+      _count: { _all: true },
+    }),
+
+    prisma.question.groupBy({
+      by: ["disciplineId"],
+      where: {
+        status: "IN_REVIEW",
+        topicId: { not: null },
+      },
+      _count: { _all: true },
+    }),
+
+    prisma.questionClassificationTask.findFirst({
+      where: { completedAt: { not: null } },
+      orderBy: { completedAt: "desc" },
+      select: {
+        completedAt: true,
+        provider: true,
+        model: true,
       },
     }),
   ]);
 
+  const countByStatus = new Map(
+    statusGroups.map((group) => [group.status, group._count._all]),
+  );
+
+  const total = statusGroups.reduce(
+    (sum, group) => sum + group._count._all,
+    0,
+  );
+  const inReview = countByStatus.get("IN_REVIEW") ?? 0;
+  const published = countByStatus.get("PUBLISHED") ?? 0;
+  const classifiedPercent = percent(inReviewWithTopic, inReview);
+
+  const disciplines = await prisma.discipline.findMany({
+    where: {
+      id: {
+        in: reviewByDiscipline
+          .map((row) => row.disciplineId)
+          .filter((id): id is string => id !== null),
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    },
+  });
+
+  const classifiedCount = new Map(
+    classifiedByDiscipline.map((row) => [row.disciplineId, row._count._all]),
+  );
+
+  const disciplineRows = disciplines
+    .map((discipline) => {
+      const count =
+        reviewByDiscipline.find((row) => row.disciplineId === discipline.id)
+          ?._count._all ?? 0;
+
+      return {
+        id: discipline.id,
+        name: discipline.name,
+        legacy: LEGACY_DISCIPLINE_SLUGS.has(discipline.slug),
+        count,
+        classified: classifiedCount.get(discipline.id) ?? 0,
+      };
+    })
+    .sort((left, right) => right.count - left.count);
+
+  const maxDisciplineCount = Math.max(
+    1,
+    ...disciplineRows.map((row) => row.count),
+  );
+
   const metrics = [
     {
-      label: "Total de questões",
-      value: total,
-      detail: "Base cadastrada",
-      tone: "neutral",
-    },
-    {
       label: "Em revisão",
-      value: inReview,
-      detail: "Aguardando validação",
+      value: formatCount(inReview),
+      detail: `${formatCount(total)} questões na base`,
       tone: "attention",
     },
     {
-      label: "Sem tópico",
-      value: missingTopic,
-      detail: "Classificação pendente",
-      tone: "critical",
+      label: "Classificadas",
+      value: formatCount(inReviewWithTopic),
+      detail: `${classifiedPercent}% das questões em revisão`,
+      tone: inReviewWithTopic > 0 ? "success" : "neutral",
+    },
+    {
+      label: "Com sugestão automática",
+      value: formatCount(withSuggestion),
+      detail: `${formatCount(withHighConfidence)} com alta confiança`,
+      tone: "info",
     },
     {
       label: "Publicadas",
-      value: published,
-      detail: "Disponíveis aos alunos",
-      tone: "success",
+      value: formatCount(published),
+      detail: "Disponíveis para os alunos",
+      tone: published > 0 ? "success" : "neutral",
     },
   ] as const;
+
+  const nextActions = [
+    {
+      title: "Aplicar sugestões automáticas",
+      description:
+        "Questões sem tópico que já têm uma sugestão do classificador.",
+      count: withSuggestion,
+      href: buildReviewQueueHref({ suggestion: "with" }),
+    },
+    {
+      title: "Definir disciplina",
+      description:
+        "Questões ainda nas áreas antigas do ENEM, sem disciplina específica.",
+      count: awaitingDiscipline,
+      href: buildReviewQueueHref({}),
+    },
+    {
+      title: "Publicar classificadas",
+      description:
+        "Questões com tópico que podem seguir para a publicação.",
+      count: inReviewWithTopic,
+      href: buildReviewQueueHref({ topic: "assigned" }),
+    },
+  ];
 
   return (
     <main className={styles.page}>
@@ -102,9 +246,8 @@ export default async function AdminHomePage() {
           </h1>
 
           <p className={styles.description}>
-            Acompanhe a saúde editorial da base,
-            priorize pendências e acesse as
-            principais operações do backoffice.
+            Acompanhe a classificação e a publicação do
+            banco de questões e siga para as próximas ações.
           </p>
         </div>
 
@@ -112,14 +255,8 @@ export default async function AdminHomePage() {
           href="/admin/questoes/revisao"
           className={styles.primaryAction}
         >
-          <span>
-            Revisar questões
-          </span>
-
-          <span
-            className={styles.actionArrow}
-            aria-hidden="true"
-          >
+          Abrir revisão editorial
+          <span aria-hidden="true">
             →
           </span>
         </Link>
@@ -127,28 +264,23 @@ export default async function AdminHomePage() {
 
       <section
         className={styles.metrics}
-        aria-label="Resumo do banco de questões"
+        aria-label="Indicadores do banco de questões"
       >
         {metrics.map((metric) => (
           <article
             key={metric.label}
-            className={`${styles.metricCard} ${
-              styles[metric.tone]
-            }`}
+            className={`${styles.metricCard} ${styles[`metric_${metric.tone}`]}`}
           >
-            <div className={styles.metricHeading}>
-              <span className={styles.metricLabel}>
-                {metric.label}
-              </span>
-
+            <span className={styles.metricLabel}>
               <span
-                className={styles.metricIndicator}
+                className={styles.metricDot}
                 aria-hidden="true"
               />
-            </div>
+              {metric.label}
+            </span>
 
             <strong className={styles.metricValue}>
-              {formatCount(metric.value)}
+              {metric.value}
             </strong>
 
             <span className={styles.metricDetail}>
@@ -158,8 +290,110 @@ export default async function AdminHomePage() {
         ))}
       </section>
 
+      <section className={styles.progressCard}>
+        <div className={styles.progressHeader}>
+          <div>
+            <p className={styles.sectionEyebrow}>
+              Classificação taxonômica
+            </p>
+
+            <h2>
+              {classifiedPercent}% das questões em revisão já têm tópico
+            </h2>
+          </div>
+
+          {lastRun?.completedAt ? (
+            <span className={styles.progressMeta}>
+              Última classificação automática em{" "}
+              {lastRun.completedAt.toLocaleDateString("pt-BR")}
+            </span>
+          ) : null}
+        </div>
+
+        <div
+          className={styles.progressBar}
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={classifiedPercent}
+          aria-label="Questões em revisão com tópico"
+        >
+          <span style={{ width: `${classifiedPercent}%` }} />
+        </div>
+
+        <dl className={styles.statusRow}>
+          {STATUS_ORDER.map((status) => (
+            <div key={status}>
+              <dt>
+                {labelFor(QUESTION_STATUS_LABELS, status).label}
+              </dt>
+              <dd>
+                {formatCount(countByStatus.get(status) ?? 0)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
       <section className={styles.workspaceGrid}>
         <article className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <p className={styles.sectionEyebrow}>
+                Em revisão
+              </p>
+
+              <h2>
+                Questões por disciplina
+              </h2>
+            </div>
+
+            <span className={styles.panelMeta}>
+              Barra verde: já classificadas
+            </span>
+          </div>
+
+          <ul className={styles.disciplineList}>
+            {disciplineRows.map((row) => (
+              <li key={row.id}>
+                <Link
+                  href={buildReviewQueueHref({ disciplineId: row.id })}
+                  className={styles.disciplineRow}
+                >
+                  <span className={styles.disciplineName}>
+                    {row.name}
+                    {row.legacy ? (
+                      <span className={styles.legacyTag}>
+                        Área antiga do ENEM
+                      </span>
+                    ) : null}
+                  </span>
+
+                  <span className={styles.disciplineCount}>
+                    {formatCount(row.count)}
+                  </span>
+
+                  <span
+                    className={styles.disciplineBar}
+                    aria-hidden="true"
+                  >
+                    <span
+                      className={styles.disciplineBarTotal}
+                      style={{ width: `${(row.count / maxDisciplineCount) * 100}%` }}
+                    >
+                      <span
+                        className={styles.disciplineBarDone}
+                        style={{ width: `${percent(row.classified, row.count)}%` }}
+                      />
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <aside className={styles.panel}>
           <div className={styles.panelHeader}>
             <div>
               <p className={styles.sectionEyebrow}>
@@ -167,257 +401,48 @@ export default async function AdminHomePage() {
               </p>
 
               <h2>
-                Prioridades
+                Próximas ações
               </h2>
             </div>
-
-            <span className={styles.panelMeta}>
-              Atualizado em tempo real
-            </span>
           </div>
 
-          <div className={styles.priorityList}>
-            <div className={styles.priorityItem}>
-              <div
-                className={`${styles.priorityIcon} ${styles.priorityIconCritical}`}
-                aria-hidden="true"
-              >
-                1
-              </div>
-
-              <div className={styles.priorityContent}>
-                <div className={styles.priorityTitleRow}>
-                  <strong>
-                    Classificação taxonômica
-                  </strong>
-
-                  <span className={styles.priorityBadge}>
-                    Prioridade alta
+          <ol className={styles.actionList}>
+            {nextActions.map((action, index) => (
+              <li key={action.title}>
+                <Link
+                  href={action.href}
+                  className={styles.actionItem}
+                >
+                  <span
+                    className={styles.actionStep}
+                    aria-hidden="true"
+                  >
+                    {index + 1}
                   </span>
-                </div>
 
-                <p>
-                  Questões ativas ainda sem tópico
-                  canônico definido.
-                </p>
-              </div>
+                  <span className={styles.actionCopy}>
+                    <strong>{action.title}</strong>
+                    <span>{action.description}</span>
+                  </span>
 
-              <strong className={styles.priorityCount}>
-                {formatCount(missingTopic)}
-              </strong>
-            </div>
+                  <span className={styles.actionCount}>
+                    {formatCount(action.count)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
 
-            <div className={styles.priorityItem}>
-              <div
-                className={`${styles.priorityIcon} ${styles.priorityIconAttention}`}
-                aria-hidden="true"
-              >
-                2
-              </div>
-
-              <div className={styles.priorityContent}>
-                <div className={styles.priorityTitleRow}>
-                  <strong>
-                    Revisão editorial
-                  </strong>
-                </div>
-
-                <p>
-                  Questões aguardando validação antes
-                  da publicação.
-                </p>
-              </div>
-
-              <strong className={styles.priorityCount}>
-                {formatCount(inReview)}
-              </strong>
-            </div>
-
-            <div className={styles.priorityItem}>
-              <div
-                className={styles.priorityIcon}
-                aria-hidden="true"
-              >
-                3
-              </div>
-
-              <div className={styles.priorityContent}>
-                <div className={styles.priorityTitleRow}>
-                  <strong>
-                    Rascunhos
-                  </strong>
-                </div>
-
-                <p>
-                  Registros que ainda não entraram
-                  na fila editorial.
-                </p>
-              </div>
-
-              <strong className={styles.priorityCount}>
-                {formatCount(draft)}
-              </strong>
-            </div>
-          </div>
-
-          <div className={styles.panelFooter}>
-            <Link
-              href="/admin/questoes/revisao"
-              className={styles.secondaryAction}
-            >
-              Abrir fila de revisão
-              <span aria-hidden="true">
-                →
-              </span>
-            </Link>
-          </div>
-        </article>
-
-        <aside className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <p className={styles.sectionEyebrow}>
-                Atalhos
-              </p>
-
-              <h2>
-                Operações rápidas
-              </h2>
-            </div>
-          </div>
-
-          <div className={styles.quickActions}>
-            <Link
-              href="/admin/questoes/revisao"
-              className={styles.quickAction}
-            >
-              <div>
-                <strong>
-                  Revisar questões
-                </strong>
-
-                <span>
-                  Classificar e publicar
-                </span>
-              </div>
-
-              <span
-                className={styles.quickActionArrow}
-                aria-hidden="true"
-              >
-                →
-              </span>
-            </Link>
-
-            <div className={styles.quickActionDisabled}>
-              <div>
-                <strong>
-                  Nova questão
-                </strong>
-
-                <span>
-                  Cadastro manual
-                </span>
-              </div>
-
-              <span className={styles.comingSoon}>
-                Em breve
-              </span>
-            </div>
-
-            <div className={styles.quickActionDisabled}>
-              <div>
-                <strong>
-                  Importações
-                </strong>
-
-                <span>
-                  PDF, JSON, CSV e XLSX
-                </span>
-              </div>
-
-              <span className={styles.comingSoon}>
-                Em breve
-              </span>
-            </div>
-
-            <div className={styles.quickActionDisabled}>
-              <div>
-                <strong>
-                  Taxonomia
-                </strong>
-
-                <span>
-                  Disciplinas, áreas e tópicos
-                </span>
-              </div>
-
-              <span className={styles.comingSoon}>
-                Em breve
-              </span>
-            </div>
+          <div className={styles.soonList}>
+            <span className={styles.sectionEyebrow}>
+              Em breve no backoffice
+            </span>
+            <p>
+              Cadastro manual de questões, central de importações
+              (PDF, JSON, CSV e XLSX) e gestão da taxonomia.
+            </p>
           </div>
         </aside>
-      </section>
-
-      <section className={styles.baseStatus}>
-        <div className={styles.baseStatusHeading}>
-          <div>
-            <p className={styles.sectionEyebrow}>
-              Estado da base
-            </p>
-
-            <h2>
-              Distribuição editorial
-            </h2>
-          </div>
-
-          <span>
-            {formatCount(total)} registros
-          </span>
-        </div>
-
-        <div className={styles.baseStats}>
-          <div>
-            <span>
-              Rascunhos
-            </span>
-
-            <strong>
-              {formatCount(draft)}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Em revisão
-            </span>
-
-            <strong>
-              {formatCount(inReview)}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Publicadas
-            </span>
-
-            <strong>
-              {formatCount(published)}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              Arquivadas
-            </span>
-
-            <strong>
-              {formatCount(archived)}
-            </strong>
-          </div>
-        </div>
       </section>
     </main>
   );
