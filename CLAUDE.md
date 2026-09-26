@@ -34,6 +34,10 @@ autenticação Supabase, mídia no Supabase Storage (bucket privado). Comunicaç
   nunca confiar em `user_metadata` ou no frontend. Em arquivos `"use server"`, só exportar actions.
 - Publicar questões só pela política (`validateQuestionForPublication` / `publishQuestionAction`).
 - Taxonomia é controlada: nem IA nem importadores criam disciplinas/tópicos.
+- Rótulos na UI: `Discipline`=Matéria, `Area`=Tópico, `Topic`=Subtópico, `Subtopic`=Detalhe.
+- Banca vem do catálogo (`examining-board-catalog.ts`, `boards:seed`), nunca do leitor de PDF;
+  "Instituto AOCP" ≠ "AOCP". Questão de prova só publica com prova + banca + ano.
+- Edição manual de questões só por `/admin/questoes/[id]/editar` (grava `question_revisions`).
 - Aplicar sugestões de classificação só via `applyClassificationSuggestion`.
 - Não reimportar ENEM 2024 nem refazer importações para corrigir taxonomia ou mídia.
 - Não raspar bancos de questões de terceiros (ex.: Gran Cursos); fonte = PDFs oficiais das bancas.

@@ -356,3 +356,42 @@ de "termo destacado" vindo do `rawPayload`; configurar IA com cota adequada para
 - Navegadores podem ter guardado respostas antigas de `/api/media` com `public, immutable` (rota antiga);
   o servidor atual responde `private, no-store` para mídia não publicada — use `cache: 'no-store'` ao testar.
 - `git push` pode demorar >2 min nesta máquina: rodar em segundo plano e conferir com `git ls-remote`.
+
+---
+
+## 13. Continuação de 26/09/2026 (tarde) — edição, bancas e nomenclatura
+
+Vale sobre §1/§12 onde divergir.
+
+### Feito
+1. **Alternativas só com imagem** passam na política de publicação (`mediaCount` em
+   `PublicationAlternative`). Commit `e1658e8`.
+2. **Edição de questões** — `/admin/questoes/[id]/editar` (botão "Editar conteúdo" na revisão):
+   enunciado, texto das alternativas e gabarito, para questões em revisão **e publicadas**.
+   Regras puras em `question-bank/domain/question-content-edit.ts` (testadas). Motivo obrigatório,
+   confirmação explícita para trocar gabarito de publicada, revalidação da política, concorrência
+   otimista por `updatedAt`. Cada gravação cria `question_revisions` (antes/depois, editor, motivo) —
+   migration aditiva `20260927000000_question_revisions` **aplicada** (RLS ligada). Letras/ordem das
+   alternativas nunca mudam (tentativas de alunos apontam para elas). Commit `3af9169`.
+3. **Bancas** — catálogo `question-bank/domain/examining-board-catalog.ts`. "Instituto AOCP" e
+   "AOCP" são **bancas diferentes** (pedido do usuário). `npm run boards:seed` (dry-run/`--apply`)
+   **aplicado**: 13 bancas criadas, siglas/sites preenchidos, as 16 provas ENEM ligadas a **INEP**
+   (log em `data-private/backfills/examining-boards-*.json`).
+   - Importação: o *leitor* (`OFFICIAL_EXAM_READERS`: formato AOCP/Fundatec/Cebraspe) **não é a banca**.
+     A prévia exige escolher a banca (sugerida pelo texto da capa; `analysis.suggestedBoardSlug`).
+     A chave do leitor continua no slug da prova para reimportação idempotente.
+   - Política de publicação: fonte ≠ `ORIGINAL` exige prova com banca e ano
+     (`EXAMINATION_REQUIRED`, `BOARD_REQUIRED`, `YEAR_REQUIRED`). Commit `9fbda26`.
+4. **Nomenclatura (só rótulos, sem mudança de dados)** — decisão do usuário:
+   `Discipline` = **Matéria**, `Area` = **Tópico**, `Topic` = **Subtópico**, `Subtopic` = **Detalhe**.
+   Publicação continua exigindo `topicId` (= Subtópico). O prompt do classificador mantém os
+   rótulos internos (DISCIPLINA/ASSUNTO/TÓPICO) — mudar exigiria nova versão `oa-v3`.
+   ENEM: 4 macroáreas oficiais como filtro principal; matérias internas para estudo. Commit `dee54fe`.
+
+### Pendências novas (antes das de §12)
+1. Lista **"Todas as questões"** (`/admin/questoes`) com filtros por situação/banca/ano — único jeito
+   de achar publicadas para editar.
+2. Trocar classificação de questões publicadas; trocar/adicionar imagens; editar dados da origem.
+3. Aluno: exibir órgão e cargo em linhas próprias; filtro por macroárea para ENEM.
+4. Tela de administração de bancas (hoje só pelo catálogo + `boards:seed`).
+5. As 35 questões A.C.Camargo (VUNESP) vieram da Quest API, não de PDF oficial — conferir origem.
