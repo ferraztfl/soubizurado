@@ -433,3 +433,23 @@ Vale sobre §1/§12 onde divergir.
   vira `lay2:<local>><remoto>` (tarefas antigas `lay1` continuam válidas para a configuração sem IA local).
   Máquina do usuário: Ryzen 3 4350G, 11 GB RAM, sem GPU dedicada → só modelos ~3B, lentos (~30–90 s/questão).
   Ollama **ainda não instalado** (download precisa de aprovação explícita do usuário).
+
+### 13.3 Rodada completa, custo real e testes de prompt (26/09/2026, manhã)
+- **Botão usado:** ENEM + restantes classificadas com regras → Gemini (`gemini-3.5-flash-lite`, nível pago,
+  60 req/min, concorrência 4): 2.871 processadas em ~50 min, 2.731 gravadas, 17 pelas regras, 140 para revisão,
+  0 falhas (4 "fetch failed" reprocessadas; corrigido o fim prematuro com retries pendentes). Restam **144**
+  sem classificação (59 com sugestão pronta, 85 sem subtópico sugerido). Nada publicado.
+- **Custo real:** R$ 16,07 (6,37 M tokens entrada, 0,45 M saída) → ~US$ 0,30/M entrada e ~US$ 2,40/M saída
+  (deduzido da fatura; a estimativa inicial de ~US$ 0,10/M estava errada). ≈ R$ 0,006 por questão.
+  Conta pré-paga (limite = saldo). `.env` do usuário: `CLASSIFIER_MAX_AI_CALLS_PER_RUN=3000` (voltar a 500).
+- **IA local (Ollama `qwen2.5:3b`) reprovada:** 33% de acerto com confiança 0,95 declarada; ~38 s/questão.
+  Linhas `CLASSIFIER_LOCAL_*` comentadas no `.env`. Modelo continua instalado.
+- **Testes de prompt (mesmas 50 questões, Matéria oculta, referência = classificação gravada):**
+  | estilo | concordância | ≥0,95 | tokens entrada+saída | custo relativo |
+  |---|---|---|---|---|
+  | `labelled` (v2, padrão) | 88% | 94% | 2.399 + 157 | 100% |
+  | `labelled-short` (v4) | 84% | 91% | 2.395 + 82 | ~83% |
+  | `compact` (v3) | 66% | 83% | 1.084 + 57 | ~44% |
+  Decisão: manter `labelled`. A lista de Detalhes ajuda a IA a escolher o Subtópico; ENEM não pode ser
+  restrito a uma Matéria (regras erram a Matéria do ENEM em 20–35%). Ferramentas: `classification:calibrate-ai`
+  (paga, somente leitura) e `classification:calibrate-rules` (grátis).
