@@ -4,6 +4,8 @@ import type {
   PublicQuestionDto,
 } from "@/modules/question-bank/application/dto/public-question";
 
+import { stripInlineMarkdown } from "@/shared/ui/inline-markdown";
+
 import { QuestionMedia } from "./question-media";
 
 import styles from "./question-preview-card.module.css";
@@ -58,7 +60,7 @@ export function QuestionPreviewCard({
         {board ? <span>{board}</span> : null}
       </div>
 
-      <h2>{question.statement}</h2>
+      <h2>{stripInlineMarkdown(question.statement)}</h2>
 
       <QuestionMedia
         media={previewMedia}

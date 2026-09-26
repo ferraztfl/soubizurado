@@ -10,6 +10,8 @@ import {
 import { ApplicationError } from "@/shared/errors/application-error";
 import { ERROR_CODES } from "@/shared/errors/error-code";
 import { PageHeader } from "@/shared/ui/page-header";
+import { removeMarkdownImages } from "@/shared/ui/inline-markdown";
+import { RichText } from "@/shared/ui/rich-text";
 
 import { QuestionMedia } from "../_components/question-media";
 import { QuestionAnswerPanel } from "./_components/question-answer-panel";
@@ -45,6 +47,13 @@ export default async function QuestionDetailPage({
 
     throw error;
   }
+
+  // Support texts that only held an image rendered by QuestionMedia.
+  const visibleSupportContents =
+    question.supportContents.filter(
+      (support) =>
+        removeMarkdownImages(support.content).length > 0,
+    );
 
   const board =
     question.examination?.board?.acronym ??
@@ -89,7 +98,7 @@ export default async function QuestionDetailPage({
             {board ? <span>{board}</span> : null}
           </div>
 
-          {question.supportContents.length > 0 ? (
+          {visibleSupportContents.length > 0 ? (
             <section
               className={styles.supportContent}
               aria-label="Texto de apoio"
@@ -98,10 +107,12 @@ export default async function QuestionDetailPage({
                 Texto de apoio
               </span>
 
-              {question.supportContents.map(
+              {visibleSupportContents.map(
                 (support) => (
                   <p key={support.id}>
-                    {support.content}
+                    <RichText
+                      text={support.content}
+                    />
                   </p>
                 ),
               )}
@@ -109,7 +120,9 @@ export default async function QuestionDetailPage({
           ) : null}
 
           <div className={styles.statement}>
-            {question.statement}
+            <RichText
+              text={question.statement}
+            />
           </div>
 
           <QuestionMedia

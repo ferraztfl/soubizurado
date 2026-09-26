@@ -10,6 +10,8 @@ import {
 import {
   getPrismaClient,
 } from "@/shared/infrastructure/database/prisma";
+import { removeMarkdownImages } from "@/shared/ui/inline-markdown";
+import { RichText } from "@/shared/ui/rich-text";
 
 import {
   QuestionMedia,
@@ -590,6 +592,15 @@ export default async function ReviewQuestionPage(
         "Não foi possível concluir a operação."
       : null;
 
+  // Support texts that only held a (now separately rendered) image.
+  const visibleSupportLinks =
+    question.supportLinks.filter(
+      (link) =>
+        removeMarkdownImages(
+          link.supportContent.content,
+        ).length > 0,
+    );
+
   const statusLabel =
     labelFor(
       QUESTION_STATUS_LABELS,
@@ -786,7 +797,7 @@ export default async function ReviewQuestionPage(
             </dl>
           </section>
 
-          {question.supportLinks.length >
+          {visibleSupportLinks.length >
           0 ? (
             <section
               className={`${styles.card} ${styles.support}`}
@@ -796,17 +807,19 @@ export default async function ReviewQuestionPage(
                 Texto de apoio
               </h2>
 
-              {question.supportLinks.map(
+              {visibleSupportLinks.map(
                 (link) => (
                   <p
                     key={
                       link.supportContent.id
                     }
                   >
-                    {
-                      link.supportContent
-                        .content
-                    }
+                    <RichText
+                      text={
+                        link.supportContent
+                          .content
+                      }
+                    />
                   </p>
                 ),
               )}
@@ -822,7 +835,9 @@ export default async function ReviewQuestionPage(
             </h2>
 
             <div className={styles.statement}>
-              {question.statement}
+              <RichText
+                text={question.statement}
+              />
             </div>
 
             <QuestionMedia
@@ -895,9 +910,11 @@ export default async function ReviewQuestionPage(
                           >
                             {alternative.content.trim() ? (
                               <p>
-                                {
-                                  alternative.content
-                                }
+                                <RichText
+                                  text={
+                                    alternative.content
+                                  }
+                                />
                               </p>
                             ) : (
                               <p

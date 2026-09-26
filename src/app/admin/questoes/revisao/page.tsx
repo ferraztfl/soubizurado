@@ -8,6 +8,7 @@ import {
 } from "@/modules/question-bank/presentation/review-queue-search-params";
 import { LEGACY_ENEM_KNOWLEDGE_AREA_SLUGS } from "@/modules/taxonomy/application/legacy-enem-taxonomy-backfill";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
+import { stripInlineMarkdown } from "@/shared/ui/inline-markdown";
 
 import styles from "./page.module.css";
 
@@ -60,7 +61,7 @@ function formatCount(value: number): string {
 }
 
 function previewStatement(statement: string): string {
-  const compact = statement.replace(/\s+/g, " ").trim();
+  const compact = stripInlineMarkdown(statement).replace(/\s+/g, " ").trim();
 
   return compact.length > STATEMENT_PREVIEW_LENGTH
     ? `${compact.slice(0, STATEMENT_PREVIEW_LENGTH).trimEnd()}…`

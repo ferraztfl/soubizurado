@@ -16,6 +16,8 @@ import {
   submitStudyAnswerAction,
 } from "@/modules/study/presentation/actions/study-answer-actions";
 
+import { RichText } from "@/shared/ui/rich-text";
+
 import { QuestionMedia } from "../../_components/question-media";
 
 import styles from "./question-answer-panel.module.css";
@@ -201,7 +203,11 @@ export function QuestionAnswerPanel({
                     className={styles.optionText}
                   >
                     <span>
-                      {alternative.content}
+                      <RichText
+                        text={
+                          alternative.content
+                        }
+                      />
                     </span>
 
                     <QuestionMedia

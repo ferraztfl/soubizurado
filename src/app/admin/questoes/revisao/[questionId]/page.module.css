@@ -506,3 +506,9 @@
     transition: none;
   }
 }
+
+.support a {
+  color: var(--sb-brand-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
