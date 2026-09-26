@@ -78,7 +78,7 @@ describe("OpenAiCompatibleQuestionClassifier", () => {
     );
 
     const classifier = classifierWith(fetchImpl);
-    expect(classifier.version).toBe("oa-v3:test-model");
+    expect(classifier.version).toBe("oa-v2:test-model");
 
     const result = await classifier.classify(input, index);
 
@@ -95,8 +95,8 @@ describe("OpenAiCompatibleQuestionClassifier", () => {
 
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({ model: "test-model", temperature: 0 });
-    expect(body.messages[1].content).toContain("- Funções");
-    expect(body.messages[1].content).not.toContain("Função Afim");
+    expect(body.messages[1].content).toContain("TÓPICO: Funções");
+    expect(body.messages[1].content).toContain("Função Afim");
     expect(body.messages[1].content).toContain("(B) R$ 2 mil");
   });
 

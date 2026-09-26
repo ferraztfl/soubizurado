@@ -22,8 +22,12 @@ export type OpenAiCompatibleConfig = Readonly<{
   /** Label stored in the task, e.g. "openai", "gemini", "ollama". */
   providerLabel: string;
   timeoutMs: number;
-  /** "compact" (default, v3) or "labelled" (v2, the original prompt). */
-  promptStyle?: "labelled" | "compact";
+  /**
+   * "labelled" (default, v2, the original prompt), "labelled-short" (v4:
+   * same input, short answer) or "compact" (v3: rejected on 2026-09-26,
+   * 66% vs 88% agreement on 50 questions).
+   */
+  promptStyle?: PromptStyle;
 }>;
 
 type FetchLike = (
@@ -147,7 +151,13 @@ const COMPACT_SYSTEM_PROMPT = [
 /** Shorter text limits for the compact prompt: the subject shows early. */
 const COMPACT_LIMITS = { statement: 2_500, support: 1_500, alternative: 300 } as const;
 
-export type PromptStyle = "labelled" | "compact";
+export type PromptStyle = "labelled" | "labelled-short" | "compact";
+
+const VERSION_BY_STYLE: Readonly<Record<PromptStyle, string>> = {
+  labelled: "oa-v2",
+  compact: "oa-v3",
+  "labelled-short": "oa-v4",
+};
 
 function clip(value: string, max: number): string {
   return value.length > max ? `${value.slice(0, max)}…` : value;
@@ -159,7 +169,7 @@ export function buildClassificationPrompt(
   taxonomy: TaxonomyIndex,
   style: PromptStyle,
 ): Readonly<{ system: string; user: string }> {
-  if (style === "labelled") {
+  if (style === "labelled" || style === "labelled-short") {
     const question = [
       truncate(input.statement),
       ...input.supportTexts.map((text) => `Texto de apoio: ${truncate(text)}`),
@@ -169,7 +179,7 @@ export function buildClassificationPrompt(
     ].join("\n");
 
     return {
-      system: SYSTEM_PROMPT,
+      system: style === "labelled" ? SYSTEM_PROMPT : SHORT_ANSWER_SYSTEM_PROMPT,
       user: `Taxonomia permitida:\n${describeCandidateTaxonomy(taxonomy, input)}\n\nQuestão:\n${question}`,
     };
   }
@@ -200,6 +210,16 @@ const SYSTEM_PROMPT = [
   "confidence é um número entre 0 e 1. tags: até 5 termos curtos em português.",
 ].join("\n");
 
+/**
+ * Prompt v4: same instructions and taxonomy as v2, but a short answer
+ * (no tags, rationale capped): output tokens cost ~8x input tokens.
+ */
+const SHORT_ANSWER_SYSTEM_PROMPT = [
+  ...SYSTEM_PROMPT.split("\n").slice(0, 7),
+  "Responda apenas com JSON: {\"discipline\",\"area\",\"topic\",\"subtopic\",\"confidence\",\"rationale\"}.",
+  "confidence é um número entre 0 e 1. rationale: no máximo 12 palavras.",
+].join("\n");
+
 export class OpenAiCompatibleQuestionClassifier implements QuestionClassifier {
   public readonly provider: string;
   public readonly model: string;
@@ -212,11 +232,11 @@ export class OpenAiCompatibleQuestionClassifier implements QuestionClassifier {
   ) {
     this.provider = config.providerLabel;
     this.model = config.model;
-    this.version = `${this.promptStyle === "labelled" ? "oa-v2" : "oa-v3"}:${config.model}`.slice(0, 40);
+    this.version = `${VERSION_BY_STYLE[this.promptStyle]}:${config.model}`.slice(0, 40);
   }
 
   private get promptStyle(): PromptStyle {
-    return this.config.promptStyle ?? "compact";
+    return this.config.promptStyle ?? "labelled";
   }
 
   public async classify(

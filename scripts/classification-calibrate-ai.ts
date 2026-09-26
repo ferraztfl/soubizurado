@@ -23,7 +23,8 @@ function argument(name: string): string | undefined {
 
 async function main(): Promise<void> {
   const remote = argument("provider") === "remote";
-  const style = argument("style") === "labelled" ? "labelled" : "compact";
+  const requested = argument("style");
+  const style = requested === "compact" || requested === "labelled-short" ? requested : "labelled";
   const baseUrl = (remote ? process.env.CLASSIFIER_API_BASE_URL : process.env.CLASSIFIER_LOCAL_API_BASE_URL)?.trim();
   const model = (remote ? process.env.CLASSIFIER_MODEL : process.env.CLASSIFIER_LOCAL_MODEL)?.trim();
 

@@ -23,7 +23,7 @@ describe("createQuestionClassifier", () => {
     expect(classifier).toMatchObject({
       provider: "layered:gemini",
       model: "some-model",
-      version: "lay1:oa-v3:some-model",
+      version: "lay1:oa-v2:some-model",
     });
   });
 
@@ -60,7 +60,7 @@ describe("createQuestionClassifier", () => {
       CLASSIFIER_LAYERED: "false",
     });
 
-    expect(classifier).toMatchObject({ provider: "gemini", version: "oa-v3:some-model" });
+    expect(classifier).toMatchObject({ provider: "gemini", version: "oa-v2:some-model" });
   });
 
   it("allows plain http only for local servers", () => {

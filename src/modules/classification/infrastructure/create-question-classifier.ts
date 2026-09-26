@@ -16,7 +16,7 @@ type Environment = Readonly<Record<string, string | undefined>>;
  *   CLASSIFIER_MODEL=...
  *   CLASSIFIER_PROVIDER_LABEL=openai|gemini|ollama|...
  *   CLASSIFIER_TIMEOUT_MS=30000
- *   CLASSIFIER_PROMPT_STYLE=compact           (default, v3; "labelled" = original v2)
+ *   CLASSIFIER_PROMPT_STYLE=labelled          (default v2; labelled-short = v4; compact = v3, rejected)
  *   CLASSIFIER_LAYERED=true                   (default: rules first, AI as fallback)
  *   CLASSIFIER_RULES_THRESHOLD=0.8            (rules answer accepted at or above)
  *
@@ -55,10 +55,10 @@ export function createQuestionClassifier(
       throw new Error("CLASSIFIER_TIMEOUT_MS must be between 1000 and 300000.");
     }
 
-    const promptStyle = env.CLASSIFIER_PROMPT_STYLE?.trim() || "compact";
+    const promptStyle = env.CLASSIFIER_PROMPT_STYLE?.trim() || "labelled";
 
-    if (promptStyle !== "compact" && promptStyle !== "labelled") {
-      throw new Error('CLASSIFIER_PROMPT_STYLE must be "compact" or "labelled".');
+    if (promptStyle !== "labelled" && promptStyle !== "labelled-short" && promptStyle !== "compact") {
+      throw new Error('CLASSIFIER_PROMPT_STYLE must be "labelled", "labelled-short" or "compact".');
     }
 
     const ai = new OpenAiCompatibleQuestionClassifier({
