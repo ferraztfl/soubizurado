@@ -32,10 +32,6 @@ function topic(
   };
 }
 
-function sub(name: string, ...aliases: string[]): CatalogSubtopic {
-  return { name, aliases };
-}
-
 function area(
   name: string,
   topics: readonly CatalogTopic[],
