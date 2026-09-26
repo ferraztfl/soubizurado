@@ -117,3 +117,53 @@ describe("RuleBasedQuestionClassifier", () => {
     expect(result.confidence).toBeLessThanOrEqual(0.5);
   });
 });
+
+describe("RuleBasedQuestionClassifier legal references", () => {
+  const legalIndex = new TaxonomyIndex({
+    version: 2,
+    disciplines: [
+      { id: "lpe", name: "Legislação Penal Especial", slug: "legislacao-penal-especial", knowledgeAreaId: "cj", aliases: [] },
+      { id: "dc", name: "Direito Constitucional", slug: "direito-constitucional", knowledgeAreaId: "cj", aliases: [] },
+    ],
+    areas: [
+      { id: "prot", disciplineId: "lpe", name: "Proteção de Grupos Vulneráveis", aliases: [] },
+      { id: "dgf", disciplineId: "dc", name: "Direitos e Garantias Fundamentais na Constituição", aliases: [] },
+    ],
+    topics: [
+      { id: "mp", disciplineId: "lpe", areaId: "prot", name: "Lei Maria da Penha", aliases: [] },
+      { id: "art5", disciplineId: "dc", areaId: "dgf", name: "Direitos e Deveres Individuais e Coletivos", aliases: [] },
+    ],
+    subtopics: [],
+  });
+
+  it("classifies a cited law with high confidence", async () => {
+    const result = await new RuleBasedQuestionClassifier().classify(
+      input({
+        statement: "Nessa situação, à luz da Lei no 11.340/2006, é correto afirmar que as condutas configuram violência",
+        knowledgeAreaId: "cj",
+      }),
+      legalIndex,
+    );
+
+    expect(result).toMatchObject({
+      discipline: "Legislação Penal Especial",
+      area: "Proteção de Grupos Vulneráveis",
+      topic: "Lei Maria da Penha",
+      confidence: 0.92,
+    });
+  });
+
+  it("ignores a reference outside the question Matéria", async () => {
+    const result = await new RuleBasedQuestionClassifier().classify(
+      input({
+        statement: "Segundo a Lei no 11.340/2006, assinale a correta.",
+        knowledgeAreaId: "cj",
+        disciplineId: "dc",
+      }),
+      legalIndex,
+    );
+
+    expect(result.topic).not.toBe("Lei Maria da Penha");
+    expect(result.confidence).toBeLessThan(0.8);
+  });
+});

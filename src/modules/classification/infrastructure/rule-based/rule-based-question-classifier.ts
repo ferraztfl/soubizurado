@@ -12,6 +12,7 @@ import type {
 } from "../../domain/taxonomy-index";
 
 import { DISCIPLINE_KEYWORDS } from "./discipline-keywords";
+import { matchLegalReferences } from "./legal-references";
 
 /*
  * Deterministic baseline classifier. No network, no model: phrase
@@ -22,6 +23,10 @@ import { DISCIPLINE_KEYWORDS } from "./discipline-keywords";
  */
 
 const MAX_CONFIDENCE = 0.9;
+/** A single, unambiguous legal reference (law number, statute, CF art.). */
+const LEGAL_REFERENCE_CONFIDENCE = 0.92;
+/** Several references, one clearly dominant (>= 75% of the weight). */
+const LEGAL_REFERENCE_DOMINANT_CONFIDENCE = 0.85;
 const TOPIC_NAME_WEIGHT = 3;
 const SUBTOPIC_NAME_WEIGHT = 2;
 const KEYWORD_WEIGHT = 1;
@@ -123,10 +128,51 @@ function dominance(scores: readonly number[]): number {
   return total > 0 ? (scores[0] ?? 0) / total : 0;
 }
 
+type LegalCandidate = Readonly<{
+  discipline: IndexedDiscipline;
+  topic: IndexedTopic;
+  weight: number;
+  evidence: string;
+}>;
+
+/**
+ * Legal references restricted to topics that exist inside the candidate
+ * disciplines, summed per topic, strongest first.
+ */
+function legalCandidates(
+  rawText: string,
+  candidates: readonly IndexedDiscipline[],
+): LegalCandidate[] {
+  const byTopic = new Map<string, LegalCandidate>();
+
+  for (const hit of matchLegalReferences(rawText)) {
+    const discipline = candidates.find(
+      (candidate) => normalizeTaxonomyTerm(candidate.name) === normalizeTaxonomyTerm(hit.discipline),
+    );
+    const topic = discipline?.topics.find(
+      (candidate) => normalizeTaxonomyTerm(candidate.name) === normalizeTaxonomyTerm(hit.topic),
+    );
+
+    if (!discipline || !topic) {
+      continue;
+    }
+
+    const current = byTopic.get(topic.id);
+    byTopic.set(topic.id, {
+      discipline,
+      topic,
+      weight: (current?.weight ?? 0) + hit.weight,
+      evidence: current?.evidence ?? hit.evidence,
+    });
+  }
+
+  return [...byTopic.values()].sort((left, right) => right.weight - left.weight);
+}
+
 export class RuleBasedQuestionClassifier implements QuestionClassifier {
   public readonly provider = "rule-based";
   public readonly model = null;
-  public readonly version = "rule-based-v1";
+  public readonly version = "rule-based-v2";
 
   public async classify(
     input: QuestionClassificationInput,
@@ -137,6 +183,35 @@ export class RuleBasedQuestionClassifier implements QuestionClassifier {
     );
 
     const candidates = taxonomy.candidateDisciplines(input);
+
+    const legal = legalCandidates(
+      [input.statement, ...input.supportTexts, ...input.alternatives].join(" "),
+      candidates,
+    );
+    const bestLegal = legal[0];
+
+    if (bestLegal) {
+      const legalDominance = dominance(legal.map((entry) => entry.weight));
+
+      if (legalDominance >= 0.75) {
+        const subtopic = scoreTopics(text, bestLegal.discipline).find(
+          (entry) => entry.topic.id === bestLegal.topic.id,
+        )?.subtopicName ?? null;
+
+        return {
+          discipline: bestLegal.discipline.name,
+          area: bestLegal.topic.areaName,
+          topic: bestLegal.topic.name,
+          subtopic,
+          tags: [],
+          confidence:
+            legalDominance === 1
+              ? LEGAL_REFERENCE_CONFIDENCE
+              : LEGAL_REFERENCE_DOMINANT_CONFIDENCE,
+          rationale: `Referência legal: ${bestLegal.evidence}.`,
+        };
+      }
+    }
 
     const disciplineScores = candidates
       .map((discipline) => {
