@@ -20,7 +20,8 @@ para ingestão, mídia e regras gerais; este documento registra tudo o que veio 
 | Reclassificação legada | Aplicada: 685 → Matemática, 62 → Língua Inglesa, 67 → Língua Espanhola |
 | Classificador | Fila persistente + classificador por regras (padrão) + adaptador OpenAI-compatível (IA). Rodada `rule-based-v1` feita: 2928 tarefas, 1191 com tópico sugerido, 19 de alta confiança, 0 aplicadas |
 | Publicação | 0 questões publicadas; 2963 em `IN_REVIEW`; 0 com tópico (em 26/09/2026) |
-| Próximo passo combinado | Usuário vai criar chave gratuita do Google AI Studio (Gemini) e configurar `.env`; depois: teste com 50 questões + auditoria de acerto, fila completa, `classification:apply` |
+| IA configurada | Gemini gratuito (Google AI Studio) no `.env`, modelo `gemini-flash-latest`. Rodada de teste `oa-v2:gemini-flash-latest` com 50 questões em andamento/concluída (ver §7) |
+| Próximo passo combinado | Auditar as 50 do teste; se boas, enfileirar o restante e processar em dias sucessivos (cota grátis); depois `classification:apply` |
 
 ---
 
@@ -161,11 +162,17 @@ Documentado em `.env.example`. Para o Gemini gratuito (Google AI Studio):
 CLASSIFIER_PROVIDER=openai-compatible
 CLASSIFIER_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
 CLASSIFIER_API_KEY=<chave criada pelo usuário — nunca commitar nem colar no chat>
-CLASSIFIER_MODEL=<id do modelo Gemini Flash no AI Studio>
+CLASSIFIER_MODEL=gemini-flash-latest
 CLASSIFIER_PROVIDER_LABEL=gemini
-CLASSIFIER_REQUESTS_PER_MINUTE=8
+CLASSIFIER_REQUESTS_PER_MINUTE=4
 CLASSIFIER_MIN_CONFIDENCE=0.8
 ```
+
+Validado em 26/09/2026 com a chave do usuário (lista de modelos via `GET /v1beta/openai/models`):
+`gemini-flash-latest` e `gemini-3.5-flash-lite` respondem JSON; `gemini-2.5-flash` não está
+disponível para contas novas; `gemini-3.x-flash` retornavam 503 (alta demanda) no momento.
+A 8 req/min o plano grátis devolveu 29× HTTP 429 e 13× HTTP 503 em 50 tarefas — usar
+`--rpm=4 --concurrency=1`. Tarefas com erro voltam sozinhas à fila (backoff).
 
 Sem essas variáveis, o padrão é `rule-based`. O texto das questões (conteúdo público do ENEM)
 é enviado ao provedor configurado. As imagens ainda **não** são enviadas.
@@ -174,9 +181,12 @@ Sem essas variáveis, o padrão é `rule-based`. O texto das questões (conteúd
 
 ## 7. Plano combinado para a classificação por IA
 
-1. Usuário configura o `.env` (§6).
-2. `classification:enqueue -- --apply --limit=50` → `classification:process -- --rpm=8` → auditar
-   manualmente (pelo assistente) a taxa de acerto nessas 50.
+1. ✅ Usuário configurou o `.env` (§6).
+2. ✅ Teste `oa-v1`: das 8 concluídas, 7 plausíveis; 1 falhou por confusão de níveis no prompt
+   (modelo devolveu o assunto como tópico). Prompt corrigido para rotular
+   DISCIPLINA/ASSUNTO/TÓPICO/SUBTÓPICOS → versão `oa-v2`. As 42 pendentes da v1 foram
+   marcadas FAILED ("Superseded by oa-v2"). Teste `oa-v2` com as mesmas 50 questões:
+   `classification:process -- --limit=50 --concurrency=1 --rpm=4`; auditar o resultado.
 3. Se boa: enfileirar o restante e processar (retomar em dias seguintes se a cota diária acabar).
 4. `classification:apply` (dry-run → `--apply`). Baixa confiança permanece em revisão.
 5. Publicação em lote **somente** das que passam em `validateQuestionForPublication` — confirmar
@@ -199,6 +209,8 @@ Sem essas variáveis, o padrão é `rule-based`. O texto das questões (conteúd
 
 ## 9. Débitos conhecidos / próximos itens
 
+- Formatação inline: `src/shared/ui/inline-markdown.ts` + `rich-text.tsx` (negrito, itálico, links http; imagens Markdown removidas porque já aparecem via QuestionMedia). 26 referências de imagem `enem.dev` em textos de apoio não têm cópia local (pendência de mídia).
+- Dashboard `/admin` refeito com indicadores operacionais, progresso por disciplina e próximas ações.
 - UI/UX: detalhe da revisão redesenhado (duas colunas, painel de ações fixo, checklist de publicação, rótulos em português). Rótulos de enums ficam em `src/modules/question-bank/presentation/question-labels.ts` — **nunca renderizar valores crus como `IN_REVIEW`**; usar `labelFor(...)`. Próximas telas a polir: dashboard e fila (já usam tokens, mas podem ganhar componentes compartilhados de badge/card).
 - Enunciados importados contêm marcações cruas de Markdown (`**negrito**`, `_itálico_`); falta um renderizador seguro de formatação inline (admin e área do aluno).
 - `/api/media/[id]` serve mídia de questão não publicada a quem souber o UUID, e há 1 SVG servido no mesmo domínio sem CSP (hardening pendente).

@@ -67,21 +67,29 @@ export function describeCandidateTaxonomy(
     .map((discipline) => {
       const byArea = new Map<string, string[]>();
 
+      // Every level is labelled explicitly: an unlabelled "topic: a; b"
+      // line made models return the area as topic and the whole line
+      // as subtopic.
       for (const topic of discipline.topics) {
         const area = topic.areaName ?? "Sem assunto";
-        const subtopics = topic.subtopics.map((subtopic) => subtopic.name);
-        const line = subtopics.length
-          ? `    - ${topic.name}: ${subtopics.join("; ")}`
-          : `    - ${topic.name}`;
+        const lines = [`    TÓPICO: ${topic.name}`];
 
-        byArea.set(area, [...(byArea.get(area) ?? []), line]);
+        if (topic.subtopics.length > 0) {
+          lines.push(
+            `      SUBTÓPICOS: ${topic.subtopics
+              .map((subtopic) => subtopic.name)
+              .join(" | ")}`,
+          );
+        }
+
+        byArea.set(area, [...(byArea.get(area) ?? []), ...lines]);
       }
 
       const areas = [...byArea.entries()]
-        .map(([area, lines]) => `  * ${area}\n${lines.join("\n")}`)
+        .map(([area, lines]) => `  ASSUNTO: ${area}\n${lines.join("\n")}`)
         .join("\n");
 
-      return `# ${discipline.name}\n${areas}`;
+      return `DISCIPLINA: ${discipline.name}\n${areas}`;
     })
     .join("\n");
 }
@@ -89,6 +97,8 @@ export function describeCandidateTaxonomy(
 const SYSTEM_PROMPT = [
   "Você classifica questões de vestibular/ENEM numa taxonomia fechada.",
   "Use SOMENTE nomes exatamente como aparecem na taxonomia fornecida.",
+  "discipline = um nome após DISCIPLINA; area = um nome após ASSUNTO;",
+  "topic = um nome após TÓPICO; subtopic = UM único nome da lista SUBTÓPICOS desse tópico (ou null).",
   "Nunca invente disciplina, assunto, tópico ou subtópico.",
   "Se nenhum tópico se aplicar com segurança, retorne topic null e confiança baixa.",
   "Subtópico é opcional: só indique quando claramente aplicável.",
@@ -108,7 +118,7 @@ export class OpenAiCompatibleQuestionClassifier implements QuestionClassifier {
   ) {
     this.provider = config.providerLabel;
     this.model = config.model;
-    this.version = `oa-v1:${config.model}`.slice(0, 40);
+    this.version = `oa-v2:${config.model}`.slice(0, 40);
   }
 
   public async classify(

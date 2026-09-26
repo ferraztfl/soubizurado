@@ -52,7 +52,7 @@ function classifierWith(fetchImpl: ReturnType<typeof vi.fn>) {
 describe("describeCandidateTaxonomy", () => {
   it("lists only candidate disciplines grouped by area", () => {
     expect(describeCandidateTaxonomy(index, input)).toBe(
-      "# Matemática\n  * Álgebra\n    - Funções: Função Afim",
+      "DISCIPLINA: Matemática\n  ASSUNTO: Álgebra\n    TÓPICO: Funções\n      SUBTÓPICOS: Função Afim",
     );
   });
 });
@@ -73,7 +73,7 @@ describe("OpenAiCompatibleQuestionClassifier", () => {
     );
 
     const classifier = classifierWith(fetchImpl);
-    expect(classifier.version).toBe("oa-v1:test-model");
+    expect(classifier.version).toBe("oa-v2:test-model");
 
     const result = await classifier.classify(input, index);
 
@@ -90,7 +90,7 @@ describe("OpenAiCompatibleQuestionClassifier", () => {
 
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({ model: "test-model", temperature: 0 });
-    expect(body.messages[1].content).toContain("- Funções: Função Afim");
+    expect(body.messages[1].content).toContain("TÓPICO: Funções");
     expect(body.messages[1].content).toContain("(B) R$ 2 mil");
   });
 
