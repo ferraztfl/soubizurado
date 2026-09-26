@@ -103,12 +103,28 @@ export async function saveQuestionClassificationAction(
       select: {
         id: true,
         disciplineId: true,
+        knowledgeAreaId: true,
+        discipline: {
+          select: {
+            knowledgeAreaId: true,
+          },
+        },
       },
     });
 
+  // A canonical discipline (linked to a knowledge area) bounds the
+  // choice. Without one (imported "Noções de Direito", legacy ENEM
+  // areas), any active discipline of the question knowledge area can be
+  // chosen and becomes the question discipline.
+  const canonicalDisciplineId =
+    question?.discipline?.knowledgeAreaId
+      ? question.disciplineId
+      : null;
+
   if (
     !question ||
-    !question.disciplineId
+    (!canonicalDisciplineId &&
+      !question.knowledgeAreaId)
   ) {
     redirect(
       reviewUrl(
@@ -118,11 +134,25 @@ export async function saveQuestionClassificationAction(
     );
   }
 
-  // Only active entries of the question discipline are accepted; an
-  // inactive assunto blocks its topics too.
+  const disciplineScope =
+    canonicalDisciplineId
+      ? {
+          disciplineId:
+            canonicalDisciplineId,
+        }
+      : {
+          discipline: {
+            isActive:
+              true,
+            knowledgeAreaId:
+              question.knowledgeAreaId,
+          },
+        };
+
+  // Only active entries are accepted; an inactive assunto blocks its
+  // topics too.
   const activeTopicWhere = {
-    disciplineId:
-      question.disciplineId,
+    ...disciplineScope,
     isActive:
       true,
     OR: [
@@ -139,8 +169,21 @@ export async function saveQuestionClassificationAction(
     ],
   };
 
+  const topicSelect = {
+    id: true,
+    areaId: true,
+    disciplineId: true,
+    discipline: {
+      select: {
+        knowledgeAreaId: true,
+      },
+    },
+  } as const;
+
   let classification:
     | Readonly<{
+        knowledgeAreaId: string | null;
+        disciplineId: string;
         areaId: string | null;
         topicId: string;
         subtopicId: string | null;
@@ -156,15 +199,17 @@ export async function saveQuestionClassificationAction(
           ...activeTopicWhere,
         },
 
-        select: {
-          id: true,
-          areaId: true,
-        },
+        select:
+          topicSelect,
       });
 
     // Choosing a topic clears any previous subtopic.
     classification = topic
       ? {
+          knowledgeAreaId:
+            topic.discipline.knowledgeAreaId,
+          disciplineId:
+            topic.disciplineId,
           areaId:
             topic.areaId,
           topicId:
@@ -188,16 +233,19 @@ export async function saveQuestionClassificationAction(
         select: {
           id: true,
           topic: {
-            select: {
-              id: true,
-              areaId: true,
-            },
+            select:
+              topicSelect,
           },
         },
       });
 
     classification = subtopic
       ? {
+          knowledgeAreaId:
+            subtopic.topic.discipline
+              .knowledgeAreaId,
+          disciplineId:
+            subtopic.topic.disciplineId,
           areaId:
             subtopic.topic.areaId,
           topicId:

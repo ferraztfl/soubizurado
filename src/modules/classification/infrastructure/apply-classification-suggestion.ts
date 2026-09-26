@@ -82,7 +82,9 @@ export async function applyClassificationSuggestion(
     return { status: "SUGGESTION_UNAVAILABLE" };
   }
 
-  if (!question?.disciplineId) {
+  // A question may have no discipline yet (knowledge-area-only imports);
+  // the knowledge-area check below still bounds the suggestion.
+  if (!question) {
     return { status: "QUESTION_UNAVAILABLE" };
   }
 

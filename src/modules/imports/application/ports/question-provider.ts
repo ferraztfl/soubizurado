@@ -16,6 +16,12 @@ export type ProviderQuestionCandidate =
     examinationExternalIds:
       readonly string[];
     discipline: string | null;
+    /**
+     * Knowledge area slug for sections that do not name a single
+     * discipline (e.g. "Noções de Direito"). The classifier later picks
+     * the discipline inside this area.
+     */
+    knowledgeAreaSlug?: string | null;
     topic: string | null;
     supportTextsHtml: readonly string[];
     attachmentUrls: readonly string[];

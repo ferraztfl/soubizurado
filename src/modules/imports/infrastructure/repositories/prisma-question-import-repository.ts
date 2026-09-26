@@ -264,35 +264,81 @@ async function resolveExamination(
 
 async function resolveTaxonomy(
   transaction: Prisma.TransactionClient,
-  disciplineName: string,
+  disciplineName: string | null,
   topicName: string | null,
+  knowledgeAreaSlug: string | null,
 ): Promise<Readonly<{
-  disciplineId: string;
+  knowledgeAreaId: string | null;
+  disciplineId: string | null;
   topicId: string | null;
 }>> {
-  const disciplineSlug = slugify(
-    disciplineName,
-    180,
-  );
+  const explicitKnowledgeArea = knowledgeAreaSlug
+    ? await transaction.knowledgeArea.findUnique({
+        where: { slug: knowledgeAreaSlug },
+        select: { id: true },
+      })
+    : null;
+
+  if (!disciplineName) {
+    return {
+      knowledgeAreaId: explicitKnowledgeArea?.id ?? null,
+      disciplineId: null,
+      topicId: null,
+    };
+  }
+
+  // Canonical discipline first (by canonical slug or alias), so board
+  // section names such as "Legislação Extravagante" land on the
+  // curated entry instead of creating a new discipline.
+  const canonical =
+    await transaction.discipline.findFirst({
+      where: {
+        isActive: true,
+        knowledgeAreaId: { not: null },
+        OR: [
+          { slug: toTaxonomySlug(disciplineName) },
+          {
+            aliases: {
+              some: {
+                normalizedName:
+                  normalizeTaxonomyTerm(disciplineName),
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        knowledgeAreaId: true,
+      },
+    });
 
   const discipline =
-    await transaction.discipline.upsert({
+    canonical ??
+    (await transaction.discipline.upsert({
       where: {
-        slug: disciplineSlug,
+        slug: slugify(disciplineName, 180),
       },
       // Never rename or reactivate curated taxonomy from provider data.
       update: {},
       create: {
         name: disciplineName,
-        slug: disciplineSlug,
+        slug: slugify(disciplineName, 180),
       },
       select: {
         id: true,
+        knowledgeAreaId: true,
       },
-    });
+    }));
+
+  const knowledgeAreaId =
+    discipline.knowledgeAreaId ??
+    explicitKnowledgeArea?.id ??
+    null;
 
   if (!topicName) {
     return {
+      knowledgeAreaId,
       disciplineId: discipline.id,
       topicId: null,
     };
@@ -331,6 +377,7 @@ async function resolveTaxonomy(
     });
 
   return {
+    knowledgeAreaId,
     disciplineId: discipline.id,
     topicId: topic?.id ?? null,
   };
@@ -672,6 +719,7 @@ export class PrismaQuestionImportRepository
             transaction,
             input.disciplineName,
             input.topicName,
+            input.knowledgeAreaSlug,
           );
 
         const question =
@@ -694,6 +742,8 @@ export class PrismaQuestionImportRepository
               sourceId:
                 input.sourceId,
               examinationId,
+              knowledgeAreaId:
+                taxonomy.knowledgeAreaId,
               disciplineId:
                 taxonomy.disciplineId,
               topicId:

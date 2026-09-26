@@ -64,7 +64,8 @@ export type PersistImportedQuestionInput =
       isCorrect: boolean;
     }>[];
     correctTrueFalse: boolean | null;
-    disciplineName: string;
+    disciplineName: string | null;
+    knowledgeAreaSlug: string | null;
     topicName: string | null;
     supportContents: readonly Readonly<{
       content: string;

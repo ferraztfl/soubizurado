@@ -174,6 +174,7 @@ export default async function ReviewQuestionPage(
         disciplineId: true,
         topicId: true,
         subtopicId: true,
+        knowledgeAreaId: true,
 
         knowledgeArea: {
           select: {
@@ -184,6 +185,7 @@ export default async function ReviewQuestionPage(
         discipline: {
           select: {
             name: true,
+            knowledgeAreaId: true,
           },
         },
 
@@ -303,13 +305,36 @@ export default async function ReviewQuestionPage(
     notFound();
   }
 
-  // Active taxonomy of the question discipline, grouped by assunto.
+  // A canonical discipline bounds the choice; otherwise (imported
+  // knowledge-area-only questions, legacy ENEM areas) every active
+  // discipline of the question knowledge area is offered.
+  const canonicalDisciplineId =
+    question.discipline?.knowledgeAreaId
+      ? question.disciplineId
+      : null;
+
+  const knowledgeAreaMode =
+    !canonicalDisciplineId &&
+    Boolean(question.knowledgeAreaId);
+
+  // Active taxonomy in scope, grouped by assunto.
   const taxonomyTopics =
-    question.disciplineId
+    canonicalDisciplineId || knowledgeAreaMode
       ? await prisma.topic.findMany({
           where: {
-            disciplineId:
-              question.disciplineId,
+            ...(canonicalDisciplineId
+              ? {
+                  disciplineId:
+                    canonicalDisciplineId,
+                }
+              : {
+                  discipline: {
+                    isActive:
+                      true,
+                    knowledgeAreaId:
+                      question.knowledgeAreaId,
+                  },
+                }),
 
             isActive:
               true,
@@ -342,6 +367,14 @@ export default async function ReviewQuestionPage(
           select: {
             id: true,
             name: true,
+
+            discipline: {
+              select: {
+                id: true,
+                name: true,
+                sortOrder: true,
+              },
+            },
 
             area: {
               select: {
@@ -388,16 +421,21 @@ export default async function ReviewQuestionPage(
 
   for (const topic of taxonomyTopics) {
     const key =
-      topic.area?.id ?? "";
+      `${topic.discipline.id}:${topic.area?.id ?? ""}`;
+
+    const areaName =
+      topic.area?.name ??
+      "Sem assunto";
 
     const group =
       topicGroupMap.get(key) ?? {
-        name:
-          topic.area?.name ??
-          "Sem assunto",
+        name: knowledgeAreaMode
+          ? `${topic.discipline.name} \u203a ${areaName}`
+          : areaName,
         sortOrder:
-          topic.area?.sortOrder ??
-          Number.MAX_SAFE_INTEGER,
+          topic.discipline.sortOrder * 10_000 +
+          (topic.area?.sortOrder ??
+            9_999),
         topics: [],
       };
 
@@ -1047,9 +1085,9 @@ export default async function ReviewQuestionPage(
                 </h2>
 
                 <p className={styles.cardMeta}>
-                  Tópico ou subtópico de{" "}
-                  {question.discipline?.name ??
-                    "disciplina não definida"}
+                  {knowledgeAreaMode
+                    ? `Disciplina, tópico ou subtópico em ${question.knowledgeArea?.name ?? "área não definida"}`
+                    : `Tópico ou subtópico de ${question.discipline?.name ?? "disciplina não definida"}`}
                 </p>
               </div>
             </div>
@@ -1135,11 +1173,10 @@ export default async function ReviewQuestionPage(
 
             {taxonomyTopics.length === 0 ? (
               <p className={styles.hint}>
-                Esta disciplina ainda não possui
-                tópicos ativos. Questões nas
-                disciplinas antigas do ENEM aguardam
-                a definição da disciplina — use a
-                sugestão automática quando houver.
+                Não há tópicos ativos para esta
+                questão. Verifique se ela tem
+                disciplina ou área do conhecimento
+                definida.
               </p>
             ) : null}
           </section>

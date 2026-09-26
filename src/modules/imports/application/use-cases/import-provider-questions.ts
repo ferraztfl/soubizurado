@@ -157,7 +157,7 @@ function buildPersistenceInput(
 
   if (
     !candidate.answerKey ||
-    !candidate.discipline ||
+    (!candidate.discipline && !candidate.knowledgeAreaSlug) ||
     (input.publish && !candidate.topic)
   ) {
     return null;
@@ -362,7 +362,9 @@ function buildPersistenceInput(
     alternatives,
     correctTrueFalse,
     disciplineName:
-      candidate.discipline,
+      candidate.discipline ?? null,
+    knowledgeAreaSlug:
+      candidate.knowledgeAreaSlug ?? null,
     topicName:
       candidate.topic ?? null,
     supportContents,
