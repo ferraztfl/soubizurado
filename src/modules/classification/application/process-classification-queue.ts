@@ -29,6 +29,19 @@ export type ProcessClassificationQueueInput = Readonly<{
    * the review screen). Never publishes.
    */
   autoApply?: boolean;
+  /**
+   * Ignore the question discipline and let every layer choose among the
+   * disciplines of its knowledge area (rescue runs for questions whose
+   * booklet section fixed a discipline that does not fit).
+   */
+  widenToKnowledgeArea?: boolean;
+  /**
+   * Ignore both the discipline and the stored knowledge area and choose
+   * among these areas; confident answers may then move the question to
+   * another area (only legacy questions without a canonical discipline,
+   * enforced when applying).
+   */
+  widenToKnowledgeAreas?: readonly string[];
   sleep?: (milliseconds: number) => Promise<void>;
 }>;
 
@@ -117,7 +130,13 @@ async function processOne(
   retryMaxSeconds: number,
   waitForSlot: () => Promise<void>,
 ): Promise<Outcome> {
-  const question = await input.repository.loadQuestionInput(task.questionId);
+  const loaded = await input.repository.loadQuestionInput(task.questionId);
+  const question =
+    loaded && input.widenToKnowledgeAreas && input.widenToKnowledgeAreas.length > 0
+      ? { ...loaded, disciplineId: null, knowledgeAreaId: null, candidateKnowledgeAreaIds: input.widenToKnowledgeAreas }
+      : loaded && input.widenToKnowledgeArea && loaded.knowledgeAreaId
+        ? { ...loaded, disciplineId: null }
+        : loaded;
 
   if (!question) {
     await input.repository.failTask({
@@ -194,6 +213,7 @@ async function processOne(
       applied = await input.repository.applySuggestion({
         taskId: task.id,
         questionId: task.questionId,
+        allowKnowledgeAreaChange: Boolean(input.widenToKnowledgeAreas?.length),
       });
     } catch {
       applied = false;

@@ -13,6 +13,12 @@ export type QuestionClassificationInput = Readonly<{
    * Legacy ENEM "disciplines" are passed as null.
    */
   disciplineId: string | null;
+  /**
+   * Without discipline and knowledge area: limit the candidates to these
+   * knowledge areas (e.g. the four ENEM areas for a question whose
+   * stored area is wrong).
+   */
+  candidateKnowledgeAreaIds?: readonly string[];
 }>;
 
 /**

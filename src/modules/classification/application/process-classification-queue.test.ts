@@ -145,7 +145,26 @@ describe("processClassificationQueue", () => {
     expect(output.applied).toBe(1);
     expect(output.answeredByRules).toBe(1);
     expect(repo.applySuggestion).toHaveBeenCalledTimes(1);
-    expect(repo.applySuggestion).toHaveBeenCalledWith({ taskId: "t1", questionId: "q1" });
+    expect(repo.applySuggestion).toHaveBeenCalledWith({ taskId: "t1", questionId: "q1", allowKnowledgeAreaChange: false });
+  });
+
+  it("widens candidates to given knowledge areas and allows the area fix", async () => {
+    const repo = repository();
+    const seen: QuestionClassificationInput[] = [];
+
+    await processClassificationQueue({
+      ...base,
+      autoApply: true,
+      widenToKnowledgeAreas: ["ka"],
+      repository: repo,
+      classifier: classifier(async (input) => {
+        seen.push(input);
+        return { discipline: "Matemática", area: "Álgebra", topic: "Funções", subtopic: null, tags: [], confidence: 0.95 };
+      }),
+    });
+
+    expect(seen[0]).toMatchObject({ disciplineId: null, knowledgeAreaId: null, candidateKnowledgeAreaIds: ["ka"] });
+    expect(repo.applySuggestion).toHaveBeenCalledWith(expect.objectContaining({ allowKnowledgeAreaChange: true }));
   });
 
   it("keeps the suggestion when auto-apply fails", async () => {

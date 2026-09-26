@@ -145,6 +145,7 @@ export class TaxonomyIndex {
     constraints: Readonly<{
       disciplineId: string | null;
       knowledgeAreaId: string | null;
+      candidateKnowledgeAreaIds?: readonly string[];
     }>,
   ): readonly IndexedDiscipline[] {
     if (constraints.disciplineId) {
@@ -159,6 +160,13 @@ export class TaxonomyIndex {
       return this.disciplines.filter(
         (discipline) =>
           discipline.knowledgeAreaId === constraints.knowledgeAreaId,
+      );
+    }
+
+    if (constraints.candidateKnowledgeAreaIds && constraints.candidateKnowledgeAreaIds.length > 0) {
+      const allowed = new Set(constraints.candidateKnowledgeAreaIds);
+      return this.disciplines.filter(
+        (discipline) => discipline.knowledgeAreaId !== null && allowed.has(discipline.knowledgeAreaId),
       );
     }
 

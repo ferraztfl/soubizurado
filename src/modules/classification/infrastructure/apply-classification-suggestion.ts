@@ -43,6 +43,12 @@ export async function applyClassificationSuggestion(
     questionId: string;
     appliedByProfileId: string | null;
     onlyIfUnclassified: boolean;
+    /**
+     * Accept a topic from another knowledge area, but only for legacy
+     * questions without a canonical discipline (e.g. old ENEM imports
+     * whose stored area came from the booklet day, not the question).
+     */
+    allowKnowledgeAreaChange?: boolean;
   }>,
 ): Promise<ApplySuggestionResult> {
   const [task, question] = await Promise.all([
@@ -74,6 +80,7 @@ export async function applyClassificationSuggestion(
         areaId: true,
         topicId: true,
         subtopicId: true,
+        discipline: { select: { knowledgeAreaId: true } },
       },
     }),
   ]);
@@ -121,7 +128,11 @@ export async function applyClassificationSuggestion(
     question.knowledgeAreaId !== null &&
     topic?.discipline.knowledgeAreaId === question.knowledgeAreaId;
 
-  if (!topic || (!sameDiscipline && !sameKnowledgeArea)) {
+  const legacyAreaFix =
+    input.allowKnowledgeAreaChange === true &&
+    (question.disciplineId === null || question.discipline?.knowledgeAreaId == null);
+
+  if (!topic || (!sameDiscipline && !sameKnowledgeArea && !legacyAreaFix)) {
     return { status: "INVALID_TOPIC" };
   }
 

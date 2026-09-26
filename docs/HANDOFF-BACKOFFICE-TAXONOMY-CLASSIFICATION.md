@@ -477,3 +477,17 @@ Vale sobre §1/§12 onde divergir.
 - Teste real: Libras (V/F, pronta 85/85) e PMPE Soldado 2023 (pronta 54/60) — **analisadas, não importadas**
   (último lote `e1f017a0-…`; Libras no lote `29e4901e-…`).
 - Estado do lote em memória do processo (um lote por vez); em hospedagem serverless precisaria de fila externa.
+
+### 13.6 Varredura final e publicação (26/09/2026, noite)
+- **Resgate de classificação** (`classification:rescue`): `--apply` amplia para todas as matérias da área
+  (27 gravadas); `--enem --apply` usa as 4 áreas do ENEM e corrige a área de questões antigas sem matéria
+  canônica (97 gravadas; a importação antiga do ENEM atribuía a área pelo caderno do dia). Custo ≈ R$ 2,70.
+- 6 sugestões confiantes que exigiam troca de área e 4 decisões de revisor gravadas por script (log em
+  `data-private/classification-applies/manual-*.json`). Taxonomia v4: "Estatuto da Pessoa com Deficiência".
+- **Publicação em lote** (`questions:publish`, mesma política da tela + trava de enunciado incompleto;
+  não marca gabarito como verificado): **3.013 publicadas** (log em `data-private/publications/`).
+  Em revisão: **85** com enunciado provavelmente incompleto (ENEM antigo sem contexto/alternativas em imagem
+  perdidas — precisam de correção de conteúdo) e **47** sem subtópico (35 de Nutrição/Quest API, sem matéria
+  na taxonomia, e 12 restantes).
+- Área do aluno conferida: 3.015 publicadas, filtro por banca (INEP, Instituto AOCP), resolução e correção OK.
+- V/F: cabeçalho "Texto N" sem faixa de itens e formatação do texto de apoio (título/autor/fonte) corrigidos.

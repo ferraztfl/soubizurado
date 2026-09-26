@@ -44,6 +44,7 @@ const LAWS: Readonly<Record<string, LegalTarget>> = {
   "7716": { discipline: LEGISLACAO, topic: "Crimes de Racismo" },
   "8069": { discipline: LEGISLACAO, topic: "Estatuto da Criança e do Adolescente" },
   "10741": { discipline: LEGISLACAO, topic: "Estatuto da Pessoa Idosa" },
+  "13146": { discipline: LEGISLACAO, topic: "Estatuto da Pessoa com Deficiência" },
   "8112": { discipline: ADMINISTRATIVO, topic: "Regime Jurídico dos Servidores" },
   "8429": { discipline: ADMINISTRATIVO, topic: "Improbidade Administrativa" },
   "14230": { discipline: ADMINISTRATIVO, topic: "Improbidade Administrativa" },

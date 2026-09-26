@@ -186,7 +186,7 @@ export class PrismaClassificationTaskRepository
       statement: question.statement,
       supportTexts: question.supportLinks.map((link) => link.supportContent.content),
       alternatives: question.alternatives.map((alternative) => alternative.content),
-      knowledgeAreaId: question.knowledgeAreaId,
+      knowledgeAreaId: question.knowledgeAreaId ?? question.discipline?.knowledgeAreaId ?? null,
       // Legacy ENEM disciplines have no knowledge area: not canonical.
       disciplineId: question.discipline?.knowledgeAreaId
         ? question.disciplineId
@@ -252,13 +252,14 @@ export class PrismaClassificationTaskRepository
 
   /** Automatic application: no profile, never overwrites a classification. */
   public async applySuggestion(
-    input: Readonly<{ taskId: string; questionId: string }>,
+    input: Readonly<{ taskId: string; questionId: string; allowKnowledgeAreaChange?: boolean }>,
   ): Promise<boolean> {
     const result = await applyClassificationSuggestion(this.prisma, {
       taskId: input.taskId,
       questionId: input.questionId,
       appliedByProfileId: null,
       onlyIfUnclassified: true,
+      allowKnowledgeAreaChange: input.allowKnowledgeAreaChange ?? false,
     });
 
     return result.status === "APPLIED";

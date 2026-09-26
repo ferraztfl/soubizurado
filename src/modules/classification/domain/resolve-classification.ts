@@ -80,7 +80,7 @@ function findTopics(
  */
 export function resolveProviderClassification(
   index: TaxonomyIndex,
-  input: Pick<QuestionClassificationInput, "disciplineId" | "knowledgeAreaId">,
+  input: Pick<QuestionClassificationInput, "disciplineId" | "knowledgeAreaId" | "candidateKnowledgeAreaIds">,
   result: ProviderClassification,
 ): ResolvedClassification {
   const issues: ClassificationIssue[] = [];

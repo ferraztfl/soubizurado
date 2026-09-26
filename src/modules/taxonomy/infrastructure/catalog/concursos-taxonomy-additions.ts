@@ -288,6 +288,8 @@ export const CONCURSOS_DISCIPLINES: readonly CatalogDiscipline[] = [
         topic("Lei Maria da Penha", [], ["Lei 11.340/2006"]),
         topic("Estatuto da Criança e do Adolescente", [], ["ECA"]),
         topic("Estatuto da Pessoa Idosa"),
+        // v4
+        topic("Estatuto da Pessoa com Deficiência", [], ["Lei Brasileira de Inclusão", "Lei nº 13.146/2015"]),
       ]),
     ],
   },

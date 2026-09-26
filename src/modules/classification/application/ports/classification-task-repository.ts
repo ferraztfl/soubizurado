@@ -68,6 +68,8 @@ export interface ClassificationTaskRepository {
     input: Readonly<{
       taskId: string;
       questionId: string;
+      /** Legacy questions only (no canonical discipline): fix a wrong area. */
+      allowKnowledgeAreaChange?: boolean;
     }>,
   ): Promise<boolean>;
 

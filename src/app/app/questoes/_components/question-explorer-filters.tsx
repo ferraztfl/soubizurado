@@ -82,7 +82,7 @@ export function QuestionExplorerFilters({
               key={board.id}
               value={board.id}
             >
-              {board.acronym
+              {board.acronym && board.acronym !== board.name
                 ? `${board.acronym} — ${board.name}`
                 : board.name}
             </option>
