@@ -223,6 +223,17 @@ Sem essas variáveis, o padrão é `rule-based`. O texto das questões (conteúd
   Penal, Processual Penal, Legislação Penal Especial/Execução Penal, Direitos Humanos,
   Informática, Raciocínio Lógico) — hoje o catálogo só tem ENEM; (2) provider `QuestionProvider`
   AOCP + script de importação com metadados (banca, órgão, cargo, ano, edital) via CLI.
+- **Mais provas AOCP em `data-private/`** (lidas sem problemas estruturais, ainda não importadas):
+  - `1b343118-73f4-4014-9c62-94be3c85fd1d{,-gabarito}.pdf` — PMPE 2023 (Portaria Conjunta SAD/SDS
+    83/2023), Soldado, nível médio, manhã, prova 01: 60 questões, 5 alternativas, blocos I–III
+    (Língua Portuguesa, História de Pernambuco, Raciocínio Lógico, Informática, Direito
+    Constitucional, Extravagante). Anuladas: 11, 16, 19, 37, 40, 53.
+  - `5d5d7b61-b355-4af3-b50c-d6aceb15601e{,-gabarito}.pdf` — PMPE 2023, 2º Tenente, nível superior,
+    tarde, prova 01: 70 questões + 5 variantes de Espanhol (11–15 repetem numeração de Inglês;
+    gabarito lista ambas em ordem). 13 disciplinas (inclui Estatística, Direito Penal Militar,
+    Processual Penal Militar). Anuladas: 7, 13 (Espanhol), 36.
+  - O parser trata "BLOCO" como grupo, disciplinas como seção, variantes de idioma
+    (`variant` + `answerFor`) e ignora dígitos em negrito de tabelas.
 - Scraping de bancos de terceiros (ex.: Gran Cursos) foi **descartado**: termos de uso e proteção
   de base de dados/compilação. Fonte correta = PDFs oficiais publicados pelas bancas.
 
