@@ -94,10 +94,10 @@ const issueLabels:
       "Origem obrigatória.",
 
     DISCIPLINE_REQUIRED:
-      "Disciplina obrigatória.",
+      "Matéria obrigatória.",
 
     TOPIC_REQUIRED:
-      "Tópico obrigatório.",
+      "Subtópico obrigatório.",
 
     EXAMINATION_REQUIRED:
       "Questão de prova precisa estar vinculada à prova de origem.",
@@ -133,10 +133,10 @@ const errorMessages:
       "A sugestão não está mais disponível ou já foi aplicada.",
 
     "topic-required":
-      "Selecione um tópico antes de salvar.",
+      "Selecione um subtópico antes de salvar.",
 
     "invalid-topic":
-      "O tópico selecionado não pertence à disciplina da questão ou está inativo.",
+      "O subtópico selecionado não pertence à matéria da questão ou está inativo.",
 
     "answer-key":
       "O gabarito ainda não está pronto para publicação.",
@@ -333,7 +333,7 @@ export default async function ReviewQuestionPage(
     !canonicalDisciplineId &&
     Boolean(question.knowledgeAreaId);
 
-  // Active taxonomy in scope, grouped by assunto.
+  // Active taxonomy in scope, grouped by Area (shown as "Tópico").
   const taxonomyTopics =
     canonicalDisciplineId || knowledgeAreaMode
       ? await prisma.topic.findMany({
@@ -441,7 +441,7 @@ export default async function ReviewQuestionPage(
 
     const areaName =
       topic.area?.name ??
-      "Sem assunto";
+      "Sem tópico";
 
     const group =
       topicGroupMap.get(key) ?? {
@@ -730,10 +730,10 @@ export default async function ReviewQuestionPage(
       key: "classification",
       ok: taxonomyIsValid,
       label: taxonomyIsValid
-        ? "Classificação com tópico válido"
+        ? "Classificação com subtópico válido"
         : question.topicId
-          ? "Tópico inconsistente com a disciplina"
-          : "Tópico ainda não definido",
+          ? "Subtópico inconsistente com a matéria"
+          : "Subtópico ainda não definido",
     },
     {
       key: "answer-key",
@@ -851,7 +851,7 @@ export default async function ReviewQuestionPage(
               </div>
 
               <div>
-                <dt>Disciplina</dt>
+                <dt>Matéria</dt>
                 <dd>
                   {question.discipline?.name ??
                     "Não definida"}
@@ -1075,7 +1075,7 @@ export default async function ReviewQuestionPage(
                 {suggestion.suggestedTopic
                   ? suggestionPath
                   : suggestion.suggestedDiscipline
-                    ? `${suggestion.suggestedDiscipline.name} › tópico não identificado`
+                    ? `${suggestion.suggestedDiscipline.name} › subtópico não identificado`
                     : "Nenhuma classificação identificada."}
               </p>
 
@@ -1130,8 +1130,8 @@ export default async function ReviewQuestionPage(
 
                 <p className={styles.cardMeta}>
                   {knowledgeAreaMode
-                    ? `Disciplina, tópico ou subtópico em ${question.knowledgeArea?.name ?? "área não definida"}`
-                    : `Tópico ou subtópico de ${question.discipline?.name ?? "disciplina não definida"}`}
+                    ? `Matéria, subtópico ou detalhe em ${question.knowledgeArea?.name ?? "área não definida"}`
+                    : `Subtópico ou detalhe de ${question.discipline?.name ?? "matéria não definida"}`}
                 </p>
               </div>
             </div>
@@ -1153,7 +1153,7 @@ export default async function ReviewQuestionPage(
                 htmlFor="classification"
               >
                 <span className={styles.srOnly}>
-                  Tópico ou subtópico
+                  Subtópico ou detalhe
                 </span>
 
                 <select
@@ -1166,7 +1166,7 @@ export default async function ReviewQuestionPage(
                   required
                 >
                   <option value="">
-                    Selecione um tópico ou subtópico
+                    Selecione um subtópico ou detalhe
                   </option>
 
                   {topicGroups.map(
@@ -1217,9 +1217,9 @@ export default async function ReviewQuestionPage(
 
             {taxonomyTopics.length === 0 ? (
               <p className={styles.hint}>
-                Não há tópicos ativos para esta
+                Não há subtópicos ativos para esta
                 questão. Verifique se ela tem
-                disciplina ou área do conhecimento
+                matéria ou área do conhecimento
                 definida.
               </p>
             ) : null}

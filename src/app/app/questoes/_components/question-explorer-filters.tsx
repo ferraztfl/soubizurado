@@ -42,7 +42,7 @@ export function QuestionExplorerFilters({
 
       <div className={styles.selectField}>
         <label htmlFor="question-discipline">
-          Disciplina
+          Matéria
         </label>
         <select
           id="question-discipline"
@@ -52,7 +52,7 @@ export function QuestionExplorerFilters({
           }
         >
           <option value="">
-            Todas as disciplinas
+            Todas as matérias
           </option>
           {facets.disciplines.map(
             (discipline) => (

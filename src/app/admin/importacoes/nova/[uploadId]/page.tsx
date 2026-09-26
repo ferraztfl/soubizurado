@@ -311,7 +311,7 @@ export default async function OfficialExamPreviewPage({ params, searchParams }: 
               <h2 className={styles.cardTitle}>Matérias da prova</h2>
               <p className={styles.cardMeta}>
                 Cada seção do caderno foi associada automaticamente à taxonomia. Ajuste se necessário. Seções genéricas
-                (ex.: &ldquo;Noções de Direito&rdquo;) ficam só com a área; a classificação automática define a disciplina e o tópico.
+                (ex.: &ldquo;Noções de Direito&rdquo;) ficam só com a área; a classificação automática define a matéria e o subtópico.
               </p>
             </div>
 

@@ -272,12 +272,12 @@ export default async function ReviewQuestionsPage({
           </div>
 
           <div>
-            <dt>Sem tópico</dt>
+            <dt>Não classificadas</dt>
             <dd>{formatCount(missingTopicCount)}</dd>
           </div>
 
           <div>
-            <dt>Com tópico</dt>
+            <dt>Classificadas</dt>
             <dd>{formatCount(reviewCount - missingTopicCount)}</dd>
           </div>
         </dl>
@@ -300,13 +300,13 @@ export default async function ReviewQuestionsPage({
         </label>
 
         <label>
-          <span>Disciplina</span>
+          <span>Matéria</span>
           <select
             name="discipline"
             defaultValue={query.disciplineId ?? ""}
           >
             <option value="">
-              Todas as disciplinas
+              Todas as matérias
             </option>
 
             {disciplineOptions.map((option) => (
@@ -320,8 +320,8 @@ export default async function ReviewQuestionsPage({
         <label>
           <span>Classificação</span>
           <select name="topic" defaultValue={query.topic}>
-            <option value="missing">Sem tópico</option>
-            <option value="assigned">Com tópico</option>
+            <option value="missing">Não classificadas</option>
+            <option value="assigned">Classificadas</option>
             <option value="all">Todas</option>
           </select>
         </label>
@@ -427,7 +427,7 @@ export default async function ReviewQuestionsPage({
                       </span>
                     ) : (
                       <span className={styles.badgePending}>
-                        Sem tópico
+                        Não classificada
                       </span>
                     )}
 

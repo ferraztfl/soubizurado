@@ -69,18 +69,18 @@ export function QuestionPreviewCard({
       />
 
       <div className={styles.taxonomy}>
+        {question.classification.area ? (
+          <>
+            <span>
+              {question.classification.area.name}
+            </span>
+            <span aria-hidden="true">/</span>
+          </>
+        ) : null}
+
         <span>
           {question.classification.topic.name}
         </span>
-
-        {question.classification.subtopic ? (
-          <>
-            <span aria-hidden="true">/</span>
-            <span>
-              {question.classification.subtopic.name}
-            </span>
-          </>
-        ) : null}
       </div>
 
       <footer className={styles.footer}>

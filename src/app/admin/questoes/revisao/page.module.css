@@ -2,6 +2,7 @@
   width: min(1120px, 100%);
   margin: 0 auto;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -39,6 +40,8 @@
 
 .summary {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
   margin: 0;
 }
@@ -268,6 +271,14 @@
 
 .pagination span {
   color: var(--sb-text-subtle);
+}
+
+/* With the sidebar open, the content column is ~250px narrower than
+   the viewport: the six-column filter bar only fits above ~1280px. */
+@media (max-width: 1280px) {
+  .filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1000px) {

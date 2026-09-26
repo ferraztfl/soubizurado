@@ -213,7 +213,7 @@ export default async function AdminHomePage() {
     {
       title: "Aplicar sugestões automáticas",
       description:
-        "Questões sem tópico que já têm uma sugestão do classificador.",
+        "Questões ainda não classificadas que já têm uma sugestão do classificador.",
       count: withSuggestion,
       href: buildReviewQueueHref({ suggestion: "with" }),
     },
@@ -227,7 +227,7 @@ export default async function AdminHomePage() {
     {
       title: "Publicar classificadas",
       description:
-        "Questões com tópico que podem seguir para a publicação.",
+        "Questões classificadas que podem seguir para a publicação.",
       count: inReviewWithTopic,
       href: buildReviewQueueHref({ topic: "assigned" }),
     },
@@ -298,7 +298,7 @@ export default async function AdminHomePage() {
             </p>
 
             <h2>
-              {classifiedPercent}% das questões em revisão já têm tópico
+              {classifiedPercent}% das questões em revisão já estão classificadas
             </h2>
           </div>
 
@@ -316,7 +316,7 @@ export default async function AdminHomePage() {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={classifiedPercent}
-          aria-label="Questões em revisão com tópico"
+          aria-label="Questões em revisão classificadas"
         >
           <span style={{ width: `${classifiedPercent}%` }} />
         </div>

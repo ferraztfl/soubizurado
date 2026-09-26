@@ -8,7 +8,8 @@ import type {
 /*
  * Canonical taxonomy v1 for ENEM / Ensino Médio.
  *
- * Structure: Discipline -> Area ("Assunto") -> Topic -> Subtopic.
+ * Structure: Discipline -> Area -> Topic -> Subtopic, shown in the UI as
+ * Matéria -> Tópico -> Subtópico -> Detalhe.
  * Based on the ENEM Matriz de Referência and BNCC (Ensino Médio).
  *
  * Rules for editing:

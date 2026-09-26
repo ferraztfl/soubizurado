@@ -16,7 +16,10 @@ export type CatalogTopic = CatalogNode &
     subtopics?: readonly CatalogSubtopic[];
   }>;
 
-/** "Assunto" in the UI; stored as Area. */
+/**
+ * Stored as Area. UI labels (since 2026-09-26): Discipline = "Matéria",
+ * Area = "Tópico", Topic = "Subtópico", Subtopic = "Detalhe".
+ */
 export type CatalogArea = CatalogNode &
   Readonly<{
     topics: readonly CatalogTopic[];

@@ -142,14 +142,23 @@ export default async function QuestionDetailPage({
 
           <dl className={styles.details}>
             <div>
-              <dt>Disciplina</dt>
+              <dt>Matéria</dt>
               <dd>
                 {question.classification.discipline.name}
               </dd>
             </div>
 
+            {question.classification.area ? (
+              <div>
+                <dt>Tópico</dt>
+                <dd>
+                  {question.classification.area.name}
+                </dd>
+              </div>
+            ) : null}
+
             <div>
-              <dt>Assunto</dt>
+              <dt>Subtópico</dt>
               <dd>
                 {question.classification.topic.name}
               </dd>
@@ -157,7 +166,7 @@ export default async function QuestionDetailPage({
 
             {question.classification.subtopic ? (
               <div>
-                <dt>Subassunto</dt>
+                <dt>Detalhe</dt>
                 <dd>
                   {question.classification.subtopic.name}
                 </dd>
