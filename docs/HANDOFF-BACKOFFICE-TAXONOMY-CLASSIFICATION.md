@@ -1,29 +1,31 @@
 # Handoff — Backoffice, Taxonomia Canônica e Classificação Automática
 
-**Atualizado em:** 26/09/2026 (inclui Central de Importações, §10)
+**Atualizado em:** 26/09/2026, fim da sessão (estado conferido no banco — ver §1 e §12)
 **Branch:** `feature/enem-pdf-ingestion` (contém todas as outras branches, ver §2)
 **Documento anterior:** `docs/HANDOFF-ADMIN-QUESTION-BANK.md` (21/09/2026) — continua válido
 para ingestão, mídia e regras gerais; este documento registra tudo o que veio depois.
 
-> Para retomar numa nova conversa: leia `CLAUDE.md`, depois este arquivo, depois rode
-> `git status --short`, `git log --oneline -15`, `npm run classification:status`.
+> Para retomar numa nova conversa: leia `CLAUDE.md`, depois este arquivo (comece por §1 e §12),
+> depois rode `git status --short`, `git log --oneline -15`, `npm run classification:status`,
+> `npm run media:status`. As seções 3–11 são o histórico detalhado; onde divergirem de §1/§12,
+> valem §1/§12.
 
 ---
 
-## 1. Estado atual em uma página
+## 1. Estado atual em uma página (conferido em 26/09/2026)
 
 | Área | Estado |
 |---|---|
-| Backoffice `/admin` | Shell protegido por `requireAdminUser`, sidebar com rota ativa, navegação móvel (drawer < 1100px), dashboard com KPIs |
-| Revisão editorial | Em `/admin/questoes/revisao` (fila com filtros/paginação + detalhe). `/app/revisao-questoes` só redireciona |
-| Taxonomia canônica | Aplicada no banco: 4 áreas do conhecimento, 14 disciplinas, 68 assuntos, 306 tópicos, 381 subtópicos, 41 aliases, revisão v1 |
-| Reclassificação legada | Aplicada: 685 → Matemática, 62 → Língua Inglesa, 67 → Língua Espanhola |
-| Classificador | Fila persistente + classificador por regras (padrão) + adaptador OpenAI-compatível (IA). Rodada `rule-based-v1` feita: 2928 tarefas, 1191 com tópico sugerido, 19 de alta confiança, 0 aplicadas |
-| Publicação | 0 questões publicadas; 2963 em `IN_REVIEW`; 0 com tópico (em 26/09/2026) |
-| IA configurada | Gemini gratuito (Google AI Studio) no `.env`, modelo `gemini-flash-latest`. Rodada de teste `oa-v2:gemini-flash-latest` com 50 questões em andamento/concluída (ver §7) |
-| Cota Gemini grátis | **`gemini-flash-latest` = `gemini-3.8-flash`, limite de 20 requisições/dia** (erro 429 `GenerateRequestsPerDayPerProjectPerModel-FreeTier`). Inviável para ~2.900 questões. `gemini-3.5-flash-lite` respondia (cota separada). Decisão pendente do usuário (ver §7) |
-| Importação de provas oficiais | Leitor Instituto AOCP pronto (`aocp-pdf-parser.ts`, `npm run inspect:aocp-pdf`), validado na prova SEJUSP-MG 2025 Policial Penal. Importação no banco ainda **não** feita (depende da taxonomia de concursos, §9) |
-| Próximo passo combinado | Decidir provedor de IA (flash-lite grátis / faturamento / Ollama); ampliar taxonomia para disciplinas de concurso; importar a prova AOCP |
+| Backoffice `/admin` | Shell protegido (`requireAdminUser`), sidebar com rota ativa, menu móvel, dashboard operacional (KPIs, progresso por disciplina, próximas ações) |
+| Revisão editorial | `/admin/questoes/revisao`: fila com filtros (disciplina, classificação, mídia, sugestão, busca) e paginação; detalhe em 2 colunas com sugestão automática, seletor Assunto › Tópico › Subtópico, checklist de publicação. Questões sem disciplina canônica (área apenas ou ENEM legado) oferecem todas as disciplinas da área |
+| Central de Importações | `/admin/importacoes` → upload de prova + gabarito PDF → prévia → confirmar. **Leitor suportado: Instituto AOCP** (imagens, anuladas, variantes de idioma, blocos). Fundatec/Cebraspe detectados, sem leitor ainda (§10) |
+| Taxonomia | Catálogo **v2** aplicado: 6 áreas do conhecimento, 34 disciplinas no banco (14 ENEM + 12 concursos + 8 legadas/Quest API), 111 assuntos, 446 tópicos, 475 subtópicos; revisões 1 e 2 |
+| Questões | **3.093 `IN_REVIEW`, 0 publicadas**, 1 com tópico. Inclui 58 da SEJUSP-MG 2025 e 72 da PMPE 2023 2º Tenente (importadas pela Central) |
+| Imagens | **1.963 MediaAssets em `SUPABASE_STORAGE`** (bucket privado `question-media`, 86 MB), 0 em `LOCAL_FS`. `.env`: `MEDIA_STORAGE_DRIVER=supabase` + `SUPABASE_SECRET_KEY`. Fila de mídia: 0 pendentes, 2 FAILED históricos (ENEM 2018 q136, LaTeX — manter) |
+| Acesso a mídia | `/api/media/[id]`: publicada = pública/cache imutável; não publicada = só ADMIN (`private, no-store`), demais 404; CSP `sandbox` |
+| Classificação | Provedor `openai-compatible` (Gemini) com **`CLASSIFIER_MODEL=gemini-3.5-flash-lite`**. **130 tarefas `oa-v2:gemini-3.5-flash-lite` PENDENTES** (58 SEJUSP + 72 PMPE Tenente) — rodar `classification:process`. Rodadas antigas: `rule-based-v1` (2.928), `oa-v1`/`oa-v2:gemini-flash-latest` (encerradas, FAILED "superseded") |
+| Cota Gemini | `gemini-flash-latest` = 20 req/dia no plano grátis (inviável). `gemini-3.5-flash-lite` tem cota separada (limite diário exato desconhecido; usar `--rpm=4`) |
+| Git | Tudo commitado e enviado até `e7f921e` + docs desta atualização. PR `main ← feature/enem-pdf-ingestion` ainda não aberto (usuário abre no GitHub; `gh` não instalado) |
 
 ---
 
@@ -311,3 +313,46 @@ de "termo destacado" vindo do `rawPayload`; configurar IA com cota adequada para
   CSP com `sandbox` em toda resposta (neutraliza SVG); id inválido = 404.
 - **Estado:** código pronto; aguardando o usuário criar a chave secreta e rodar a migração. Enquanto
   isso tudo continua em `LOCAL_FS`.
+
+---
+
+## 12. Fim da sessão de 26/09/2026 — de onde continuar
+
+### Feito e verificado nesta sessão (em ordem)
+1. Backoffice: sidebar ativa, menu móvel, rótulos pt-BR, dashboard operacional, formatação segura de
+   texto (`RichText`: negrito/itálico/links; imagens Markdown removidas pois já vêm via QuestionMedia).
+2. Revisão migrada para `/admin/questoes/revisao` com filtros, sugestões, seletor com subtópicos.
+3. Taxonomia canônica v1 (ENEM) + v2 (concursos) aplicadas; reclassificação legada aplicada.
+4. Classificador vendor-neutral + fila + aplicação em lote (`classification:apply`) — nada é aplicado
+   automaticamente sem passar por `applyClassificationSuggestion`.
+5. Central de Importações de provas oficiais (AOCP) com imagens e anuladas; SEJUSP-MG 2025 e PMPE 2023
+   Tenente importadas.
+6. Mídia migrada para Supabase Storage privado (1.963/1.963, sha256 conferido após upload);
+   endurecimento do `/api/media`. Corrigida corrida na fila de mídia (mesma imagem em 2 questões).
+
+### Pendências abertas (ordem sugerida)
+1. **Classificar as 130 questões importadas:** `npm run classification:process -- --limit=130 --concurrency=1 --rpm=4`;
+   auditar ~20 sugestões (texto da questão × sugestão); se boas, `npm run classification:apply` (dry-run
+   → `--apply`). Depois considerar enfileirar as ~2.900 antigas (`classification:enqueue -- --apply`).
+2. **Importar PMPE 2023 Soldado** pela Central (PDFs `data-private/1b343118-…{,-gabarito}.pdf`, AOCP, pronto).
+3. **Leitor Fundatec** (ALRS 2024 Agente de Polícia Legislativa: `data-private/agente_de_policia_legislativo.pdf`
+   + `gabaritos_preliminares.pdf`, Cargo 1; gabarito traz a disciplina de cada questão).
+4. **Leitor Cebraspe** (PF 2025 Agente, Certo/Errado: `data-private/agente_de_policia_federal.pdf` +
+   `gabarito.pdf`; Agente = CB2 itens 1–60, CG1 61–96, cargo 16 97–120). Gabaritos recebidos são preliminares.
+5. Tela para resolver `POSSIBLE_DUPLICATE` (SEJUSP Q20 retida: enunciado idêntico, alternativas diferentes).
+6. Mostrar na revisão o aviso "termo destacado" (hoje só na prévia; está em `ImportItem.rawPayload.refersToHighlight`).
+7. Publicação em lote respeitando a política (confirmar com o usuário antes — expõe conteúdo aos alunos).
+8. Abrir o PR para `main`; configurar `SUPABASE_SECRET_KEY` e `MEDIA_STORAGE_DRIVER=supabase` também no hosting.
+
+### Armadilhas desta sessão (evitar repetir)
+- **Não editar arquivos TS/TSX via heredoc Python com barras invertidas** (`\n`, `\b`, `\s`): o shell/Python
+  converteu escapes em caracteres de controle (backspace/quebra real) e quebrou regex/strings. Usar a
+  ferramenta Edit/Write, ou um script em arquivo que recusa gravar caracteres de controle
+  (padrão usado: `splice.py` que aborta se encontrar `[\x00-\x08\x0b\x0c\x0e-\x1f]`).
+- Gate de commit: usar o **código de saída** de `npm run lint -- --max-warnings=0` (grep por "warning"
+  dá falso positivo com o nome da flag).
+- `pdftohtml` **sem** `-i` (com `-i` as imagens são ignoradas).
+- Reiniciar `npm run dev` após `db:generate`, após mudar `next.config.ts` e após mudar variáveis do `.env`.
+- Navegadores podem ter guardado respostas antigas de `/api/media` com `public, immutable` (rota antiga);
+  o servidor atual responde `private, no-store` para mídia não publicada — use `cache: 'no-store'` ao testar.
+- `git push` pode demorar >2 min nesta máquina: rodar em segundo plano e conferir com `git ls-remote`.
