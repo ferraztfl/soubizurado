@@ -290,3 +290,24 @@ Informação; 12 disciplinas de concurso; aliases para nomes de seção das banc
 **Próximos passos:** leitor Fundatec (simples; gabarito traz a disciplina de cada questão);
 leitor Cebraspe (Certo/Errado); tela para resolver `POSSIBLE_DUPLICATE`; mostrar na revisão o aviso
 de "termo destacado" vindo do `rawPayload`; configurar IA com cota adequada para classificar.
+
+---
+
+## 11. Armazenamento de mídia para produção (26/09/2026)
+
+- Bytes das imagens **não** ficam no Postgres: `media_assets` guarda metadados (provider, bucket,
+  storageKey content-addressed `sha256/..`, checksum, mime, tamanho) e os links com questões/alternativas.
+- Providers suportados na leitura: `LOCAL_FS` (`data-private/media-store`) e `SUPABASE_STORAGE`
+  (bucket **privado**, padrão `question-media`). Escrita escolhida por `MEDIA_STORAGE_DRIVER`
+  (`local` padrão | `supabase`). Código: `src/shared/infrastructure/media-storage/*`,
+  `src/modules/imports/infrastructure/media/create-media-storage.ts`.
+- Chave: `SUPABASE_SECRET_KEY` (sb_secret_…, substituta do service_role) **somente no servidor**
+  (.env local e variáveis do hosting). Nunca `NEXT_PUBLIC_`.
+- Migração: `npm run media:migrate-supabase` (dry-run valida tamanho+sha256 de cada arquivo local);
+  `-- --apply` garante bucket privado, envia, baixa de volta e reconfere o sha256 antes de trocar o
+  asset para `SUPABASE_STORAGE`. Retomável; não apaga arquivos locais.
+- `/api/media/[id]`: mídia de questão publicada = pública com cache imutável; mídia só de questões
+  não publicadas = somente ADMIN (`isCurrentUserAdmin`, sem bootstrap), `private, no-store`, demais 404;
+  CSP com `sandbox` em toda resposta (neutraliza SVG); id inválido = 404.
+- **Estado:** código pronto; aguardando o usuário criar a chave secreta e rodar a migração. Enquanto
+  isso tudo continua em `LOCAL_FS`.
