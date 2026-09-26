@@ -176,6 +176,10 @@ export default async function ClassificationPage(props: PageProps) {
               <dd>{numberFormatter.format(run.answeredByRules)}</dd>
             </div>
             <div>
+              <dt>Pela IA local</dt>
+              <dd>{numberFormatter.format(run.answeredByLocalAi)}</dd>
+            </div>
+            <div>
               <dt>Para revisão</dt>
               <dd>{numberFormatter.format(run.reviewRequired)}</dd>
             </div>

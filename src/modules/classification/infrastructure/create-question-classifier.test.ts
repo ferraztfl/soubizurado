@@ -27,6 +27,30 @@ describe("createQuestionClassifier", () => {
     });
   });
 
+  it("adds a local AI layer only for localhost endpoints", () => {
+    const base = {
+      CLASSIFIER_PROVIDER: "openai-compatible",
+      CLASSIFIER_API_BASE_URL: "https://api.example.com/v1",
+      CLASSIFIER_MODEL: "gemini-x",
+    };
+
+    expect(
+      createQuestionClassifier({
+        ...base,
+        CLASSIFIER_LOCAL_API_BASE_URL: "http://localhost:11434/v1",
+        CLASSIFIER_LOCAL_MODEL: "qwen2.5:3b",
+      }).version,
+    ).toBe("lay2:qwen2.5:3b>gemini-x");
+
+    expect(() =>
+      createQuestionClassifier({
+        ...base,
+        CLASSIFIER_LOCAL_API_BASE_URL: "https://other-host.example/v1",
+        CLASSIFIER_LOCAL_MODEL: "x",
+      }),
+    ).toThrow("localhost");
+  });
+
   it("builds the plain AI classifier when layering is disabled", () => {
     const classifier = createQuestionClassifier({
       CLASSIFIER_PROVIDER: "openai-compatible",

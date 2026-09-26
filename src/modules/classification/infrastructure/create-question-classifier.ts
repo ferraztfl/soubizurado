@@ -1,6 +1,6 @@
 import type { QuestionClassifier } from "../domain/question-classifier";
 
-import { LayeredQuestionClassifier } from "./layered/layered-question-classifier";
+import { type LocalAiLayer, LayeredQuestionClassifier } from "./layered/layered-question-classifier";
 import { OpenAiCompatibleQuestionClassifier } from "./openai-compatible/openai-compatible-question-classifier";
 import { RuleBasedQuestionClassifier } from "./rule-based/rule-based-question-classifier";
 
@@ -18,6 +18,12 @@ type Environment = Readonly<Record<string, string | undefined>>;
  *   CLASSIFIER_TIMEOUT_MS=30000
  *   CLASSIFIER_LAYERED=true                   (default: rules first, AI as fallback)
  *   CLASSIFIER_RULES_THRESHOLD=0.8            (rules answer accepted at or above)
+ *
+ * Optional local AI between the rules and the remote AI (e.g. Ollama):
+ *   CLASSIFIER_LOCAL_API_BASE_URL=http://localhost:11434/v1
+ *   CLASSIFIER_LOCAL_MODEL=qwen2.5:3b
+ *   CLASSIFIER_LOCAL_THRESHOLD=0.9            (stricter: small models overstate confidence)
+ *   CLASSIFIER_LOCAL_TIMEOUT_MS=180000        (CPU inference is slow)
  */
 export function createQuestionClassifier(
   env: Environment = process.env,
@@ -60,10 +66,52 @@ export function createQuestionClassifier(
       return ai;
     }
 
-    return new LayeredQuestionClassifier(new RuleBasedQuestionClassifier(), ai, readRulesThreshold(env));
+    return new LayeredQuestionClassifier(
+      new RuleBasedQuestionClassifier(),
+      ai,
+      readRulesThreshold(env),
+      createLocalAiLayer(env),
+    );
   }
 
   throw new Error(`Unknown CLASSIFIER_PROVIDER "${provider}".`);
+}
+
+function createLocalAiLayer(env: Environment): LocalAiLayer | null {
+  const baseUrl = env.CLASSIFIER_LOCAL_API_BASE_URL?.trim();
+  const model = env.CLASSIFIER_LOCAL_MODEL?.trim();
+
+  if (!baseUrl || !model) {
+    return null;
+  }
+
+  // Local means local: never send questions to another host this way.
+  if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(baseUrl)) {
+    throw new Error("CLASSIFIER_LOCAL_API_BASE_URL must point to localhost.");
+  }
+
+  const timeoutMs = Number(env.CLASSIFIER_LOCAL_TIMEOUT_MS ?? "180000");
+
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 900_000) {
+    throw new Error("CLASSIFIER_LOCAL_TIMEOUT_MS must be between 1000 and 900000.");
+  }
+
+  const threshold = Number(env.CLASSIFIER_LOCAL_THRESHOLD ?? "0.9");
+
+  if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) {
+    throw new Error("CLASSIFIER_LOCAL_THRESHOLD must be between 0 and 1.");
+  }
+
+  return {
+    classifier: new OpenAiCompatibleQuestionClassifier({
+      baseUrl,
+      apiKey: null,
+      model,
+      providerLabel: "ollama",
+      timeoutMs,
+    }),
+    threshold,
+  };
 }
 
 export function readRulesThreshold(

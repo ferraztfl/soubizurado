@@ -418,3 +418,18 @@ Vale sobre §1/§12 onde divergir.
 - **Próximo passo sugerido:** enfileirar as ~2.925 restantes (`classification:enqueue -- --apply`) e
   processar em lotes respeitando a cota diária do Gemini.
 - Bancas: catálogo com 40 bancas + tela `/admin/bancas` (nome imutável; desativar em vez de renomear).
+
+### 13.2 Regras de referência legal, botão e IA local (26/09/2026, noite)
+- **Regras `rule-based-v2`** (`rule-based/legal-references.ts`): número de lei (aceita "Lei no 11.340"
+  do texto de PDF), leis citadas por nome, artigos da CF e do Código Penal → Subtópicos existentes.
+  Calibração: 15 de 131 resolvidas a ≥0,8 (antes 1), 100% corretas. Ampliar o mapa `LAWS` quando novas
+  provas trouxerem outras leis (sempre para Subtópicos que já existem).
+- **`/admin/classificacao`**: botão "Classificar pendentes" → `classification-run-manager.ts` enfileira
+  todas as pendentes e processa em lotes de 20 em segundo plano (estado em memória no processo do
+  servidor; para em fila vazia, cota esgotada ou "Interromper"). **Não foi clicado nesta sessão** —
+  decisão do usuário (≈2.927 questões, consome cota do Gemini).
+- **IA local opcional** (Ollama): `CLASSIFIER_LOCAL_API_BASE_URL` (só localhost) + `CLASSIFIER_LOCAL_MODEL`;
+  limite próprio `CLASSIFIER_LOCAL_THRESHOLD` (0,9); falha/offline → pula para o Gemini. Versão da esteira
+  vira `lay2:<local>><remoto>` (tarefas antigas `lay1` continuam válidas para a configuração sem IA local).
+  Máquina do usuário: Ryzen 3 4350G, 11 GB RAM, sem GPU dedicada → só modelos ~3B, lentos (~30–90 s/questão).
+  Ollama **ainda não instalado** (download precisa de aprovação explícita do usuário).

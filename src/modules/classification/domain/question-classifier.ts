@@ -30,7 +30,7 @@ export type ProviderClassification = Readonly<{
   confidence: number;
   rationale?: string;
   /** Pipeline layer that produced the answer (layered classifier). */
-  layer?: "RULES" | "AI";
+  layer?: "RULES" | "LOCAL_AI" | "AI";
 }>;
 
 export type ClassifyOptions = Readonly<{

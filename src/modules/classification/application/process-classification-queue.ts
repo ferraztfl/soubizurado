@@ -43,15 +43,17 @@ export type ProcessClassificationQueueOutput = Readonly<{
   applied: number;
   /** Answers produced by the rules layer, without a remote call. */
   answeredByRules: number;
+  /** Answers produced by the local AI layer (e.g. Ollama). */
+  answeredByLocalAi: number;
 }>;
 
 type Outcome = Readonly<{
   status: "COMPLETED" | "REVIEW_REQUIRED" | "RETRIED" | "FAILED";
   applied: boolean;
-  byRules: boolean;
+  layer: "RULES" | "LOCAL_AI" | "AI" | null;
 }>;
 
-const failed: Outcome = { status: "FAILED", applied: false, byRules: false };
+const failed: Outcome = { status: "FAILED", applied: false, layer: null };
 
 /**
  * Spaces provider calls evenly across concurrent workers: each call
@@ -121,7 +123,7 @@ async function processOne(
   }
 
   let status: "COMPLETED" | "REVIEW_REQUIRED";
-  let byRules: boolean;
+  let layer: Outcome["layer"];
 
   try {
     // The rate limit applies to remote calls only; local layers are free.
@@ -141,7 +143,7 @@ async function processOne(
       resolved,
       input.minimumConfidence,
     );
-    byRules = providerResult.layer === "RULES";
+    layer = providerResult.layer ?? null;
 
     await input.repository.completeTask({
       taskId: task.id,
@@ -169,7 +171,7 @@ async function processOne(
 
     return outcome === "FAILED"
       ? failed
-      : { status: "RETRIED", applied: false, byRules: false };
+      : { status: "RETRIED", applied: false, layer: null };
   }
 
   // Applying is best effort: the suggestion stays stored if it fails.
@@ -186,7 +188,7 @@ async function processOne(
     }
   }
 
-  return { status, applied, byRules };
+  return { status, applied, layer };
 }
 
 async function mapWithConcurrency<T, R>(
@@ -278,6 +280,7 @@ export async function processClassificationQueue(
     retried: count("RETRIED"),
     failed: count("FAILED"),
     applied: outcomes.filter((outcome) => outcome.applied).length,
-    answeredByRules: outcomes.filter((outcome) => outcome.byRules).length,
+    answeredByRules: outcomes.filter((outcome) => outcome.layer === "RULES").length,
+    answeredByLocalAi: outcomes.filter((outcome) => outcome.layer === "LOCAL_AI").length,
   };
 }

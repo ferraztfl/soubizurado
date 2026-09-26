@@ -99,6 +99,7 @@ describe("processClassificationQueue", () => {
       failed: 1,
       applied: 0,
       answeredByRules: 0,
+      answeredByLocalAi: 0,
     });
 
     expect(repo.applySuggestion).not.toHaveBeenCalled();

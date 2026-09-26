@@ -94,4 +94,39 @@ describe("LayeredQuestionClassifier", () => {
     expect(classifier.version.length).toBeLessThanOrEqual(40);
     expect(() => new LayeredQuestionClassifier(fake({}), fake({}), 1.5)).toThrow();
   });
+
+  it("uses the local AI before the remote one and skips it when it fails", async () => {
+    const rules = fake({ confidence: 0 });
+    const good = { discipline: "Direito Constitucional", topic: "Direitos e Deveres Individuais", confidence: 0.95 };
+    const beforeRemoteCall = vi.fn();
+
+    const local = fake(good, "local-v1");
+    const remote = fake(good);
+    const withLocal = new LayeredQuestionClassifier(rules, remote, 0.8, { classifier: local, threshold: 0.9 });
+
+    expect((await withLocal.classify(input, taxonomy, { beforeRemoteCall })).layer).toBe("LOCAL_AI");
+    expect(remote.classify).not.toHaveBeenCalled();
+    expect(beforeRemoteCall).not.toHaveBeenCalled();
+
+    const unsure = fake({ ...good, confidence: 0.85 }, "local-v1");
+    const escalated = new LayeredQuestionClassifier(rules, remote, 0.8, { classifier: unsure, threshold: 0.9 });
+    expect((await escalated.classify(input, taxonomy)).layer).toBe("AI");
+
+    const offline: QuestionClassifier = {
+      provider: "ollama",
+      model: "qwen2.5:3b",
+      version: "oa-v2:qwen2.5:3b",
+      classify: vi.fn().mockRejectedValue(new Error("ECONNREFUSED")),
+    };
+    const fallback = new LayeredQuestionClassifier(rules, remote, 0.8, { classifier: offline, threshold: 0.9 });
+    expect((await fallback.classify(input, taxonomy)).layer).toBe("AI");
+  });
+
+  it("names the local + remote chain in the version", () => {
+    const local: QuestionClassifier = { ...fake({}), model: "qwen2.5:3b" };
+    const remote: QuestionClassifier = { ...fake({}), model: "gemini-3.5-flash-lite" };
+    const classifier = new LayeredQuestionClassifier(fake({}), remote, 0.8, { classifier: local, threshold: 0.9 });
+
+    expect(classifier.version).toBe("lay2:qwen2.5:3b>gemini-3.5-flash-lite");
+  });
 });
