@@ -39,6 +39,23 @@ export function readRequestsPerMinute(
   return parsed;
 }
 
+/** Parallel AI calls (CLASSIFIER_CONCURRENCY, 1..16; default 1 for free tiers). */
+export function readConcurrency(
+  value: string | undefined = process.env.CLASSIFIER_CONCURRENCY,
+): number {
+  if (!value?.trim()) {
+    return 1;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > 16) {
+    throw new Error("CLASSIFIER_CONCURRENCY must be an integer between 1 and 16.");
+  }
+
+  return parsed;
+}
+
 /**
  * Runs one batch of the classification pipeline (rules → AI) over due
  * tasks of the configured classifier version, auto-applying confident
@@ -63,7 +80,7 @@ export async function runClassificationBatch(
     classifier,
     taxonomy,
     limit: input.limit,
-    concurrency: input.concurrency ?? (classifier.provider === "rule-based" ? 8 : 1),
+    concurrency: input.concurrency ?? (classifier.provider === "rule-based" ? 8 : readConcurrency()),
     maxAttempts: 5,
     staleMinutes: 15,
     minimumConfidence: readMinimumConfidence(),

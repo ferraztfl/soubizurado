@@ -31,7 +31,7 @@ export type ClassificationRunState = Readonly<{
   endReason: string | null;
 }>;
 
-const BATCH_SIZE = 20;
+const BATCH_SIZE = 40;
 
 type MutableState = { -readonly [Key in keyof ClassificationRunState]: ClassificationRunState[Key] };
 
