@@ -17,8 +17,8 @@ import {
   StagedMediaSourceReader,
 } from "../src/modules/imports/infrastructure/media/staged-media-source-reader";
 import {
-  LocalMediaStorage,
-} from "../src/modules/imports/infrastructure/media/local-media-storage";
+  createMediaStorage,
+} from "../src/modules/imports/infrastructure/media/create-media-storage";
 import {
   PrismaMediaTaskRepository,
 } from "../src/modules/imports/infrastructure/repositories/prisma-media-task-repository";
@@ -135,15 +135,9 @@ async function main(): Promise<void> {
         }),
     });
 
+  // MEDIA_STORAGE_DRIVER=supabase writes to the private Storage bucket.
   const storage =
-    new LocalMediaStorage({
-      rootDirectory:
-        storageRoot,
-      bucket:
-        process.env
-          .MEDIA_STORAGE_BUCKET ??
-        "question-media",
-    });
+    createMediaStorage();
 
   const result =
     await processMediaQueue({

@@ -28,7 +28,7 @@ import type {
 import { processMediaQueue } from "../../application/services/process-media-queue";
 import { ImportProviderQuestionsUseCase } from "../../application/use-cases/import-provider-questions";
 import { HttpMediaSourceReader } from "../media/http-media-source-reader";
-import { LocalMediaStorage } from "../media/local-media-storage";
+import { createMediaStorage } from "../media/create-media-storage";
 import { RoutingMediaSourceReader } from "../media/routing-media-source-reader";
 import { StagedMediaSourceReader } from "../media/staged-media-source-reader";
 import { PrismaMediaTaskRepository } from "../repositories/prisma-media-task-repository";
@@ -115,10 +115,7 @@ async function processStagedMedia(limit: number): Promise<{ completed: number; f
       httpReader: new HttpMediaSourceReader({ maxBytes }),
       stagedReader: new StagedMediaSourceReader({ rootDirectory: stagingRoot(), maxBytes }),
     }),
-    storage: new LocalMediaStorage({
-      rootDirectory: resolve(process.env.MEDIA_STORAGE_LOCAL_ROOT ?? "data-private/media-store"),
-      bucket: process.env.MEDIA_STORAGE_BUCKET ?? "question-media",
-    }),
+    storage: createMediaStorage(),
     concurrency: 4,
     limit: Math.min(limit, 10_000),
     maxAttempts: 5,

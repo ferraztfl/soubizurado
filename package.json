@@ -38,7 +38,8 @@
     "classification:status": "npx --yes tsx scripts/classification-status.ts",
     "classification:apply": "npx --yes tsx scripts/classification-apply.ts",
     "inspect:aocp-pdf": "npx --yes tsx scripts/inspect-aocp-pdf.ts",
-    "import:official-exam": "npx --yes tsx scripts/analyze-official-exam.ts"
+    "import:official-exam": "npx --yes tsx scripts/analyze-official-exam.ts",
+    "media:migrate-supabase": "npx --yes tsx scripts/migrate-media-to-supabase.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
