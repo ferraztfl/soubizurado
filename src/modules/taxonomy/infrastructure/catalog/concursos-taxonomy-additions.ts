@@ -304,6 +304,25 @@ export const CONCURSOS_DISCIPLINES: readonly CatalogDiscipline[] = [
         topic("Normas de Procedimentos do Sistema Prisional"),
         topic("Ética no Serviço Público"),
       ]),
+      // v3: state statutes asked in state police and public-service exams.
+      area(
+        "Legislação Estadual",
+        [
+          topic(
+            "Estatutos dos Militares Estaduais",
+            [
+              {
+                name: "Estatuto dos Militares do Estado de Pernambuco",
+                aliases: ["Lei nº 6.783/1974", "Estatuto dos Militares de Pernambuco"],
+              },
+            ],
+            ["Estatuto dos Militares", "Estatuto da Polícia Militar"],
+          ),
+          topic("Estatutos dos Servidores Estaduais", [], ["Estatuto dos Servidores Públicos do Estado"]),
+          topic("Leis Orgânicas das Polícias Estaduais", [], ["Lei Orgânica da Polícia Militar", "Lei Orgânica da Polícia Civil"]),
+        ],
+        ["Legislação Estadual Específica"],
+      ),
     ],
   },
 

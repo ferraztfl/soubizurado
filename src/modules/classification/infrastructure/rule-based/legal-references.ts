@@ -66,6 +66,12 @@ const NAMED: readonly Readonly<{ pattern: RegExp; target: LegalTarget }>[] = [
   { pattern: /estatuto\s+(?:do\s+idoso|da\s+pessoa\s+idosa)/i, target: LAWS["10741"]! },
   { pattern: /lei\s+de\s+improbidade/i, target: LAWS["8429"]! },
   { pattern: /lei\s+de\s+licita[cç][oõ]es/i, target: LAWS["14133"]! },
+  // State statutes are matched by name only: state law numbers repeat
+  // across states.
+  {
+    pattern: /estatuto\s+dos\s+militares\s+(?:do\s+estado\s+)?de\s+pernambuco/i,
+    target: { discipline: "Legislação Institucional", topic: "Estatutos dos Militares Estaduais" },
+  },
 ];
 
 /** Constitution article ranges → Subtópico (inclusive). */

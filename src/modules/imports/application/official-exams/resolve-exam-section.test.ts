@@ -26,7 +26,7 @@ describe("resolveExamSection", () => {
     ["Língua Portuguesa", "Língua Portuguesa"],
     ["Informática Básica", "Informática"],
     ["Legislação Especial", "Legislação Penal Especial"],
-    ["Extravagante", "Legislação Penal Especial"],
+    ["Legislação Penal Extravagante", "Legislação Penal Especial"],
     ["Raciocínio Lógico/Matemático", "Raciocínio Lógico"],
     ["Direitos e Garantias Fundamentais", "Direito Constitucional"],
     ["Direito Penal Militar", "Direito Penal Militar"],
@@ -60,6 +60,12 @@ describe("resolveExamSection", () => {
       kind: "KNOWLEDGE_AREA",
       knowledgeAreaSlug: "ciencias-juridicas",
     });
+
+
+    // Mixed-law sections: drug law and a state statute in the same block.
+    for (const section of ["Extravagante", "Legislação Extravagante", "Legislação Especial e Extravagante"]) {
+      expect(resolve(section)).toEqual({ kind: "KNOWLEDGE_AREA", knowledgeAreaSlug: "ciencias-juridicas" });
+    }
   });
 
   it("leaves unknown sections for a reviewer", () => {

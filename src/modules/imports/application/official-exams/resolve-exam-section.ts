@@ -34,6 +34,9 @@ const KNOWLEDGE_AREA_RULES: readonly Readonly<{
   { pattern: /\b(informatica|computacao|tecnologia da informacao)\b/, knowledgeAreaSlug: "tecnologia-da-informacao" },
 ];
 
+/** "Extravagante", "Legislação Extravagante", "Legislação Especial e Extravagante". */
+const MIXED_LAW_SECTION = /^(?:legislacao\s+)?(?:especial\s+e\s+)?extravagante$/;
+
 function contains(haystack: string, needle: string): boolean {
   return ` ${haystack} `.includes(` ${needle} `);
 }
@@ -51,6 +54,15 @@ export function resolveExamSection(
 
   if (!normalized) {
     return { kind: "UNRESOLVED" };
+  }
+
+  // Mixed-law sections only fix the area; the classifier picks the
+  // discipline per question (e.g. PMPE "Extravagante" mixes drug law
+  // with the state military statute). Checked before the aliases,
+  // which still map "Legislação Penal Extravagante" to the penal
+  // discipline.
+  if (MIXED_LAW_SECTION.test(normalized)) {
+    return { kind: "KNOWLEDGE_AREA", knowledgeAreaSlug: "ciencias-juridicas" };
   }
 
   const exact = entries.find((entry) => entry.terms.includes(normalized));

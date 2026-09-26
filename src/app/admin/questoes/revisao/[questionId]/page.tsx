@@ -321,36 +321,33 @@ export default async function ReviewQuestionPage(
     notFound();
   }
 
-  // A canonical discipline bounds the choice; otherwise (imported
-  // knowledge-area-only questions, legacy ENEM areas) every active
-  // discipline of the question knowledge area is offered.
-  const canonicalDisciplineId =
+  // Every active discipline of the question knowledge area is offered,
+  // the current canonical discipline first: a booklet section may fix a
+  // discipline that does not fit the question (e.g. "Extravagante").
+  const currentDisciplineId =
     question.discipline?.knowledgeAreaId
       ? question.disciplineId
       : null;
 
-  const knowledgeAreaMode =
-    !canonicalDisciplineId &&
-    Boolean(question.knowledgeAreaId);
+  const scopeKnowledgeAreaId =
+    question.discipline?.knowledgeAreaId ??
+    question.knowledgeAreaId ??
+    null;
 
-  // Active taxonomy in scope, grouped by Area (shown as "Tópico").
+  const knowledgeAreaMode =
+    Boolean(scopeKnowledgeAreaId);
+
+  // Active taxonomy in scope, grouped by Matéria › Area ("Tópico").
   const taxonomyTopics =
-    canonicalDisciplineId || knowledgeAreaMode
+    scopeKnowledgeAreaId
       ? await prisma.topic.findMany({
           where: {
-            ...(canonicalDisciplineId
-              ? {
-                  disciplineId:
-                    canonicalDisciplineId,
-                }
-              : {
-                  discipline: {
-                    isActive:
-                      true,
-                    knowledgeAreaId:
-                      question.knowledgeAreaId,
-                  },
-                }),
+            discipline: {
+              isActive:
+                true,
+              knowledgeAreaId:
+                scopeKnowledgeAreaId,
+            },
 
             isActive:
               true,
@@ -449,6 +446,9 @@ export default async function ReviewQuestionPage(
           ? `${topic.discipline.name} \u203a ${areaName}`
           : areaName,
         sortOrder:
+          (topic.discipline.id === currentDisciplineId
+            ? 0
+            : 1_000_000_000) +
           topic.discipline.sortOrder * 10_000 +
           (topic.area?.sortOrder ??
             9_999),
@@ -1129,9 +1129,9 @@ export default async function ReviewQuestionPage(
                 </h2>
 
                 <p className={styles.cardMeta}>
-                  {knowledgeAreaMode
-                    ? `Matéria, subtópico ou detalhe em ${question.knowledgeArea?.name ?? "área não definida"}`
-                    : `Subtópico ou detalhe de ${question.discipline?.name ?? "matéria não definida"}`}
+                  {currentDisciplineId
+                    ? `Subtópico ou detalhe. ${question.discipline?.name ?? "A matéria atual"} aparece primeiro; escolher outra matéria da área também a altera.`
+                    : `Matéria, subtópico ou detalhe em ${question.knowledgeArea?.name ?? "área não definida"}`}
                 </p>
               </div>
             </div>

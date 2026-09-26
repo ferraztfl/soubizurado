@@ -112,19 +112,20 @@ export async function saveQuestionClassificationAction(
       },
     });
 
-  // A canonical discipline (linked to a knowledge area) bounds the
-  // choice. Without one (imported "Noções de Direito", legacy ENEM
-  // areas), any active discipline of the question knowledge area can be
-  // chosen and becomes the question discipline.
-  const canonicalDisciplineId =
-    question?.discipline?.knowledgeAreaId
-      ? question.disciplineId
-      : null;
+  // Any active discipline of the question knowledge area can be chosen
+  // and becomes the question discipline: a booklet section (e.g.
+  // "Extravagante") may fix a discipline that does not fit every
+  // question. The area comes from the current canonical discipline or,
+  // without one (legacy ENEM, knowledge-area-only imports), from the
+  // question itself.
+  const scopeKnowledgeAreaId =
+    question?.discipline?.knowledgeAreaId ??
+    question?.knowledgeAreaId ??
+    null;
 
   if (
     !question ||
-    (!canonicalDisciplineId &&
-      !question.knowledgeAreaId)
+    !scopeKnowledgeAreaId
   ) {
     redirect(
       reviewUrl(
@@ -134,20 +135,14 @@ export async function saveQuestionClassificationAction(
     );
   }
 
-  const disciplineScope =
-    canonicalDisciplineId
-      ? {
-          disciplineId:
-            canonicalDisciplineId,
-        }
-      : {
-          discipline: {
-            isActive:
-              true,
-            knowledgeAreaId:
-              question.knowledgeAreaId,
-          },
-        };
+  const disciplineScope = {
+    discipline: {
+      isActive:
+        true,
+      knowledgeAreaId:
+        scopeKnowledgeAreaId,
+    },
+  };
 
   // Only active entries are accepted; an inactive assunto blocks its
   // topics too.

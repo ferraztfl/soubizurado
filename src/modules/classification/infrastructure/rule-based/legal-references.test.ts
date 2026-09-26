@@ -44,6 +44,13 @@ describe("matchLegalReferences", () => {
     expect(topics("art. 5º da Constituição Federal e art. 121 do Código Penal")).toEqual([]);
   });
 
+  it("recognizes state statutes by name, not by number", () => {
+    expect(
+      topics("de acordo com o Estatuto dos Militares do Estado de Pernambuco (Lei Estadual no 6.783/1974)"),
+    ).toEqual(["Estatutos dos Militares Estaduais"]);
+    expect(topics("Lei Estadual nº 6.783/1974")).toEqual([]);
+  });
+
   it("ignores unknown laws and plain numbers", () => {
     expect(topics("Lei nº 1.234/2000")).toEqual([]);
     expect(topics("Em 2006, 11.340 pessoas")).toEqual([]);
