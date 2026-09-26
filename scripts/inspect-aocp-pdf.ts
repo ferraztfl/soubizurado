@@ -12,6 +12,7 @@ import {
 import { promisify } from "node:util";
 
 import {
+  answerFor,
   parseAocpAnswerKey,
   parseAocpExam,
   readAocpLines,
@@ -64,18 +65,25 @@ async function main(): Promise<void> {
     const answerKey = parseAocpAnswerKey(answerText);
     const issues = validateAocpExam(exam);
 
-    const missingAnswers = exam.questions
-      .filter((question) => !answerKey.has(question.number))
-      .map((question) => question.number);
+    const describe = (question: { number: number; variant: number; section: string | null }) =>
+      question.variant > 0 ? `${question.number} (${question.section})` : String(question.number);
 
-    const annulled = [...answerKey.entries()]
-      .filter(([, answer]) => answer === "ANNULLED")
-      .map(([number]) => number);
+    const missingAnswers = exam.questions
+      .filter((question) => answerFor(answerKey, question) === null)
+      .map(describe);
+
+    const annulled = exam.questions
+      .filter((question) => answerFor(answerKey, question) === "ANNULLED")
+      .map(describe);
+
+    const variants = exam.questions
+      .filter((question) => question.variant > 0)
+      .map(describe);
 
     const bySection: Record<string, number> = {};
 
     for (const question of exam.questions) {
-      const name = question.section ?? "(sem seção)";
+      const name = `${question.block ? `${question.block} · ` : ""}${question.section ?? "(sem seção)"}`;
       bySection[name] = (bySection[name] ?? 0) + 1;
     }
 
@@ -88,7 +96,8 @@ async function main(): Promise<void> {
           refersToHighlight: exam.questions
             .filter((question) => question.refersToHighlight)
             .map((question) => question.number),
-          answerKeyEntries: answerKey.size,
+          answerKeyEntries: [...answerKey.values()].reduce((sum, list) => sum + list.length, 0),
+          languageVariants: variants,
           annulled,
           missingAnswers,
           issues,
@@ -99,10 +108,13 @@ async function main(): Promise<void> {
     );
 
     const detail = Number(argumentValue("questao") ?? "1");
-    const question = exam.questions.find((item) => item.number === detail);
+    const variant = Number(argumentValue("variante") ?? "1") - 1;
+    const question = exam.questions.find(
+      (item) => item.number === detail && item.variant === variant,
+    );
 
     if (question) {
-      console.log(`\n--- Questão ${question.number} (${question.section}) · gabarito ${answerKey.get(question.number) ?? "?"}`);
+      console.log(`\n--- Questão ${question.number} (${question.block ?? "-"} · ${question.section}) · gabarito ${answerFor(answerKey, question) ?? "?"}`);
       console.log(`[apoio] ${question.supportText ? question.supportText.slice(0, 300) + "…" : "—"}`);
       console.log(`[enunciado] ${question.statement}`);
 

@@ -36,6 +36,13 @@ export type AocpAlternative = Readonly<{
 export type AocpQuestion = Readonly<{
   number: number;
   /**
+   * 0-based occurrence of this number. Optional-language blocks reuse
+   * numbers (e.g. 11-15 in English and again in Spanish).
+   */
+  variant: number;
+  /** Top-level grouping such as "BLOCO I", when the booklet has one. */
+  block: string | null;
+  /**
    * The statement refers to a highlighted/underlined term. Underlines
    * are drawn shapes that pdftohtml cannot export, so a reviewer must
    * check the highlight against the original PDF.
@@ -53,7 +60,17 @@ export type AocpExam = Readonly<{
   questions: readonly AocpQuestion[];
 }>;
 
-export type AocpAnswerKey = ReadonlyMap<number, string | "ANNULLED">;
+export type AocpAnswer = string | "ANNULLED";
+
+/** Answers per question number, in booklet order (one per variant). */
+export type AocpAnswerKey = ReadonlyMap<number, readonly AocpAnswer[]>;
+
+export function answerFor(
+  key: AocpAnswerKey,
+  question: Pick<AocpQuestion, "number" | "variant">,
+): AocpAnswer | null {
+  return key.get(question.number)?.[question.variant] ?? null;
+}
 
 const HEADER_MAX_TOP = 75;
 const FOOTER_MIN_RATIO = 0.93;
@@ -61,6 +78,7 @@ const SAME_LINE_TOLERANCE = 4;
 const ALTERNATIVE_LABEL = /^\(([A-E])\)\s*(.*)$/;
 const QUESTION_NUMBER = /^\d{1,3}$/;
 const END_OF_OBJECTIVE_PART = /reda[cç][aã]o/i;
+const BLOCK_HEADING = /^bloco\b/i;
 const HIGHLIGHT_REFERENCE =
   /\b(destacad[oa]s?|em destaque|sublinhad[oa]s?|grifad[oa]s?|em negrito)\b/i;
 
@@ -215,6 +233,8 @@ type State = "between" | "support" | "statement" | "alternative";
 
 type MutableQuestion = {
   number: number;
+  variant: number;
+  block: string | null;
   section: string | null;
   statement: string;
   alternatives: { label: string; content: string }[];
@@ -225,17 +245,35 @@ type MutableQuestion = {
 export function parseAocpExam(
   lines: readonly AocpLine[],
 ): AocpExam {
-  const headingSize = Math.max(0, ...lines.filter((line) => line.bold).map((line) => line.size));
-  const markerSizes = new Set(
+  // Question markers use one dominant font size; bold digits in tables
+  // and charts use other sizes and must not start questions.
+  const markerSize = mostFrequent(
     lines
       .filter((line) => line.bold && QUESTION_NUMBER.test(line.text))
       .map((line) => line.size),
   );
 
+  // Section (discipline) headings: largest bold non-numeric text that
+  // is not a "BLOCO" grouping heading.
+  const headingSize = Math.max(
+    0,
+    ...lines
+      .filter(
+        (line) =>
+          line.bold &&
+          !QUESTION_NUMBER.test(line.text) &&
+          !BLOCK_HEADING.test(line.text),
+      )
+      .map((line) => line.size),
+  );
+
+  const seenNumbers = new Map<number, number>();
+
   const sections: string[] = [];
   const questions: MutableQuestion[] = [];
 
   let section: string | null = null;
+  let block: string | null = null;
   let state: State = "between";
   let supportParts: string[] = [];
   let supportText: string | null = null;
@@ -265,6 +303,16 @@ export function parseAocpExam(
   };
 
   for (const line of lines) {
+    if (line.bold && BLOCK_HEADING.test(line.text) && line.size >= headingSize) {
+      closeSupport();
+      block = line.text;
+      section = null;
+      supportText = null;
+      state = "between";
+      question = null;
+      continue;
+    }
+
     if (line.bold && line.size === headingSize && !QUESTION_NUMBER.test(line.text)) {
       closeSupport();
 
@@ -280,10 +328,15 @@ export function parseAocpExam(
       continue;
     }
 
-    if (line.bold && markerSizes.has(line.size) && QUESTION_NUMBER.test(line.text)) {
+    if (line.bold && line.size === markerSize && QUESTION_NUMBER.test(line.text)) {
       closeSupport();
+      const number = Number(line.text);
+      const variant = seenNumbers.get(number) ?? 0;
+      seenNumbers.set(number, variant + 1);
       question = {
-        number: Number(line.text),
+        number,
+        variant,
+        block,
         section,
         statement: "",
         alternatives: [],
@@ -332,42 +385,79 @@ export function parseAocpExam(
   };
 }
 
+function mostFrequent(values: readonly number[]): number | null {
+  const counts = new Map<number, number>();
+
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  let best: number | null = null;
+  let bestCount = 0;
+
+  for (const [value, count] of counts) {
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+    }
+  }
+
+  return best;
+}
+
 /** Structural problems that must block an import. */
 export function validateAocpExam(
   exam: AocpExam,
-  expectedAlternatives = 4,
+  expectedAlternatives?: number,
 ): string[] {
   const issues: string[] = [];
 
-  exam.questions.forEach((question, index) => {
-    if (question.number !== index + 1) {
-      issues.push(`Numeração fora de ordem: esperado ${index + 1}, encontrado ${question.number}.`);
+  // Booklets use a fixed number of alternatives (4 or 5); detect it.
+  const expected =
+    expectedAlternatives ??
+    mostFrequent(exam.questions.map((question) => question.alternatives.length)) ??
+    4;
+  const expectedLabels = "ABCDE".slice(0, expected);
+
+  let highest = 0;
+
+  for (const question of exam.questions) {
+    const label = question.variant > 0
+      ? `Questão ${question.number} (variante ${question.variant + 1})`
+      : `Questão ${question.number}`;
+
+    if (question.variant === 0) {
+      if (question.number !== highest + 1) {
+        issues.push(`Numeração fora de ordem: esperado ${highest + 1}, encontrado ${question.number}.`);
+      }
+
+      highest = Math.max(highest, question.number);
     }
 
     if (!question.statement.trim()) {
-      issues.push(`Questão ${question.number}: enunciado vazio.`);
+      issues.push(`${label}: enunciado vazio.`);
     }
 
     const labels = question.alternatives.map((alternative) => alternative.label).join("");
-    const expected = "ABCDE".slice(0, expectedAlternatives);
 
-    if (labels !== expected) {
-      issues.push(`Questão ${question.number}: alternativas "${labels}" (esperado "${expected}").`);
+    if (labels !== expectedLabels) {
+      issues.push(`${label}: alternativas "${labels}" (esperado "${expectedLabels}").`);
     }
 
     for (const alternative of question.alternatives) {
       if (!alternative.content.trim()) {
-        issues.push(`Questão ${question.number}: alternativa ${alternative.label} vazia.`);
+        issues.push(`${label}: alternativa ${alternative.label} vazia.`);
       }
     }
-  });
+  }
 
   return issues;
 }
 
 /**
  * Parses the official answer key text (`pdftotext`): pairs of question
- * number and letter. "X" marks an annulled question.
+ * number and letter. "X" marks an annulled question. A number listed
+ * twice (optional-language blocks) keeps both answers in order.
  */
 export function parseAocpAnswerKey(text: string): AocpAnswerKey {
   const tokens = text
@@ -375,14 +465,16 @@ export function parseAocpAnswerKey(text: string): AocpAnswerKey {
     .map((token) => token.trim())
     .filter(Boolean);
 
-  const key = new Map<number, string | "ANNULLED">();
+  const key = new Map<number, AocpAnswer[]>();
 
   for (let index = 0; index < tokens.length - 1; index += 1) {
     const number = tokens[index]!;
     const answer = tokens[index + 1]!.toUpperCase();
 
     if (/^\d{1,3}$/.test(number) && /^[A-EX]$/.test(answer)) {
-      key.set(Number(number), answer === "X" ? "ANNULLED" : answer);
+      const answers = key.get(Number(number)) ?? [];
+      answers.push(answer === "X" ? "ANNULLED" : answer);
+      key.set(Number(number), answers);
       index += 1;
     }
   }
