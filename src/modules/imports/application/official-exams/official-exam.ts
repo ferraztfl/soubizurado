@@ -12,6 +12,7 @@
  */
 export const OFFICIAL_EXAM_READERS = {
   AOCP: "Formato AOCP",
+  AOCP_VF: "Formato AOCP (Verdadeiro/Falso)",
   FUNDATEC: "Formato Fundatec",
   CEBRASPE: "Formato Cebraspe",
 } as const;

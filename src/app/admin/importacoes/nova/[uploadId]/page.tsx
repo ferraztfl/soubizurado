@@ -65,7 +65,14 @@ function QuestionPreview({
         {question.annulled ? (
           <span className={`${styles.badge} ${styles.badgeDanger}`}>Anulada · não será importada</span>
         ) : (
-          <span className={`${styles.badge} ${styles.badgeOk}`}>Gabarito {question.answer}</span>
+          <span className={`${styles.badge} ${styles.badgeOk}`}>
+            Gabarito{" "}
+            {question.type === "TRUE_FALSE"
+              ? question.answer === "V"
+                ? "Verdadeiro"
+                : "Falso"
+              : question.answer}
+          </span>
         )}
         {question.refersToHighlight ? (
           <span className={`${styles.badge} ${styles.badgeWarning}`}>Cita termo destacado · conferir no PDF</span>

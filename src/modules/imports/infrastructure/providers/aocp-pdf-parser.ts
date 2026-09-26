@@ -126,7 +126,13 @@ function cleanText(raw: string): string {
 }
 
 /** Reads positioned lines in reading order (column by column). */
-export function readAocpLines(xml: string): AocpLine[] {
+export function readAocpLines(
+  xml: string,
+  options: Readonly<{ headerMaxTop?: number }> = {},
+): AocpLine[] {
+  // Booklets whose content starts near the top edge (e.g. the 2016 V/F
+  // layout) pass a smaller header zone.
+  const headerMaxTop = options.headerMaxTop ?? HEADER_MAX_TOP;
   const fontSizes = new Map<string, number>();
 
   for (const match of xml.matchAll(/<fontspec id="(\d+)" size="(-?\d+)"/g)) {
@@ -155,7 +161,7 @@ export function readAocpLines(xml: string): AocpLine[] {
       const left = Number(text[2]);
       const content = cleanText(text[4]!);
 
-      if (!content || top < HEADER_MAX_TOP || top > height * FOOTER_MIN_RATIO) {
+      if (!content || top < headerMaxTop || top > height * FOOTER_MIN_RATIO) {
         continue;
       }
 

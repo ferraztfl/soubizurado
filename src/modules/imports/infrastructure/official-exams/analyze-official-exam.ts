@@ -23,6 +23,14 @@ import {
   readAocpLines,
   validateAocpExam,
 } from "../providers/aocp-pdf-parser";
+import {
+  findRoleAnswers,
+  parseAocpTrueFalseExam,
+  parseSectionRanges,
+  parseTrueFalseAnswerKeyBlocks,
+  TRUE_FALSE_FORMAT,
+  validateTrueFalseExam,
+} from "../providers/aocp-true-false-parser";
 
 import {
   sha256,
@@ -63,9 +71,16 @@ export function detectMetadata(coverText: string): DetectedExamMetadata {
     null;
 
   const level =
-    coverText.match(/\bn[ií]vel\b[\s\S]{0,40}?\b(fundamental|m[ée]dio|superior)\b/i)?.[1] ?? null;
+    coverText.match(/\bn[ií]vel\b[\s\S]{0,40}?\b(fundamental|m[ée]dio|intermedi[aá]rio|superior)\b/i)?.[1] ?? null;
 
+  // Institution names first: role lines also contain " - " (e.g.
+  // "TRADUTOR E INTÉRPRETE DE LINGUAGEM DE SINAIS - LIBRAS").
   const organizationLine =
+    lines.find(
+      (line) =>
+        /\b(universidade|instituto federal|prefeitura|c[aâ]mara municipal)\b/i.test(line) &&
+        !/edital|portaria/i.test(line),
+    ) ??
     lines.find((line) => /\s[–-]\s/.test(line) && /[A-ZÁÉÍÓÚ]{3,}/.test(line) && !/edital|portaria/i.test(line)) ??
     lines.find((line) => /secretaria|pol[ií]cia|assembleia|tribunal|minist[ée]rio/i.test(line)) ??
     null;
@@ -77,6 +92,78 @@ export function detectMetadata(coverText: string): DetectedExamMetadata {
     level: level ? level[0]!.toUpperCase() + level.slice(1).toLowerCase() : null,
     notice: noticeLine,
   };
+}
+
+/**
+ * The V/F answer key lists every role; the booklet role is the cover
+ * line that matches exactly one role block.
+ */
+function analyzeAocpTrueFalse(
+  xml: string,
+  coverText: string,
+  answerText: string,
+): Readonly<{
+  sections: readonly string[];
+  questions: OfficialExamQuestion[];
+  issues: string[];
+  role: string | null;
+}> {
+  const ranges = parseSectionRanges(coverText);
+  const exam = parseAocpTrueFalseExam(readAocpLines(xml, { headerMaxTop: 30 }), ranges);
+  const issues = validateTrueFalseExam(exam, ranges.at(-1)?.to ?? null);
+  const blocks = parseTrueFalseAnswerKeyBlocks(answerText);
+
+  const roles = [
+    ...new Set(
+      coverText
+        .split("\n")
+        .map((line) => line.replace(/\s+/g, " ").trim())
+        .filter((line) => line.length >= 5 && findRoleAnswers(blocks, line).answers !== null),
+    ),
+  ];
+
+  const role = roles.length === 1 ? roles[0]! : null;
+  const answers = role ? findRoleAnswers(blocks, role).answers : null;
+
+  if (!role) {
+    issues.push(
+      roles.length > 1
+        ? `Cargo ambíguo no gabarito: ${roles.join("; ")}.`
+        : "O cargo do caderno não foi encontrado no gabarito.",
+    );
+  }
+
+  const questions = exam.items.map((item): OfficialExamQuestion => {
+    const answer = answers?.get(item.number) ?? null;
+
+    if (answers && answer === null) {
+      issues.push(`Item ${item.number}: sem resposta no gabarito.`);
+    }
+
+    return {
+      key: questionKey(item.number, 0),
+      number: item.number,
+      variant: 0,
+      block: null,
+      section: item.section,
+      type: "TRUE_FALSE",
+      // The group command makes each item self-contained.
+      statement: item.command ? `${item.command}\n\n${item.statement}` : item.statement,
+      images: item.images,
+      supportText: item.supportText,
+      supportImages: item.supportImages,
+      alternatives: [],
+      answer: answer === "V" || answer === "F" ? answer : null,
+      annulled: answer === "ANNULLED",
+      refersToHighlight: item.refersToHighlight,
+    };
+  });
+
+  if (answers && answers.size !== exam.items.length) {
+    issues.push(`O gabarito do cargo tem ${answers.size} respostas para ${exam.items.length} itens.`);
+  }
+
+  return { sections: exam.sections, questions, issues, role };
 }
 
 async function pdfToText(path: string, lastPage?: number): Promise<string> {
@@ -145,7 +232,9 @@ export async function analyzeOfficialExam(
   ]);
 
   const coverText = await pdfToText(paths.booklet, 2);
-  const board = detectBoard(coverText);
+  const detectedBoard = detectBoard(coverText);
+  const board: OfficialExamReader | null =
+    detectedBoard === "AOCP" && TRUE_FALSE_FORMAT.test(coverText) ? "AOCP_VF" : detectedBoard;
   const suggestion = suggestExaminingBoard(coverText);
 
   const base = {
@@ -161,7 +250,7 @@ export async function analyzeOfficialExam(
     detected: detectMetadata(coverText),
   };
 
-  if (board !== "AOCP") {
+  if (board !== "AOCP" && board !== "AOCP_VF") {
     return {
       ...base,
       sections: [],
@@ -182,6 +271,20 @@ export async function analyzeOfficialExam(
 
   const xml = stripWatermarks(await readFile(join(paths.workspace, "document.xml"), "utf8"));
   const answerText = await pdfToText(paths.answerKey);
+
+  if (board === "AOCP_VF") {
+    const coverOnly = await pdfToText(paths.booklet, 1);
+    const parsed = analyzeAocpTrueFalse(xml, coverOnly, answerText);
+
+    return {
+      ...base,
+      detected: { ...base.detected, careerPosition: parsed.role ?? base.detected.careerPosition },
+      sections: parsed.sections,
+      questions: parsed.questions,
+      blockingIssues: parsed.issues,
+    };
+  }
+
   const parsed = analyzeAocp(xml, answerText);
 
   return {

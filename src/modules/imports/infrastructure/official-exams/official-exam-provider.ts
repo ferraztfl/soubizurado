@@ -133,7 +133,9 @@ export class OfficialExamProvider implements QuestionProvider {
       careerPosition: metadata.careerPosition,
       year: metadata.year,
       board: metadata.examiningBoardName,
-      alternativeType: "MULTIPLA_ESCOLHA",
+      alternativeType: this.input.analysis.questions.some((question) => question.type === "TRUE_FALSE")
+        ? "CERTO_ERRADO"
+        : "MULTIPLA_ESCOLHA",
     };
   }
 }
