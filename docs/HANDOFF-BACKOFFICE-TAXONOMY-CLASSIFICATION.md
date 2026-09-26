@@ -21,7 +21,9 @@ para ingestão, mídia e regras gerais; este documento registra tudo o que veio 
 | Classificador | Fila persistente + classificador por regras (padrão) + adaptador OpenAI-compatível (IA). Rodada `rule-based-v1` feita: 2928 tarefas, 1191 com tópico sugerido, 19 de alta confiança, 0 aplicadas |
 | Publicação | 0 questões publicadas; 2963 em `IN_REVIEW`; 0 com tópico (em 26/09/2026) |
 | IA configurada | Gemini gratuito (Google AI Studio) no `.env`, modelo `gemini-flash-latest`. Rodada de teste `oa-v2:gemini-flash-latest` com 50 questões em andamento/concluída (ver §7) |
-| Próximo passo combinado | Auditar as 50 do teste; se boas, enfileirar o restante e processar em dias sucessivos (cota grátis); depois `classification:apply` |
+| Cota Gemini grátis | **`gemini-flash-latest` = `gemini-3.8-flash`, limite de 20 requisições/dia** (erro 429 `GenerateRequestsPerDayPerProjectPerModel-FreeTier`). Inviável para ~2.900 questões. `gemini-3.5-flash-lite` respondia (cota separada). Decisão pendente do usuário (ver §7) |
+| Importação de provas oficiais | Leitor Instituto AOCP pronto (`aocp-pdf-parser.ts`, `npm run inspect:aocp-pdf`), validado na prova SEJUSP-MG 2025 Policial Penal. Importação no banco ainda **não** feita (depende da taxonomia de concursos, §9) |
+| Próximo passo combinado | Decidir provedor de IA (flash-lite grátis / faturamento / Ollama); ampliar taxonomia para disciplinas de concurso; importar a prova AOCP |
 
 ---
 
@@ -187,6 +189,9 @@ Sem essas variáveis, o padrão é `rule-based`. O texto das questões (conteúd
    DISCIPLINA/ASSUNTO/TÓPICO/SUBTÓPICOS → versão `oa-v2`. As 42 pendentes da v1 foram
    marcadas FAILED ("Superseded by oa-v2"). Teste `oa-v2` com as mesmas 50 questões:
    `classification:process -- --limit=50 --concurrency=1 --rpm=4`; auditar o resultado.
+   Resultado `oa-v2`: 0 concluídas, 50 com 429 (cota diária de 20 esgotada). As 50 tarefas
+   `oa-v2:gemini-flash-latest` continuam PENDING; ao trocar de modelo, marcá-las FAILED
+   ("superseded") como feito com a v1 e reenfileirar.
 3. Se boa: enfileirar o restante e processar (retomar em dias seguintes se a cota diária acabar).
 4. `classification:apply` (dry-run → `--apply`). Baixa confiança permanece em revisão.
 5. Publicação em lote **somente** das que passam em `validateQuestionForPublication` — confirmar
@@ -208,6 +213,18 @@ Sem essas variáveis, o padrão é `rule-based`. O texto das questões (conteúd
 ---
 
 ## 9. Débitos conhecidos / próximos itens
+
+- **Importação AOCP (próximo):** arquivos em `data-private/87762278-2c7e-4eee-bc79-731fd6076461{,-gabarito}.pdf`
+  (SEJUSP-MG, Edital 01/2025, Policial Penal Fem./Masc., nível médio, Tipo 01, Instituto AOCP).
+  60 questões: Língua Portuguesa 10, Informática Básica 5, Noções de Direito 10, Direitos
+  Humanos 10, Legislação Especial 20, Raciocínio Lógico 5. Q58 anulada (gabarito "X").
+  Q3, 4, 6, 7, 8, 9 citam "termo destacado" — sublinhado não é extraível; conferir no PDF.
+  Falta: (1) catálogo de disciplinas de concurso (Direito Constitucional, Administrativo,
+  Penal, Processual Penal, Legislação Penal Especial/Execução Penal, Direitos Humanos,
+  Informática, Raciocínio Lógico) — hoje o catálogo só tem ENEM; (2) provider `QuestionProvider`
+  AOCP + script de importação com metadados (banca, órgão, cargo, ano, edital) via CLI.
+- Scraping de bancos de terceiros (ex.: Gran Cursos) foi **descartado**: termos de uso e proteção
+  de base de dados/compilação. Fonte correta = PDFs oficiais publicados pelas bancas.
 
 - Formatação inline: `src/shared/ui/inline-markdown.ts` + `rich-text.tsx` (negrito, itálico, links http; imagens Markdown removidas porque já aparecem via QuestionMedia). 26 referências de imagem `enem.dev` em textos de apoio não têm cópia local (pendência de mídia).
 - Dashboard `/admin` refeito com indicadores operacionais, progresso por disciplina e próximas ações.
