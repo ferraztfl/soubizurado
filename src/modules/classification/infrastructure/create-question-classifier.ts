@@ -1,5 +1,6 @@
 import type { QuestionClassifier } from "../domain/question-classifier";
 
+import { LayeredQuestionClassifier } from "./layered/layered-question-classifier";
 import { OpenAiCompatibleQuestionClassifier } from "./openai-compatible/openai-compatible-question-classifier";
 import { RuleBasedQuestionClassifier } from "./rule-based/rule-based-question-classifier";
 
@@ -15,6 +16,8 @@ type Environment = Readonly<Record<string, string | undefined>>;
  *   CLASSIFIER_MODEL=...
  *   CLASSIFIER_PROVIDER_LABEL=openai|gemini|ollama|...
  *   CLASSIFIER_TIMEOUT_MS=30000
+ *   CLASSIFIER_LAYERED=true                   (default: rules first, AI as fallback)
+ *   CLASSIFIER_RULES_THRESHOLD=0.8            (rules answer accepted at or above)
  */
 export function createQuestionClassifier(
   env: Environment = process.env,
@@ -45,16 +48,44 @@ export function createQuestionClassifier(
       throw new Error("CLASSIFIER_TIMEOUT_MS must be between 1000 and 300000.");
     }
 
-    return new OpenAiCompatibleQuestionClassifier({
+    const ai = new OpenAiCompatibleQuestionClassifier({
       baseUrl,
       apiKey: env.CLASSIFIER_API_KEY?.trim() || null,
       model,
       providerLabel: env.CLASSIFIER_PROVIDER_LABEL?.trim() || "openai-compatible",
       timeoutMs,
     });
+
+    if (env.CLASSIFIER_LAYERED?.trim().toLowerCase() === "false") {
+      return ai;
+    }
+
+    return new LayeredQuestionClassifier(new RuleBasedQuestionClassifier(), ai, readRulesThreshold(env));
   }
 
   throw new Error(`Unknown CLASSIFIER_PROVIDER "${provider}".`);
+}
+
+export function readRulesThreshold(
+  env: Environment = process.env,
+): number {
+  // Same as the auto-apply threshold by default: a rules answer below it
+  // would neither be applied nor reach the AI (measured on 2026-09-26: a
+  // 0.625 rules answer sent a Vargas-era History question to Geography).
+  const value = Number(env.CLASSIFIER_RULES_THRESHOLD ?? "0.8");
+
+  if (!Number.isFinite(value) || value < 0 || value > 1) {
+    throw new Error("CLASSIFIER_RULES_THRESHOLD must be between 0 and 1.");
+  }
+
+  return value;
+}
+
+/** Auto-apply COMPLETED suggestions (default on; set to "false" to only suggest). */
+export function readAutoApply(
+  env: Environment = process.env,
+): boolean {
+  return env.CLASSIFIER_AUTO_APPLY?.trim().toLowerCase() !== "false";
 }
 
 export function readMinimumConfidence(

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type {
+  ClassifyOptions,
   ProviderClassification,
   QuestionClassificationInput,
   QuestionClassifier,
@@ -124,6 +125,7 @@ export class OpenAiCompatibleQuestionClassifier implements QuestionClassifier {
   public async classify(
     input: QuestionClassificationInput,
     taxonomy: TaxonomyIndex,
+    options?: ClassifyOptions,
   ): Promise<ProviderClassification> {
     const question = [
       truncate(input.statement),
@@ -133,6 +135,8 @@ export class OpenAiCompatibleQuestionClassifier implements QuestionClassifier {
           `(${String.fromCharCode(65 + index)}) ${truncate(alternative)}`,
       ),
     ].join("\n");
+
+    await options?.beforeRemoteCall?.();
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.config.timeoutMs);

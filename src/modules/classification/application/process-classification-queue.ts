@@ -23,6 +23,12 @@ export type ProcessClassificationQueueInput = Readonly<{
   retryMaxSeconds?: number;
   /** Provider calls per minute across all workers (free-tier limits). */
   requestsPerMinute?: number;
+  /**
+   * Apply COMPLETED suggestions to still-unclassified questions right
+   * away (through the repository, which enforces the same validation as
+   * the review screen). Never publishes.
+   */
+  autoApply?: boolean;
   sleep?: (milliseconds: number) => Promise<void>;
 }>;
 
@@ -33,9 +39,19 @@ export type ProcessClassificationQueueOutput = Readonly<{
   reviewRequired: number;
   retried: number;
   failed: number;
+  /** COMPLETED suggestions applied to their questions (autoApply). */
+  applied: number;
+  /** Answers produced by the rules layer, without a remote call. */
+  answeredByRules: number;
 }>;
 
-type Outcome = "COMPLETED" | "REVIEW_REQUIRED" | "RETRIED" | "FAILED";
+type Outcome = Readonly<{
+  status: "COMPLETED" | "REVIEW_REQUIRED" | "RETRIED" | "FAILED";
+  applied: boolean;
+  byRules: boolean;
+}>;
+
+const failed: Outcome = { status: "FAILED", applied: false, byRules: false };
 
 /**
  * Spaces provider calls evenly across concurrent workers: each call
@@ -101,15 +117,18 @@ async function processOne(
       message: "Question is no longer available for classification.",
     });
 
-    return "FAILED";
+    return failed;
   }
 
-  try {
-    await waitForSlot();
+  let status: "COMPLETED" | "REVIEW_REQUIRED";
+  let byRules: boolean;
 
+  try {
+    // The rate limit applies to remote calls only; local layers are free.
     const providerResult = await input.classifier.classify(
       question,
       input.taxonomy,
+      { beforeRemoteCall: waitForSlot },
     );
 
     const resolved = resolveProviderClassification(
@@ -118,10 +137,11 @@ async function processOne(
       providerResult,
     );
 
-    const status = decideClassificationStatus(
+    status = decideClassificationStatus(
       resolved,
       input.minimumConfidence,
     );
+    byRules = providerResult.layer === "RULES";
 
     await input.repository.completeTask({
       taskId: task.id,
@@ -132,8 +152,6 @@ async function processOne(
         issues: resolved.issues,
       },
     });
-
-    return status;
   } catch (error) {
     const outcome = await input.repository.retryOrFailTask({
       taskId: task.id,
@@ -149,8 +167,26 @@ async function processOne(
           : "Unknown classification failure.",
     });
 
-    return outcome === "FAILED" ? "FAILED" : "RETRIED";
+    return outcome === "FAILED"
+      ? failed
+      : { status: "RETRIED", applied: false, byRules: false };
   }
+
+  // Applying is best effort: the suggestion stays stored if it fails.
+  let applied = false;
+
+  if (status === "COMPLETED" && input.autoApply) {
+    try {
+      applied = await input.repository.applySuggestion({
+        taskId: task.id,
+        questionId: task.questionId,
+      });
+    } catch {
+      applied = false;
+    }
+  }
+
+  return { status, applied, byRules };
 }
 
 async function mapWithConcurrency<T, R>(
@@ -231,8 +267,8 @@ export async function processClassificationQueue(
       processOne(input, task, retryBaseSeconds, retryMaxSeconds, waitForSlot),
   );
 
-  const count = (outcome: Outcome) =>
-    outcomes.filter((value) => value === outcome).length;
+  const count = (status: Outcome["status"]) =>
+    outcomes.filter((outcome) => outcome.status === status).length;
 
   return {
     recovered,
@@ -241,5 +277,7 @@ export async function processClassificationQueue(
     reviewRequired: count("REVIEW_REQUIRED"),
     retried: count("RETRIED"),
     failed: count("FAILED"),
+    applied: outcomes.filter((outcome) => outcome.applied).length,
+    answeredByRules: outcomes.filter((outcome) => outcome.byRules).length,
   };
 }

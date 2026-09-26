@@ -13,6 +13,8 @@ import type {
 import type { QuestionClassificationInput } from "../domain/question-classifier";
 import { TaxonomyIndex } from "../domain/taxonomy-index";
 
+import { applyClassificationSuggestion } from "./apply-classification-suggestion";
+
 type ClaimedRow = Readonly<{
   id: string;
   question_id: string;
@@ -246,6 +248,20 @@ export class PrismaClassificationTaskRepository
       where: { id: input.taskId, status: "PROCESSING" },
       data: { status: "FAILED", errorMessage: input.message, nextAttemptAt: null },
     });
+  }
+
+  /** Automatic application: no profile, never overwrites a classification. */
+  public async applySuggestion(
+    input: Readonly<{ taskId: string; questionId: string }>,
+  ): Promise<boolean> {
+    const result = await applyClassificationSuggestion(this.prisma, {
+      taskId: input.taskId,
+      questionId: input.questionId,
+      appliedByProfileId: null,
+      onlyIfUnclassified: true,
+    });
+
+    return result.status === "APPLIED";
   }
 
   public async enqueue(input: EnqueueClassificationInput): Promise<number> {

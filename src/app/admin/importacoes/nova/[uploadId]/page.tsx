@@ -203,7 +203,7 @@ export default async function OfficialExamPreviewPage({ params, searchParams }: 
           Importação concluída: {result.counts.imported} questões novas, {result.counts.duplicates} já existentes,
           {" "}{result.counts.reviewRequired} para revisão, {result.counts.failed} falhas. {result.skippedAnnulled} anuladas
           não importadas; {result.mediaTasks.completed} imagens armazenadas; {result.classificationEnqueued} questões
-          enviadas para a classificação automática.{" "}
+          em classificação automática (regras e IA, em segundo plano; as de alta confiança são classificadas sozinhas).{" "}
           <Link href="/admin/questoes/revisao">Abrir revisão editorial</Link>
         </div>
       ) : null}

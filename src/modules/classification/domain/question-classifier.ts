@@ -29,6 +29,16 @@ export type ProviderClassification = Readonly<{
   /** 0..1 as reported/estimated by the provider. */
   confidence: number;
   rationale?: string;
+  /** Pipeline layer that produced the answer (layered classifier). */
+  layer?: "RULES" | "AI";
+}>;
+
+export type ClassifyOptions = Readonly<{
+  /**
+   * Awaited right before a paid/rate-limited remote call. Local layers
+   * (rules) never call it, so they do not consume the provider rate.
+   */
+  beforeRemoteCall?: () => Promise<void>;
 }>;
 
 /**
@@ -44,5 +54,6 @@ export interface QuestionClassifier {
   classify(
     input: QuestionClassificationInput,
     taxonomy: TaxonomyIndex,
+    options?: ClassifyOptions,
   ): Promise<ProviderClassification>;
 }

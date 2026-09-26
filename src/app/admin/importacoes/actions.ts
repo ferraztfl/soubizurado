@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 
+import { runClassificationBatch } from "@/modules/classification/infrastructure/run-classification-batch";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import type { OfficialExamReader } from "@/modules/imports/application/official-exams/official-exam";
 import {
@@ -157,10 +159,29 @@ export async function confirmOfficialExamImportAction(formData: FormData): Promi
     }
   });
 
+  let classificationEnqueued = 0;
+
   try {
-    await runOfficialExamImport({ uploadId, metadata, sections });
+    const result = await runOfficialExamImport({ uploadId, metadata, sections });
+    classificationEnqueued = result.classificationEnqueued;
   } catch (error) {
     redirect(back(`error=${encodeURIComponent(errorMessage(error))}`));
+  }
+
+  // Classification pipeline (rules → AI, confident results applied)
+  // runs after the response so the upload does not wait for the AI
+  // rate limit. Unfinished tasks stay queued for classification:process.
+  if (classificationEnqueued > 0) {
+    after(async () => {
+      try {
+        const batch = await runClassificationBatch({ limit: classificationEnqueued });
+        console.info(
+          `[classification] import ${uploadId}: ${batch.completed} completed, ${batch.applied} applied, ${batch.answeredByRules} by rules, ${batch.reviewRequired} for review, ${batch.failed} failed`,
+        );
+      } catch (error) {
+        console.error(`[classification] import ${uploadId}: ${errorMessage(error)}`);
+      }
+    });
   }
 
   revalidatePath("/admin/importacoes");

@@ -52,6 +52,7 @@ function repository(
     completeTask: vi.fn().mockResolvedValue(undefined),
     retryOrFailTask: vi.fn().mockResolvedValue("PENDING"),
     failTask: vi.fn().mockResolvedValue(undefined),
+    applySuggestion: vi.fn().mockResolvedValue(true),
     enqueue: vi.fn().mockResolvedValue(0),
     ...overrides,
   };
@@ -96,7 +97,11 @@ describe("processClassificationQueue", () => {
       reviewRequired: 1,
       retried: 0,
       failed: 1,
+      applied: 0,
+      answeredByRules: 0,
     });
+
+    expect(repo.applySuggestion).not.toHaveBeenCalled();
 
     expect(repo.claimTasks).toHaveBeenCalledWith({
       limit: 10,
@@ -113,6 +118,54 @@ describe("processClassificationQueue", () => {
     expect(repo.failTask).toHaveBeenCalledWith(
       expect.objectContaining({ taskId: "t3" }),
     );
+  });
+
+  it("auto-applies only COMPLETED suggestions and counts rule answers", async () => {
+    const repo = repository();
+
+    const output = await processClassificationQueue({
+      ...base,
+      autoApply: true,
+      repository: repo,
+      classifier: classifier(async (input) => ({
+        discipline: "Matemática",
+        area: "Álgebra",
+        topic: "Funções",
+        subtopic: null,
+        tags: [],
+        confidence: input.questionId === "q1" ? 0.95 : 0.4,
+        layer: input.questionId === "q1" ? "RULES" : "AI",
+      })),
+    });
+
+    expect(output.applied).toBe(1);
+    expect(output.answeredByRules).toBe(1);
+    expect(repo.applySuggestion).toHaveBeenCalledTimes(1);
+    expect(repo.applySuggestion).toHaveBeenCalledWith({ taskId: "t1", questionId: "q1" });
+  });
+
+  it("keeps the suggestion when auto-apply fails", async () => {
+    const repo = repository({
+      applySuggestion: vi.fn().mockRejectedValue(new Error("db")),
+    });
+
+    const output = await processClassificationQueue({
+      ...base,
+      autoApply: true,
+      repository: repo,
+      classifier: classifier(async () => ({
+        discipline: "Matemática",
+        area: "Álgebra",
+        topic: "Funções",
+        subtopic: null,
+        tags: [],
+        confidence: 0.95,
+      })),
+    });
+
+    expect(output.completed).toBe(2);
+    expect(output.applied).toBe(0);
+    expect(repo.retryOrFailTask).not.toHaveBeenCalled();
   });
 
   it("retries provider errors with backoff", async () => {

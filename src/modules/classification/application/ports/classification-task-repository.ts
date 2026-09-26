@@ -60,6 +60,17 @@ export interface ClassificationTaskRepository {
     }>,
   ): Promise<void>;
 
+  /**
+   * Applies a COMPLETED suggestion to its question when the question is
+   * still IN_REVIEW and unclassified. True when applied.
+   */
+  applySuggestion(
+    input: Readonly<{
+      taskId: string;
+      questionId: string;
+    }>,
+  ): Promise<boolean>;
+
   /** Idempotent per (question, classifierVersion, taxonomyVersion). */
   enqueue(input: EnqueueClassificationInput): Promise<number>;
 }

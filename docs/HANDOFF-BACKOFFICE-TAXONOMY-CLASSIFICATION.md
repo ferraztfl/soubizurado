@@ -395,3 +395,26 @@ Vale sobre §1/§12 onde divergir.
 3. Aluno: exibir órgão e cargo em linhas próprias; filtro por macroárea para ENEM.
 4. Tela de administração de bancas (hoje só pelo catálogo + `boards:seed`).
 5. As 35 questões A.C.Camargo (VUNESP) vieram da Quest API, não de PDF oficial — conferir origem.
+
+### 13.1 Esteira de classificação em camadas (26/09/2026, fim da tarde)
+- **Camada 1 (metadados):** o importador fixa a Matéria (seção do caderno) — restringe as demais
+  camadas; questões que já têm Subtópico nem entram na fila.
+- **Camada 2 (regras):** `RuleBasedQuestionClassifier` (palavras-chave + nomes/aliases da taxonomia).
+- **Camada 3 (IA):** só quando as regras não resolvem com confiança ≥ `CLASSIFIER_RULES_THRESHOLD`.
+- `LayeredQuestionClassifier` (versão `lay1:<versão da IA>`) é o padrão com `openai-compatible`
+  (`CLASSIFIER_LAYERED=false` volta à IA pura). `rawResult.provider.layer` registra RULES/AI.
+- **Limite das regras = 0,8** (o usuário propôs 0,6; teste real mostrou regra a 0,625 mandando questão
+  da Era Vargas para Geografia, e nesse intervalo a questão não era gravada nem ia à IA). Configurável.
+  Calibração: `npm run classification:calibrate-rules` (somente leitura).
+- **Gravação automática** (decisão do usuário): status COMPLETED (≥ `CLASSIFIER_MIN_CONFIDENCE`, 0,8)
+  é aplicado via `applyClassificationSuggestion` (só questões em revisão e sem classificação; nunca
+  publica). Desligar: `CLASSIFIER_AUTO_APPLY=false` ou `classification:process -- --no-auto-apply`.
+  Desfazer: tarefas com `applied_at` preenchido e `applied_by_profile_id` NULO foram aplicadas pela esteira.
+- O limite de requisições por minuto vale só para chamadas à IA (`beforeRemoteCall`).
+- **Na importação:** após confirmar, `after()` roda `runClassificationBatch` em segundo plano
+  (em hospedagem serverless pode ser interrompido; o que sobrar fica na fila para `classification:process`).
+- Aplicado nesta sessão: 122 sugestões `oa-v2` (lote das 130 importadas) e teste de 10 questões ENEM
+  com a esteira (1 pelas regras, 9 pela IA, 8 gravadas).
+- **Próximo passo sugerido:** enfileirar as ~2.925 restantes (`classification:enqueue -- --apply`) e
+  processar em lotes respeitando a cota diária do Gemini.
+- Bancas: catálogo com 40 bancas + tela `/admin/bancas` (nome imutável; desativar em vez de renomear).

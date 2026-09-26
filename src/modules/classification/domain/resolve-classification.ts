@@ -165,22 +165,23 @@ export function resolveProviderClassification(
   };
 }
 
+/** True when an issue makes the topic suggestion unreliable. */
+export function hasBlockingIssues(resolved: ResolvedClassification): boolean {
+  return resolved.issues.some((issue) => !NON_BLOCKING_ISSUES.has(issue.code));
+}
+
 /**
- * Suggestions are never auto-applied. COMPLETED only marks a complete,
- * consistent, confident suggestion; everything else needs a closer
- * human look. The threshold must be calibrated on reviewed data.
+ * COMPLETED marks a complete, consistent, confident suggestion (the
+ * queue may auto-apply it); everything else needs a closer human look.
+ * Calibrate the threshold with `classification:calibrate-rules`.
  */
 export function decideClassificationStatus(
   resolved: ResolvedClassification,
   minimumConfidence: number,
 ): "COMPLETED" | "REVIEW_REQUIRED" {
-  const blocking = resolved.issues.some(
-    (issue) => !NON_BLOCKING_ISSUES.has(issue.code),
-  );
-
   return resolved.topicId &&
     resolved.disciplineId &&
-    !blocking &&
+    !hasBlockingIssues(resolved) &&
     resolved.confidence >= minimumConfidence
     ? "COMPLETED"
     : "REVIEW_REQUIRED";
