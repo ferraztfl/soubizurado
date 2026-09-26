@@ -280,10 +280,17 @@ export function readAocpLines(xml: string): AocpLine[] {
       const box = (line as AocpLine & { imageBox?: string }).imageBox;
       return !box || (boxPages.get(box)?.size ?? 0) < REPEATED_IMAGE_PAGES;
     })
-    .map((line) => {
-      const { imageBox: _imageBox, ...rest } = line as AocpLine & { imageBox?: string };
-      return rest;
-    });
+    .map((line): AocpLine => ({
+      page: line.page,
+      top: line.top,
+      left: line.left,
+      size: line.size,
+      bold: line.bold,
+      text: line.text,
+      column: line.column,
+      columnLeft: line.columnLeft,
+      image: line.image,
+    }));
 }
 
 function joinFragments(left: string, right: string, separator: string): string {
