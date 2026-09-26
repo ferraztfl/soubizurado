@@ -98,6 +98,7 @@ model Profile {
   studyFavorites         StudyFavorite[]
   taxonomyRevisions      TaxonomyRevision[]
   appliedClassifications QuestionClassificationTask[]
+  questionRevisions      QuestionRevision[]
 
   @@map("profiles")
 }
@@ -472,6 +473,7 @@ model Question {
   mediaTasks ImportMediaTask[]
 
   classificationTasks QuestionClassificationTask[]
+  revisions           QuestionRevision[]
 
   @@index([status, type])
   @@index([status, disciplineId])
@@ -830,4 +832,26 @@ model StudyFavorite {
   @@index([profileId, createdAt])
   @@index([questionId, profileId])
   @@map("study_favorites")
+}
+
+/// Audit trail of manual edits made in the backoffice. Snapshots hold
+/// the edited fields before and after the change.
+model QuestionRevision {
+  id               String         @id @default(uuid()) @db.Uuid
+  questionId       String         @map("question_id") @db.Uuid
+  editorProfileId  String?        @map("editor_profile_id") @db.Uuid
+  reason           String         @db.VarChar(500)
+  changedFields    String[]       @map("changed_fields") @db.VarChar(60)
+  answerKeyChanged Boolean        @default(false) @map("answer_key_changed")
+  questionStatus   QuestionStatus @map("question_status")
+  before           Json
+  after            Json
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  editor   Profile? @relation(fields: [editorProfileId], references: [id], onDelete: SetNull)
+
+  @@index([questionId, createdAt])
+  @@index([answerKeyChanged, createdAt])
+  @@map("question_revisions")
 }

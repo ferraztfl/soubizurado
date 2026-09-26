@@ -764,6 +764,13 @@ export default async function ReviewQuestionPage(
           >
             {typeLabel.label}
           </span>
+
+          <Link
+            href={`/admin/questoes/${question.id}/editar`}
+            className={styles.editLink}
+          >
+            Editar conteúdo
+          </Link>
         </div>
       </header>
 
