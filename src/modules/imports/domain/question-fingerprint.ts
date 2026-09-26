@@ -80,6 +80,34 @@ export function questionHtmlToPlainText(
     .trim();
 }
 
+/**
+ * Like questionHtmlToPlainText, but keeps paragraph breaks (<p>, <br>,
+ * blank lines) for display. Fingerprints keep using the collapsed form,
+ * so deduplication is unaffected.
+ */
+export function questionHtmlToDisplayText(
+  value: string,
+): string {
+  const withBreaks = value
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ");
+
+  return decodeHtmlEntities(withBreaks)
+    .normalize("NFKC")
+    .split(/\n{2,}/)
+    .map((paragraph) =>
+      paragraph
+        .split("\n")
+        .map((line) => line.replace(/\s+/g, " ").trim())
+        .filter(Boolean)
+        .join("\n"),
+    )
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 export function normalizeQuestionText(
   value: string,
 ): string {

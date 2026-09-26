@@ -6,9 +6,28 @@ import {
 
 import {
   buildCanonicalQuestionFingerprint,
+  questionHtmlToDisplayText,
   questionHtmlToPlainText,
   normalizeQuestionText,
 } from "./question-fingerprint";
+
+describe("questionHtmlToDisplayText", () => {
+  it("keeps paragraphs and line breaks while collapsing spaces", () => {
+    expect(
+      questionHtmlToDisplayText(
+        "<p>**Título**</p><p>Primeiro   parágrafo<br/>linha 2</p><script>x</script><p> &amp; fim </p>",
+      ),
+    ).toBe("**Título**\n\nPrimeiro parágrafo\nlinha 2\n\n& fim");
+  });
+
+  it("normalizes to the same fingerprint text as the plain version", () => {
+    const html = "<p>A</p><p>B  c</p>";
+
+    expect(normalizeQuestionText(questionHtmlToDisplayText(html))).toBe(
+      normalizeQuestionText(html),
+    );
+  });
+});
 
 describe("question fingerprint", () => {
   it("converts provider HTML to readable plain text without lowercasing display content", () => {

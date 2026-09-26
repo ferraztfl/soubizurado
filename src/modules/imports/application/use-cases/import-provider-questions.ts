@@ -8,6 +8,7 @@ import {
   buildCanonicalQuestionFingerprint,
   normalizeQuestionText,
   QUESTION_NORMALIZATION_VERSION,
+  questionHtmlToDisplayText,
   questionHtmlToPlainText,
 } from "../../domain/question-fingerprint";
 import type {
@@ -284,8 +285,10 @@ function buildPersistenceInput(
   const supportContents =
     candidate.supportTextsHtml
       .map((content, position) => ({
+        // Paragraphs are kept for display; hashing below still uses the
+        // collapsed, case-folded text.
         content:
-          questionHtmlToPlainText(content),
+          questionHtmlToDisplayText(content),
         position,
       }))
       .filter(
