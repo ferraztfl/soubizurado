@@ -53,7 +53,7 @@ const navigationGroups: readonly NavigationGroup[] = [
     items: [
       {
         label: "Importações",
-        href: null,
+        href: "/admin/importacoes",
       },
       {
         label: "Taxonomia",
