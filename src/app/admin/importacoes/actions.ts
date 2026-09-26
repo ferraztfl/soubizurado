@@ -12,8 +12,10 @@ import {
   resolveExamSection,
   type SectionResolution,
 } from "@/modules/imports/application/official-exams/resolve-exam-section";
+import { analyzeExamJson } from "@/modules/imports/infrastructure/official-exams/analyze-exam-json";
 import { analyzeOfficialExam } from "@/modules/imports/infrastructure/official-exams/analyze-official-exam";
 import {
+  createJsonUpload,
   createUpload,
   isValidUploadId,
   loadAnalysis,
@@ -31,6 +33,43 @@ function safeFileName(name: string): string {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message.slice(0, 300) : "Erro inesperado.";
+}
+
+/**
+ * Imports a "SouBizurado Exam JSON" (e.g. produced by an AI Studio app)
+ * plus, when it references images, the booklet PDF to crop them from.
+ */
+export async function uploadExamJsonAction(formData: FormData): Promise<void> {
+  await requireAdminUser();
+
+  const json = formData.get("examJson");
+  const booklet = formData.get("booklet");
+
+  if (!(json instanceof File) || json.size === 0) {
+    redirect(`/admin/importacoes/nova?error=${encodeURIComponent("Envie o arquivo JSON da prova.")}`);
+  }
+
+  const bookletFile = booklet instanceof File && booklet.size > 0 ? booklet : null;
+  let uploadId: string;
+
+  try {
+    uploadId = await createJsonUpload({
+      json: new Uint8Array(await json.arrayBuffer()),
+      booklet: bookletFile ? new Uint8Array(await bookletFile.arrayBuffer()) : null,
+    });
+
+    const analysis = await analyzeExamJson(uploadId, {
+      json: safeFileName(json.name),
+      booklet: bookletFile ? safeFileName(bookletFile.name) : null,
+    });
+
+    await saveAnalysis(analysis);
+  } catch (error) {
+    redirect(`/admin/importacoes/nova?error=${encodeURIComponent(errorMessage(error))}`);
+  }
+
+  revalidatePath("/admin/importacoes");
+  redirect(`/admin/importacoes/nova/${uploadId}`);
 }
 
 export async function uploadOfficialExamAction(formData: FormData): Promise<void> {

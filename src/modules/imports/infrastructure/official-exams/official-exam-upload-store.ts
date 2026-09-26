@@ -22,6 +22,7 @@ import type { OfficialExamAnalysis } from "../../application/official-exams/offi
  */
 
 export const MAX_EXAM_PDF_BYTES = 30 * 1024 * 1024;
+export const MAX_EXAM_JSON_BYTES = 10 * 1024 * 1024;
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -69,6 +70,7 @@ export function uploadPaths(uploadId: string) {
     directory,
     booklet: join(directory, "prova.pdf"),
     answerKey: join(directory, "gabarito.pdf"),
+    examJson: join(directory, "prova.json"),
     workspace: join(directory, "workspace"),
     analysis: join(directory, "analysis.json"),
     result: join(directory, "result.json"),
@@ -108,6 +110,41 @@ export async function createUpload(
   await mkdir(paths.workspace, { recursive: true });
   await writeFile(paths.booklet, input.booklet);
   await writeFile(paths.answerKey, input.answerKey);
+
+  return uploadId;
+}
+
+/**
+ * Stores a "SouBizurado Exam JSON" file and, when the JSON references
+ * images, the booklet PDF they are cropped from.
+ */
+export async function createJsonUpload(
+  input: Readonly<{
+    json: Uint8Array;
+    booklet: Uint8Array | null;
+  }>,
+): Promise<string> {
+  if (input.json.byteLength === 0) {
+    throw new Error("JSON: arquivo vazio.");
+  }
+
+  if (input.json.byteLength > MAX_EXAM_JSON_BYTES) {
+    throw new Error(`JSON: arquivo maior que ${MAX_EXAM_JSON_BYTES / 1024 / 1024} MB.`);
+  }
+
+  if (input.booklet) {
+    assertPdf(input.booklet, "Prova");
+  }
+
+  const uploadId = randomUUID();
+  const paths = uploadPaths(uploadId);
+
+  await mkdir(paths.workspace, { recursive: true });
+  await writeFile(paths.examJson, input.json);
+
+  if (input.booklet) {
+    await writeFile(paths.booklet, input.booklet);
+  }
 
   return uploadId;
 }

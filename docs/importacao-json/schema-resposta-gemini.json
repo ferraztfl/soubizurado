@@ -1,0 +1,81 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": { "type": "string", "enum": ["soubizurado.exam.v1"] },
+    "exam": {
+      "type": "object",
+      "properties": {
+        "board": { "type": "string", "description": "Banca exatamente como impressa (ex.: Instituto AOCP, Cebraspe, FGV)." },
+        "organization": { "type": "string", "description": "Órgão/instituição do concurso." },
+        "role": { "type": "string", "description": "Cargo exatamente como impresso na capa." },
+        "year": { "type": "integer" },
+        "level": { "type": "string", "nullable": true },
+        "notice": { "type": "string", "nullable": true, "description": "Edital/portaria, se houver." },
+        "title": { "type": "string", "nullable": true }
+      },
+      "required": ["board", "organization", "role", "year", "level", "notice", "title"]
+    },
+    "supportTexts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Identificador curto: T1, T2..." },
+          "text": { "type": "string", "description": "Texto integral, parágrafos separados por linha em branco. Vazio se for só imagem." },
+          "images": { "type": "array", "items": { "$ref": "#/$defs/image" } }
+        },
+        "required": ["id", "text", "images"]
+      }
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": { "type": "integer" },
+          "variant": { "type": "integer", "description": "0; use 1 para a segunda versão de um número repetido (ex.: Espanhol após Inglês)." },
+          "type": { "type": "string", "enum": ["MULTIPLE_CHOICE", "TRUE_FALSE"] },
+          "section": { "type": "string", "nullable": true, "description": "Matéria/seção do caderno (ex.: Língua Portuguesa)." },
+          "supportTextId": { "type": "string", "nullable": true },
+          "command": { "type": "string", "nullable": true, "description": "Comando do grupo em provas Certo/Errado ou V/F (ex.: Julgue os itens a seguir)." },
+          "statement": { "type": "string" },
+          "images": { "type": "array", "items": { "$ref": "#/$defs/image" } },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": { "type": "string", "enum": ["A", "B", "C", "D", "E", "F"] },
+                "text": { "type": "string" },
+                "images": { "type": "array", "items": { "$ref": "#/$defs/image" } }
+              },
+              "required": ["label", "text", "images"]
+            }
+          },
+          "answer": { "type": "string", "nullable": true, "description": "Letra (A-F) ou V/F/C/E conforme o gabarito; null só se anulada." },
+          "annulled": { "type": "boolean" },
+          "refersToHighlight": { "type": "boolean", "description": "true se o enunciado citar termo destacado/sublinhado/grifado." }
+        },
+        "required": ["number", "variant", "type", "section", "supportTextId", "command", "statement", "images", "alternatives", "answer", "annulled", "refersToHighlight"]
+      }
+    }
+  },
+  "required": ["schema", "exam", "supportTexts", "questions"],
+  "$defs": {
+    "image": {
+      "type": "object",
+      "properties": {
+        "page": { "type": "integer", "description": "Página do PDF do caderno (começa em 1)." },
+        "box": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "[ymin, xmin, ymax, xmax] normalizados de 0 a 1000 na página."
+        },
+        "description": { "type": "string", "description": "Descrição curta do conteúdo da imagem." }
+      },
+      "required": ["page", "box", "description"]
+    }
+  }
+}

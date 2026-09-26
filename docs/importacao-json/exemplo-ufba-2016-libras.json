@@ -1,0 +1,49 @@
+{
+  "schema": "soubizurado.exam.v1",
+  "exam": {
+    "board": "Instituto AOCP",
+    "organization": "Universidade Federal da Bahia",
+    "role": "Tradutor e Intérprete de Linguagem de Sinais - Libras",
+    "year": 2016,
+    "level": "Intermediário",
+    "notice": "Edital nº 02/2016",
+    "title": null
+  },
+  "supportTexts": [
+    {
+      "id": "T2",
+      "text": "",
+      "images": [
+        { "page": 3, "box": [168, 109, 354, 889], "description": "Tirinha de Nic com a mãe; no último quadrinho aparece um pirata." }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "number": 1,
+      "type": "TRUE_FALSE",
+      "section": "Português",
+      "supportTextId": "T2",
+      "command": "Em relação ao Texto 2, julgue, como VERDADEIRO ou FALSO, os itens a seguir.",
+      "statement": "A afirmação verbal dos personagens, no último quadrinho, é responsável pelo efeito de humor da tirinha.",
+      "images": [],
+      "alternatives": [],
+      "answer": "F",
+      "annulled": false,
+      "refersToHighlight": false
+    },
+    {
+      "number": 2,
+      "type": "TRUE_FALSE",
+      "section": "Português",
+      "supportTextId": "T2",
+      "command": "Em relação ao Texto 2, julgue, como VERDADEIRO ou FALSO, os itens a seguir.",
+      "statement": "A imagem do pirata, no último quadrinho, está ligada ao termo “pirataria”, que fica subentendido na fala da mãe de Nic.",
+      "images": [],
+      "alternatives": [],
+      "answer": "F",
+      "annulled": false,
+      "refersToHighlight": false
+    }
+  ]
+}
