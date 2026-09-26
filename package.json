@@ -39,7 +39,7 @@
     "classification:status": "npx --yes tsx scripts/classification-status.ts",
     "classification:apply": "npx --yes tsx scripts/classification-apply.ts",
     "classification:calibrate-rules": "npx --yes tsx scripts/classification-calibrate-rules.ts",
-    "classification:calibrate-local": "npx --yes tsx scripts/classification-calibrate-local.ts",
+    "classification:calibrate-ai": "npx --yes tsx scripts/classification-calibrate-ai.ts",
     "inspect:aocp-pdf": "npx --yes tsx scripts/inspect-aocp-pdf.ts",
     "import:official-exam": "npx --yes tsx scripts/analyze-official-exam.ts",
     "media:migrate-supabase": "npx --yes tsx scripts/migrate-media-to-supabase.ts"

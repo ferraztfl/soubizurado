@@ -5,6 +5,7 @@ import { TaxonomyIndex } from "../../domain/taxonomy-index";
 
 import {
   describeCandidateTaxonomy,
+  describeCandidateTaxonomyCompact,
   OpenAiCompatibleQuestionClassifier,
 } from "./openai-compatible-question-classifier";
 
@@ -58,6 +59,10 @@ describe("describeCandidateTaxonomy", () => {
 });
 
 describe("OpenAiCompatibleQuestionClassifier", () => {
+  it("lists the compact taxonomy without the Detalhe level", () => {
+    expect(describeCandidateTaxonomyCompact(index, input)).toBe("D Matemática\nA Álgebra\n- Funções");
+  });
+
   it("sends a constrained prompt and parses the JSON answer", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       completion(
@@ -73,7 +78,7 @@ describe("OpenAiCompatibleQuestionClassifier", () => {
     );
 
     const classifier = classifierWith(fetchImpl);
-    expect(classifier.version).toBe("oa-v2:test-model");
+    expect(classifier.version).toBe("oa-v3:test-model");
 
     const result = await classifier.classify(input, index);
 
@@ -90,7 +95,8 @@ describe("OpenAiCompatibleQuestionClassifier", () => {
 
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({ model: "test-model", temperature: 0 });
-    expect(body.messages[1].content).toContain("TÓPICO: Funções");
+    expect(body.messages[1].content).toContain("- Funções");
+    expect(body.messages[1].content).not.toContain("Função Afim");
     expect(body.messages[1].content).toContain("(B) R$ 2 mil");
   });
 

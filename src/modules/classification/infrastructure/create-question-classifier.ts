@@ -16,6 +16,7 @@ type Environment = Readonly<Record<string, string | undefined>>;
  *   CLASSIFIER_MODEL=...
  *   CLASSIFIER_PROVIDER_LABEL=openai|gemini|ollama|...
  *   CLASSIFIER_TIMEOUT_MS=30000
+ *   CLASSIFIER_PROMPT_STYLE=compact           (default, v3; "labelled" = original v2)
  *   CLASSIFIER_LAYERED=true                   (default: rules first, AI as fallback)
  *   CLASSIFIER_RULES_THRESHOLD=0.8            (rules answer accepted at or above)
  *
@@ -54,12 +55,19 @@ export function createQuestionClassifier(
       throw new Error("CLASSIFIER_TIMEOUT_MS must be between 1000 and 300000.");
     }
 
+    const promptStyle = env.CLASSIFIER_PROMPT_STYLE?.trim() || "compact";
+
+    if (promptStyle !== "compact" && promptStyle !== "labelled") {
+      throw new Error('CLASSIFIER_PROMPT_STYLE must be "compact" or "labelled".');
+    }
+
     const ai = new OpenAiCompatibleQuestionClassifier({
       baseUrl,
       apiKey: env.CLASSIFIER_API_KEY?.trim() || null,
       model,
       providerLabel: env.CLASSIFIER_PROVIDER_LABEL?.trim() || "openai-compatible",
       timeoutMs,
+      promptStyle,
     });
 
     if (env.CLASSIFIER_LAYERED?.trim().toLowerCase() === "false") {
