@@ -29,5 +29,7 @@ describe("examining board catalog", () => {
     expect(suggestExaminingBoard("FUNDATEC - Fundação Universidade Empresa")?.name).toBe("Fundatec");
     expect(suggestExaminingBoard("Exame Nacional do Ensino Médio 2024")?.name).toBe("INEP");
     expect(suggestExaminingBoard("Prefeitura Municipal de Exemplo")).toBeNull();
+    expect(suggestExaminingBoard("Instituto Consulplan")?.name).toBe("Instituto Consulplan");
+    expect(suggestExaminingBoard("Realização: CONSULPLAN")?.name).toBe("Consulplan");
   });
 });

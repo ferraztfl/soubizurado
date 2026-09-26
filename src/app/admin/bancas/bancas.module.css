@@ -1,0 +1,266 @@
+.page {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--sb-brand);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 6px 0 6px;
+  color: var(--sb-text-strong);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.description {
+  max-width: 640px;
+  margin: 0;
+  color: var(--sb-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.summary {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+
+.summary > div {
+  min-width: 96px;
+  padding: 10px 14px;
+  border: 1px solid var(--sb-border);
+  border-radius: 12px;
+  background: var(--sb-surface);
+}
+
+.summary dt {
+  color: var(--sb-text-subtle);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.summary dd {
+  margin: 2px 0 0;
+  color: var(--sb-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.noticeError,
+.noticeSuccess {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.noticeError {
+  border: 1px solid #f1c4bf;
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand-strong);
+}
+
+.noticeSuccess {
+  border: 1px solid rgba(22, 134, 92, 0.25);
+  background: var(--sb-success-soft);
+  color: var(--sb-success);
+}
+
+.card {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--sb-border);
+  border-radius: 16px;
+  background: var(--sb-surface);
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--sb-text-strong);
+  font-size: 1rem;
+}
+
+.cardMeta {
+  margin: 3px 0 0;
+  color: var(--sb-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.field {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.field > span {
+  color: var(--sb-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.field input,
+.field select,
+.search input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 10px;
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primaryButton {
+  border: 0;
+  background: var(--sb-brand);
+  color: #fff;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--sb-brand-strong);
+}
+
+.secondaryButton {
+  border: 1px solid var(--sb-border-strong);
+  background: var(--sb-surface);
+  color: var(--sb-text-strong);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: #efc7c3;
+  background: var(--sb-brand-subtle);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.createForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.listHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search {
+  display: flex;
+  gap: 8px;
+  min-width: min(360px, 100%);
+}
+
+.list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(0, 3fr);
+  align-items: end;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--sb-border);
+}
+
+.rowInactive {
+  opacity: 0.6;
+}
+
+.rowName {
+  display: grid;
+  gap: 2px;
+  align-self: center;
+}
+
+.rowName strong {
+  color: var(--sb-text-strong);
+  font-size: 0.92rem;
+}
+
+.rowName span {
+  color: var(--sb-text-subtle);
+  font-size: 0.78rem;
+}
+
+.rowForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 0.8fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 720px) {
+  .createForm,
+  .rowForm {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 16px;
+  }
+}
