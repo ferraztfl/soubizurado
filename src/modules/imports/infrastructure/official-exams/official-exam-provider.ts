@@ -1,5 +1,4 @@
 import {
-  OFFICIAL_EXAM_BOARDS,
   type OfficialExamAnalysis,
   type OfficialExamMetadata,
   type OfficialExamQuestion,
@@ -133,7 +132,7 @@ export class OfficialExamProvider implements QuestionProvider {
       organization: metadata.organization,
       careerPosition: metadata.careerPosition,
       year: metadata.year,
-      board: OFFICIAL_EXAM_BOARDS[metadata.board],
+      board: metadata.examiningBoardName,
       alternativeType: "MULTIPLA_ESCOLHA",
     };
   }

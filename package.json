@@ -33,6 +33,7 @@
     "media:failures": "npx --yes tsx scripts/media-failures.ts",
     "taxonomy:seed": "npx --yes tsx scripts/seed-taxonomy.ts",
     "taxonomy:backfill-legacy": "npx --yes tsx scripts/backfill-legacy-taxonomy.ts",
+    "boards:seed": "npx --yes tsx scripts/seed-examining-boards.ts",
     "classification:enqueue": "npx --yes tsx scripts/classification-enqueue.ts",
     "classification:process": "npx --yes tsx scripts/classification-process.ts",
     "classification:status": "npx --yes tsx scripts/classification-status.ts",

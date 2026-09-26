@@ -18,7 +18,6 @@ import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import {
   examSlug,
-  OFFICIAL_EXAM_BOARDS,
   type OfficialExamMetadata,
 } from "../../application/official-exams/official-exam";
 import type {
@@ -204,12 +203,12 @@ export async function runOfficialExamImport(
   const repository = createConfiguredQuestionImportRepository({
     providerCode: `OFFICIAL_EXAM_${input.metadata.board}`,
     reference: `official-exam-${examinationSlug}`.slice(0, 250),
-    name: `${OFFICIAL_EXAM_BOARDS[input.metadata.board]} – ${input.metadata.title}`.slice(0, 200),
+    name: `${input.metadata.examiningBoardName} – ${input.metadata.title}`.slice(0, 200),
     url: null,
     sourceType: "OFFICIAL_EXAM",
     licenseStatus: "UNKNOWN",
     licenseName: null,
-    licenseNotes: `Prova oficial publicada pela banca (${OFFICIAL_EXAM_BOARDS[input.metadata.board]}), enviada pelo administrador. Arquivo: ${analysis.bookletFileName} (sha256 ${analysis.bookletChecksum}).`,
+    licenseNotes: `Prova oficial publicada pela banca (${input.metadata.examiningBoardName}), enviada pelo administrador. Arquivo: ${analysis.bookletFileName} (sha256 ${analysis.bookletChecksum}).`,
   });
 
   const useCase = new ImportProviderQuestionsUseCase(provider, repository);

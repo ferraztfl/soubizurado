@@ -431,6 +431,19 @@ export async function publishQuestionAction(
         disciplineId: true,
         topicId: true,
 
+        source: {
+          select: {
+            sourceType: true,
+          },
+        },
+
+        examination: {
+          select: {
+            boardId: true,
+            year: true,
+          },
+        },
+
         topic: {
           select: {
             disciplineId:
@@ -499,6 +512,13 @@ export async function publishQuestionAction(
 
       sourceId:
         question.sourceId,
+
+      sourceType:
+        question.source
+          ?.sourceType ?? null,
+
+      examination:
+        question.examination,
 
       disciplineId:
         question.disciplineId,

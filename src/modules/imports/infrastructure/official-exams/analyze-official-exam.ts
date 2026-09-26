@@ -4,9 +4,15 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 
 import {
+  examiningBoardSlug,
+  suggestExaminingBoard,
+} from "@/modules/question-bank/domain/examining-board-catalog";
+
+import {
   type DetectedExamMetadata,
+  OFFICIAL_EXAM_READERS,
   type OfficialExamAnalysis,
-  type OfficialExamBoard,
+  type OfficialExamReader,
   type OfficialExamQuestion,
   questionKey,
 } from "../../application/official-exams/official-exam";
@@ -33,8 +39,9 @@ export function stripWatermarks(text: string): string {
     .join("\n");
 }
 
-export function detectBoard(coverText: string): OfficialExamBoard | null {
-  if (/instituto\s+aocp|institutoaocp/i.test(coverText)) return "AOCP";
+/** Detects the booklet layout (reader), not the examining board. */
+export function detectBoard(coverText: string): OfficialExamReader | null {
+  if (/instituto\s+aocp|institutoaocp|(?<![a-z])aocp(?![a-z])/i.test(coverText)) return "AOCP";
   if (/fundatec/i.test(coverText)) return "FUNDATEC";
   if (/cebraspe|cespe/i.test(coverText)) return "CEBRASPE";
   return null;
@@ -139,12 +146,14 @@ export async function analyzeOfficialExam(
 
   const coverText = await pdfToText(paths.booklet, 2);
   const board = detectBoard(coverText);
+  const suggestion = suggestExaminingBoard(coverText);
 
   const base = {
     version: 1 as const,
     uploadId: uploadId.toLowerCase(),
     createdAt: new Date().toISOString(),
     board,
+    suggestedBoardSlug: suggestion ? examiningBoardSlug(suggestion.name) : null,
     bookletChecksum: sha256(bookletBytes),
     answerKeyChecksum: sha256(answerKeyBytes),
     bookletFileName: fileNames.booklet,
@@ -159,8 +168,8 @@ export async function analyzeOfficialExam(
       questions: [],
       blockingIssues: [
         board
-          ? `A leitura automática da banca ${board} ainda não está disponível. Por enquanto, apenas provas do Instituto AOCP são suportadas.`
-          : "Não foi possível identificar a banca pela capa da prova.",
+          ? `A leitura automática do ${OFFICIAL_EXAM_READERS[board]} ainda não está disponível. Por enquanto, apenas cadernos no formato AOCP são suportados.`
+          : "Não foi possível identificar o formato do caderno pela capa da prova.",
       ],
     };
   }

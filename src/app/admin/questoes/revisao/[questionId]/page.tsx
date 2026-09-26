@@ -99,6 +99,15 @@ const issueLabels:
     TOPIC_REQUIRED:
       "Tópico obrigatório.",
 
+    EXAMINATION_REQUIRED:
+      "Questão de prova precisa estar vinculada à prova de origem.",
+
+    BOARD_REQUIRED:
+      "A prova de origem precisa ter a banca definida.",
+
+    YEAR_REQUIRED:
+      "A prova de origem precisa ter o ano definido.",
+
     ALTERNATIVE_CONTENT_REQUIRED:
       "Existe alternativa sem texto nem imagem.",
 
@@ -210,10 +219,17 @@ export default async function ReviewQuestionPage(
           },
         },
 
+        source: {
+          select: {
+            sourceType: true,
+          },
+        },
+
         examination: {
           select: {
             title: true,
             year: true,
+            boardId: true,
 
             board: {
               select: {
@@ -550,6 +566,23 @@ export default async function ReviewQuestionPage(
 
       sourceId:
         question.sourceId,
+
+      sourceType:
+        question.source
+          ?.sourceType ?? null,
+
+      examination:
+        question.examination
+          ? {
+              boardId:
+                question.examination
+                  .boardId,
+
+              year:
+                question.examination
+                  .year,
+            }
+          : null,
 
       disciplineId:
         question.disciplineId,

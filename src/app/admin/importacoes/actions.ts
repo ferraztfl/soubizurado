@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
-import type { OfficialExamBoard } from "@/modules/imports/application/official-exams/official-exam";
+import type { OfficialExamReader } from "@/modules/imports/application/official-exams/official-exam";
 import {
   resolveExamSection,
   type SectionResolution,
@@ -101,9 +101,23 @@ export async function confirmOfficialExamImportAction(formData: FormData): Promi
     redirect(back(`error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Dados inválidos.")}`));
   }
 
-  const board = analysis.board as OfficialExamBoard;
+  // The board comes from the catalog, never from the reader layout.
+  const boardSlug = String(formData.get("boardSlug") ?? "");
+  const examiningBoard = boardSlug
+    ? await getPrismaClient().examiningBoard.findFirst({
+        where: { slug: boardSlug, isActive: true },
+        select: { name: true },
+      })
+    : null;
+
+  if (!examiningBoard) {
+    redirect(back(`error=${encodeURIComponent("Selecione a banca da prova.")}`));
+  }
+
+  const board = analysis.board as OfficialExamReader;
   const metadata = {
     board,
+    examiningBoardName: examiningBoard.name,
     organization: parsed.data.organization,
     careerPosition: parsed.data.careerPosition,
     year: parsed.data.year,

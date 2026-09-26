@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { OFFICIAL_EXAM_BOARDS } from "@/modules/imports/application/official-exams/official-exam";
+import { OFFICIAL_EXAM_READERS } from "@/modules/imports/application/official-exams/official-exam";
 import { listUploads } from "@/modules/imports/infrastructure/official-exams/official-exam-upload-store";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -77,7 +77,7 @@ export default async function ImportsPage() {
                 <tr>
                   <th>Enviada em</th>
                   <th>Arquivo</th>
-                  <th>Banca</th>
+                  <th>Formato</th>
                   <th>Questões</th>
                   <th>Situação</th>
                 </tr>
@@ -91,7 +91,7 @@ export default async function ImportsPage() {
                         {upload.analysis?.bookletFileName ?? upload.uploadId}
                       </Link>
                     </td>
-                    <td>{upload.analysis?.board ? OFFICIAL_EXAM_BOARDS[upload.analysis.board] : "Não identificada"}</td>
+                    <td>{upload.analysis?.board ? OFFICIAL_EXAM_READERS[upload.analysis.board] : "Não identificado"}</td>
                     <td>{upload.analysis?.questions.length ?? 0}</td>
                     <td>
                       {upload.result ? (

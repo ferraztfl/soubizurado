@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
-  OFFICIAL_EXAM_BOARDS,
+  OFFICIAL_EXAM_READERS,
   type OfficialExamQuestion,
 } from "@/modules/imports/application/official-exams/official-exam";
 import {
@@ -138,14 +138,21 @@ export default async function OfficialExamPreviewPage({ params, searchParams }: 
     notFound();
   }
 
-  const [entries, knowledgeAreas] = await Promise.all([
+  const [entries, knowledgeAreas, boards] = await Promise.all([
     loadSectionTaxonomyEntries(),
     getPrismaClient().knowledgeArea.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: "asc" },
       select: { slug: true, name: true },
     }),
+    getPrismaClient().examiningBoard.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { slug: true, name: true },
+    }),
   ]);
+
+  const suggestedBoard = boards.find((board) => board.slug === analysis.suggestedBoardSlug) ?? null;
 
   const areaNames = new Map(knowledgeAreas.map((area) => [area.slug, area.name]));
   const sectionNames = [...new Set(analysis.questions.map((question) => question.section ?? ""))];
@@ -182,7 +189,7 @@ export default async function OfficialExamPreviewPage({ params, searchParams }: 
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>
-            {analysis.board ? OFFICIAL_EXAM_BOARDS[analysis.board] : "Banca não identificada"}
+            {analysis.board ? OFFICIAL_EXAM_READERS[analysis.board] : "Formato não identificado"}
           </p>
           <h1>Prévia da importação</h1>
           <p className={styles.description}>
@@ -254,6 +261,24 @@ export default async function OfficialExamPreviewPage({ params, searchParams }: 
             </div>
 
             <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Banca</span>
+                <select name="boardSlug" defaultValue={suggestedBoard?.slug ?? ""} required>
+                  <option value="" disabled>
+                    Selecione a banca
+                  </option>
+                  {boards.map((board) => (
+                    <option key={board.slug} value={board.slug}>
+                      {board.name}
+                    </option>
+                  ))}
+                </select>
+                <small>
+                  {suggestedBoard
+                    ? `Sugerida pelo texto do caderno: ${suggestedBoard.name}. Confira antes de importar.`
+                    : "Não identificada no caderno. Escolha a banca responsável."}
+                </small>
+              </label>
               <label className={styles.field}>
                 <span>Órgão / instituição</span>
                 <input name="organization" defaultValue={analysis.detected.organization ?? ""} required maxLength={200} />

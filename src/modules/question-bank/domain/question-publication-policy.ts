@@ -8,6 +8,9 @@ export const QUESTION_PUBLICATION_ISSUES = {
   SOURCE_REQUIRED: "SOURCE_REQUIRED",
   DISCIPLINE_REQUIRED: "DISCIPLINE_REQUIRED",
   TOPIC_REQUIRED: "TOPIC_REQUIRED",
+  EXAMINATION_REQUIRED: "EXAMINATION_REQUIRED",
+  BOARD_REQUIRED: "BOARD_REQUIRED",
+  YEAR_REQUIRED: "YEAR_REQUIRED",
   ALTERNATIVE_CONTENT_REQUIRED: "ALTERNATIVE_CONTENT_REQUIRED",
   MULTIPLE_CHOICE_ALTERNATIVES_REQUIRED:
     "MULTIPLE_CHOICE_ALTERNATIVES_REQUIRED",
@@ -31,10 +34,25 @@ export type PublicationAlternative = Readonly<{
   mediaCount?: number;
 }>;
 
+/** Source types whose questions come from an exam and must cite it. */
+const EXAM_SOURCE_TYPES: ReadonlySet<string> = new Set([
+  "OFFICIAL_EXAM",
+  "PROVIDER_API",
+  "LICENSED",
+  "OTHER",
+]);
+
 export type QuestionPublicationCandidate = Readonly<{
   type: QuestionType;
   statement: string;
   sourceId: string | null;
+  /** Null when the question has no source (reported as SOURCE_REQUIRED). */
+  sourceType: string | null;
+  /** Exam questions must show the exam, its board and its year. */
+  examination: Readonly<{
+    boardId: string | null;
+    year: number | null;
+  }> | null;
   disciplineId: string | null;
   topicId: string | null;
   correctTrueFalse: boolean | null;
@@ -60,6 +78,29 @@ export function validateQuestionForPublication(
     issues.push(
       QUESTION_PUBLICATION_ISSUES.SOURCE_REQUIRED,
     );
+  }
+
+  if (
+    candidate.sourceType !== null &&
+    EXAM_SOURCE_TYPES.has(candidate.sourceType)
+  ) {
+    if (!candidate.examination) {
+      issues.push(
+        QUESTION_PUBLICATION_ISSUES.EXAMINATION_REQUIRED,
+      );
+    } else {
+      if (!hasText(candidate.examination.boardId)) {
+        issues.push(
+          QUESTION_PUBLICATION_ISSUES.BOARD_REQUIRED,
+        );
+      }
+
+      if (candidate.examination.year === null) {
+        issues.push(
+          QUESTION_PUBLICATION_ISSUES.YEAR_REQUIRED,
+        );
+      }
+    }
   }
 
   if (!hasText(candidate.disciplineId)) {

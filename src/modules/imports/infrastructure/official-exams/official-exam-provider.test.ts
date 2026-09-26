@@ -68,6 +68,7 @@ function provider() {
     analysis,
     metadata: {
       board: "AOCP",
+      examiningBoardName: "Instituto AOCP",
       organization: "SEJUSP-MG",
       careerPosition: "Policial Penal",
       year: 2025,

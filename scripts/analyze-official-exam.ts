@@ -3,7 +3,7 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 
-import { OFFICIAL_EXAM_BOARDS } from "../src/modules/imports/application/official-exams/official-exam";
+import { OFFICIAL_EXAM_READERS } from "../src/modules/imports/application/official-exams/official-exam";
 import { analyzeOfficialExam } from "../src/modules/imports/infrastructure/official-exams/analyze-official-exam";
 import {
   createUpload,
@@ -51,7 +51,7 @@ async function main(): Promise<void> {
     JSON.stringify(
       {
         uploadId,
-        board: analysis.board ? OFFICIAL_EXAM_BOARDS[analysis.board] : null,
+        board: analysis.board ? OFFICIAL_EXAM_READERS[analysis.board] : null,
         detected: analysis.detected,
         questions: analysis.questions.length,
         annulled: analysis.questions.filter((question) => question.annulled).map((question) => question.key),

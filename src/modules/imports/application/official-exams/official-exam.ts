@@ -4,13 +4,19 @@
  * the preview, the import provider and the UI only depend on it.
  */
 
-export const OFFICIAL_EXAM_BOARDS = {
-  AOCP: "Instituto AOCP",
-  FUNDATEC: "Fundatec",
-  CEBRASPE: "Cebraspe",
+/**
+ * Booklet layouts the importer can read. A reader is a PDF format, not
+ * an examining board: the board is chosen by the administrator from the
+ * board catalog (see examining-board-catalog.ts), because distinct
+ * boards may share a layout.
+ */
+export const OFFICIAL_EXAM_READERS = {
+  AOCP: "Formato AOCP",
+  FUNDATEC: "Formato Fundatec",
+  CEBRASPE: "Formato Cebraspe",
 } as const;
 
-export type OfficialExamBoard = keyof typeof OFFICIAL_EXAM_BOARDS;
+export type OfficialExamReader = keyof typeof OFFICIAL_EXAM_READERS;
 
 export type OfficialExamAlternative = Readonly<{
   label: string;
@@ -39,7 +45,10 @@ export type OfficialExamQuestion = Readonly<{
 }>;
 
 export type OfficialExamMetadata = Readonly<{
-  board: OfficialExamBoard;
+  /** Reader (layout) key; kept in the examination slug for idempotency. */
+  board: OfficialExamReader;
+  /** Examining board name from the catalog, confirmed by the admin. */
+  examiningBoardName: string;
   organization: string;
   careerPosition: string;
   year: number;
@@ -60,7 +69,10 @@ export type OfficialExamAnalysis = Readonly<{
   version: 1;
   uploadId: string;
   createdAt: string;
-  board: OfficialExamBoard | null;
+  /** Reader (layout) key detected on the cover. */
+  board: OfficialExamReader | null;
+  /** Catalog board slug suggested from the cover text (absent in old analyses). */
+  suggestedBoardSlug?: string | null;
   bookletChecksum: string;
   answerKeyChecksum: string;
   bookletFileName: string;
