@@ -45,6 +45,56 @@ describe("question publication policy", () => {
     ).toBe(true);
   });
 
+  it("accepts image-only alternatives", () => {
+    const candidate = {
+      ...baseClassification,
+      type: QUESTION_TYPES.MULTIPLE_CHOICE,
+      correctTrueFalse: null,
+      alternatives: [
+        {
+          content: "",
+          isCorrect: true,
+          mediaCount: 1,
+        },
+        {
+          content: "  ",
+          isCorrect: false,
+          mediaCount: 2,
+        },
+      ],
+    } as const;
+
+    expect(
+      validateQuestionForPublication(candidate),
+    ).toEqual([]);
+  });
+
+  it("rejects an alternative with neither text nor image", () => {
+    const candidate = {
+      ...baseClassification,
+      type: QUESTION_TYPES.MULTIPLE_CHOICE,
+      correctTrueFalse: null,
+      alternatives: [
+        {
+          content: "Alternativa A",
+          isCorrect: true,
+        },
+        {
+          content: "",
+          isCorrect: false,
+          mediaCount: 0,
+        },
+      ],
+    } as const;
+
+    expect(
+      validateQuestionForPublication(candidate),
+    ).toContain(
+      QUESTION_PUBLICATION_ISSUES
+        .ALTERNATIVE_CONTENT_REQUIRED,
+    );
+  });
+
   it("requires exactly one correct multiple-choice alternative", () => {
     const candidate = {
       ...baseClassification,

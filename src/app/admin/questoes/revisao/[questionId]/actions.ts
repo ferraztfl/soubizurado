@@ -444,6 +444,11 @@ export async function publishQuestionAction(
           select: {
             content: true,
             isCorrect: true,
+            _count: {
+              select: {
+                mediaLinks: true,
+              },
+            },
           },
         },
       },
@@ -508,7 +513,19 @@ export async function publishQuestionAction(
         question.correctTrueFalse,
 
       alternatives:
-        question.alternatives,
+        question.alternatives.map(
+          (alternative) => ({
+            content:
+              alternative.content,
+
+            isCorrect:
+              alternative.isCorrect,
+
+            mediaCount:
+              alternative._count
+                .mediaLinks,
+          }),
+        ),
     });
 
   if (

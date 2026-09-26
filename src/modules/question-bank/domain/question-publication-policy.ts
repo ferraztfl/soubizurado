@@ -27,6 +27,8 @@ export type QuestionPublicationIssue =
 export type PublicationAlternative = Readonly<{
   content: string;
   isCorrect: boolean;
+  /** Images linked to the alternative; an image counts as content. */
+  mediaCount?: number;
 }>;
 
 export type QuestionPublicationCandidate = Readonly<{
@@ -75,7 +77,8 @@ export function validateQuestionForPublication(
   if (
     candidate.alternatives.some(
       (alternative) =>
-        alternative.content.trim().length === 0,
+        alternative.content.trim().length === 0 &&
+        (alternative.mediaCount ?? 0) === 0,
     )
   ) {
     issues.push(

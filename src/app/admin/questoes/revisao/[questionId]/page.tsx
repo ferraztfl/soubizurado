@@ -100,7 +100,7 @@ const issueLabels:
       "Tópico obrigatório.",
 
     ALTERNATIVE_CONTENT_REQUIRED:
-      "Existe alternativa sem conteúdo textual.",
+      "Existe alternativa sem texto nem imagem.",
 
     MULTIPLE_CHOICE_ALTERNATIVES_REQUIRED:
       "Questões de múltipla escolha precisam de pelo menos duas alternativas.",
@@ -571,6 +571,10 @@ export default async function ReviewQuestionPage(
 
             isCorrect:
               alternative.isCorrect,
+
+            mediaCount:
+              alternative.mediaLinks
+                .length,
           }),
         ),
     });
@@ -954,7 +958,7 @@ export default async function ReviewQuestionPage(
                                   }
                                 />
                               </p>
-                            ) : (
+                            ) : media.length === 0 ? (
                               <p
                                 className={
                                   styles.empty
@@ -963,7 +967,7 @@ export default async function ReviewQuestionPage(
                                 Alternativa sem
                                 conteúdo textual
                               </p>
-                            )}
+                            ) : null}
 
                             <QuestionMedia
                               media={media}
