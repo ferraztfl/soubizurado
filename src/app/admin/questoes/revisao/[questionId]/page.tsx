@@ -19,6 +19,14 @@ import {
   encodeSubtopicChoice,
   encodeTopicChoice,
 } from "@/modules/question-bank/presentation/question-classification-choice";
+import {
+  ANSWER_KEY_STATUS_LABELS,
+  CLASSIFICATION_STATUS_LABELS,
+  formatConfidence,
+  labelFor,
+  QUESTION_STATUS_LABELS,
+  QUESTION_TYPE_LABELS,
+} from "@/modules/question-bank/presentation/question-labels";
 
 import {
   applyClassificationSuggestionAction,
@@ -155,6 +163,7 @@ export default async function ReviewQuestionPage(
 
       select: {
         id: true,
+        status: true,
         statement: true,
         type: true,
         answerKeyStatus: true,
@@ -581,103 +590,583 @@ export default async function ReviewQuestionPage(
         "Não foi possível concluir a operação."
       : null;
 
+  const statusLabel =
+    labelFor(
+      QUESTION_STATUS_LABELS,
+      question.status,
+    );
+
+  const answerKeyLabel =
+    labelFor(
+      ANSWER_KEY_STATUS_LABELS,
+      question.answerKeyStatus,
+    );
+
+  const typeLabel =
+    labelFor(
+      QUESTION_TYPE_LABELS,
+      question.type,
+    );
+
+  const suggestionStatusLabel =
+    suggestion
+      ? labelFor(
+          CLASSIFICATION_STATUS_LABELS,
+          suggestion.status,
+        )
+      : null;
+
+  const suggestionConfidence =
+    formatConfidence(
+      suggestion?.confidence,
+    );
+
+  const examinationLine =
+    question.examination
+      ? [
+          question.examination.title,
+          question.examination.board?.acronym ??
+            question.examination.board?.name,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : null;
+
+  // TOPIC_REQUIRED is already covered by the classification check.
+  const remainingIssues =
+    publicationIssues.filter(
+      (issue) =>
+        issue !== "TOPIC_REQUIRED",
+    );
+
+  const checklist = [
+    {
+      key: "classification",
+      ok: taxonomyIsValid,
+      label: taxonomyIsValid
+        ? "Classificação com tópico válido"
+        : question.topicId
+          ? "Tópico inconsistente com a disciplina"
+          : "Tópico ainda não definido",
+    },
+    {
+      key: "answer-key",
+      ok: answerKeyIsReady,
+      label: answerKeyIsReady
+        ? "Gabarito definido"
+        : "Gabarito ainda não definido",
+    },
+    ...remainingIssues.map(
+      (issue) => ({
+        key: issue,
+        ok: false,
+        label: issueLabels[issue],
+      }),
+    ),
+  ];
+
   return (
     <main className={styles.page}>
-      <Link
-        href="/admin/questoes/revisao"
-        className={styles.back}
+      <nav
+        className={styles.breadcrumb}
+        aria-label="Navegação estrutural"
       >
-        ← Voltar para revisão
-      </Link>
+        <Link href="/admin/questoes/revisao">
+          Revisão editorial
+        </Link>
+        <span aria-hidden="true">
+          /
+        </span>
+        <span>
+          Questão
+        </span>
+      </nav>
 
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>
-            Revisão administrativa
+            Revisão editorial
           </p>
 
           <h1>
             Revisar questão
           </h1>
+
+          {examinationLine ? (
+            <p className={styles.subtitle}>
+              {examinationLine}
+            </p>
+          ) : null}
         </div>
 
-        <span className={styles.status}>
-          IN_REVIEW
-        </span>
+        <div className={styles.headerBadges}>
+          <span
+            className={`${styles.badge} ${styles[`tone_${statusLabel.tone}`]}`}
+          >
+            {statusLabel.label}
+          </span>
+
+          <span
+            className={`${styles.badge} ${styles.tone_neutral}`}
+          >
+            {typeLabel.label}
+          </span>
+        </div>
       </header>
 
       {searchParams.saved === "1" ? (
-        <div className={styles.noticeSuccess}>
+        <div
+          className={styles.noticeSuccess}
+          role="status"
+        >
           Classificação salva com sucesso.
         </div>
       ) : null}
 
       {searchParams.saved === "suggestion" ? (
-        <div className={styles.noticeSuccess}>
+        <div
+          className={styles.noticeSuccess}
+          role="status"
+        >
           Sugestão aplicada. Confira a
           classificação antes de publicar.
         </div>
       ) : null}
 
-      {suggestion ? (
-        <section className={styles.suggestion}>
-          <div className={styles.suggestionHeader}>
-            <div>
-              <h2 className={styles.editorTitle}>
-                Sugestão automática
+      {errorMessage ? (
+        <div
+          className={styles.noticeError}
+          role="alert"
+        >
+          {errorMessage}
+        </div>
+      ) : null}
+
+      <div className={styles.layout}>
+        <article className={styles.questionColumn}>
+          <section
+            className={`${styles.card} ${styles.facts}`}
+            aria-label="Dados da questão"
+          >
+            <dl>
+              <div>
+                <dt>Área do conhecimento</dt>
+                <dd>
+                  {question.knowledgeArea?.name ??
+                    "Não definida"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Disciplina</dt>
+                <dd>
+                  {question.discipline?.name ??
+                    "Não definida"}
+                </dd>
+              </div>
+
+              <div className={styles.factWide}>
+                <dt>Classificação</dt>
+                <dd>
+                  {classificationPath ||
+                    "Não definida"}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Gabarito</dt>
+                <dd>
+                  <span
+                    className={`${styles.badge} ${styles[`tone_${answerKeyLabel.tone}`]}`}
+                  >
+                    {answerKeyLabel.label}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          {question.supportLinks.length >
+          0 ? (
+            <section
+              className={`${styles.card} ${styles.support}`}
+              aria-label="Texto de apoio"
+            >
+              <h2 className={styles.sectionLabel}>
+                Texto de apoio
               </h2>
 
-              <p className={styles.suggestionMeta}>
-                {suggestion.provider}
-                {suggestion.model
-                  ? ` \u00b7 ${suggestion.model}`
-                  : ""}
-                {suggestion.confidence !== null
-                  ? ` \u00b7 confiança ${Math.round(
-                      Number(suggestion.confidence) *
-                        100,
-                    )}%`
-                  : ""}
-              </p>
-            </div>
-
-            <span
-              className={
-                suggestion.status ===
-                "COMPLETED"
-                  ? styles.suggestionBadgeOk
-                  : styles.suggestionBadgeReview
-              }
-            >
-              {suggestion.status ===
-              "COMPLETED"
-                ? "Alta confiança"
-                : "Revisar com atenção"}
-            </span>
-          </div>
-
-          {suggestion.suggestedTopic ? (
-            <p className={styles.suggestionPath}>
-              {suggestionPath}
-            </p>
-          ) : (
-            <p className={styles.suggestionPath}>
-              {suggestion.suggestedDiscipline
-                ? `${suggestion.suggestedDiscipline.name} \u203a tópico não identificado`
-                : "Nenhuma classificação identificada."}
-            </p>
-          )}
-
-          {suggestionRationale ? (
-            <p className={styles.suggestionRationale}>
-              {suggestionRationale}
-            </p>
+              {question.supportLinks.map(
+                (link) => (
+                  <p
+                    key={
+                      link.supportContent.id
+                    }
+                  >
+                    {
+                      link.supportContent
+                        .content
+                    }
+                  </p>
+                ),
+              )}
+            </section>
           ) : null}
 
-          {suggestion.suggestedTopic ? (
+          <section
+            className={`${styles.card} ${styles.question}`}
+            aria-label="Questão"
+          >
+            <h2 className={styles.sectionLabel}>
+              Enunciado
+            </h2>
+
+            <div className={styles.statement}>
+              {question.statement}
+            </div>
+
+            <QuestionMedia
+              media={questionMedia}
+              fallbackAlt="Imagem da questão"
+            />
+
+            {question.alternatives.length >
+            0 ? (
+              <>
+                <h2 className={styles.sectionLabel}>
+                  Alternativas
+                </h2>
+
+                <ol className={styles.alternatives}>
+                  {question.alternatives.map(
+                    (alternative) => {
+                      const media =
+                        alternative.mediaLinks.map(
+                          (link) => ({
+                            id:
+                              link.mediaAsset.id,
+
+                            url:
+                              `/api/media/${link.mediaAsset.id}`,
+
+                            mimeType:
+                              link.mediaAsset
+                                .mimeType,
+
+                            width:
+                              link.mediaAsset
+                                .width,
+
+                            height:
+                              link.mediaAsset
+                                .height,
+
+                            altText:
+                              link.mediaAsset
+                                .altText,
+
+                            position:
+                              link.position,
+                          }),
+                        );
+
+                      return (
+                        <li
+                          key={alternative.id}
+                          className={`${styles.alternative} ${
+                            alternative.isCorrect
+                              ? styles.alternativeCorrect
+                              : ""
+                          }`}
+                        >
+                          <span
+                            className={
+                              styles.alternativeLetter
+                            }
+                            aria-hidden="true"
+                          >
+                            {alternative.label}
+                          </span>
+
+                          <div
+                            className={
+                              styles.alternativeBody
+                            }
+                          >
+                            {alternative.content.trim() ? (
+                              <p>
+                                {
+                                  alternative.content
+                                }
+                              </p>
+                            ) : (
+                              <p
+                                className={
+                                  styles.empty
+                                }
+                              >
+                                Alternativa sem
+                                conteúdo textual
+                              </p>
+                            )}
+
+                            <QuestionMedia
+                              media={media}
+                              variant="alternative"
+                              fallbackAlt={`Imagem da alternativa ${alternative.label}`}
+                            />
+                          </div>
+
+                          {alternative.isCorrect ? (
+                            <span
+                              className={
+                                styles.correctTag
+                              }
+                            >
+                              Gabarito
+                            </span>
+                          ) : null}
+                        </li>
+                      );
+                    },
+                  )}
+                </ol>
+              </>
+            ) : null}
+          </section>
+        </article>
+
+        <aside className={styles.sidePanel}>
+          {suggestion ? (
+            <section
+              className={`${styles.card} ${styles.suggestion}`}
+            >
+              <div className={styles.cardHeader}>
+                <div>
+                  <h2 className={styles.cardTitle}>
+                    Sugestão automática
+                  </h2>
+
+                  <p className={styles.cardMeta}>
+                    {[
+                      suggestion.provider ===
+                      "rule-based"
+                        ? "Regras"
+                        : suggestion.provider,
+                      suggestion.model,
+                      suggestionConfidence
+                        ? `confiança ${suggestionConfidence}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+
+                {suggestionStatusLabel ? (
+                  <span
+                    className={`${styles.badge} ${styles[`tone_${suggestionStatusLabel.tone}`]}`}
+                  >
+                    {suggestionStatusLabel.label}
+                  </span>
+                ) : null}
+              </div>
+
+              <p className={styles.suggestionPath}>
+                {suggestion.suggestedTopic
+                  ? suggestionPath
+                  : suggestion.suggestedDiscipline
+                    ? `${suggestion.suggestedDiscipline.name} › tópico não identificado`
+                    : "Nenhuma classificação identificada."}
+              </p>
+
+              {suggestion.provider ===
+              "rule-based" ? (
+                <p className={styles.suggestionRationale}>
+                  Sugestão baseada em palavras-chave
+                  do enunciado. Confira antes de
+                  aplicar.
+                </p>
+              ) : suggestionRationale ? (
+                <p className={styles.suggestionRationale}>
+                  {suggestionRationale}
+                </p>
+              ) : null}
+
+              {suggestion.suggestedTopic ? (
+                <form
+                  action={
+                    applyClassificationSuggestionAction
+                  }
+                >
+                  <input
+                    type="hidden"
+                    name="questionId"
+                    value={question.id}
+                  />
+
+                  <input
+                    type="hidden"
+                    name="taskId"
+                    value={suggestion.id}
+                  />
+
+                  <button
+                    type="submit"
+                    className={styles.secondaryButton}
+                  >
+                    Aplicar sugestão
+                  </button>
+                </form>
+              ) : null}
+            </section>
+          ) : null}
+
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div>
+                <h2 className={styles.cardTitle}>
+                  Classificação
+                </h2>
+
+                <p className={styles.cardMeta}>
+                  Tópico ou subtópico de{" "}
+                  {question.discipline?.name ??
+                    "disciplina não definida"}
+                </p>
+              </div>
+            </div>
+
             <form
               action={
-                applyClassificationSuggestionAction
+                saveQuestionClassificationAction
+              }
+              className={styles.classificationForm}
+            >
+              <input
+                type="hidden"
+                name="questionId"
+                value={question.id}
+              />
+
+              <label
+                className={styles.field}
+                htmlFor="classification"
+              >
+                <span className={styles.srOnly}>
+                  Tópico ou subtópico
+                </span>
+
+                <select
+                  id="classification"
+                  name="classification"
+                  defaultValue={
+                    currentChoice
+                  }
+                  className={styles.select}
+                  required
+                >
+                  <option value="">
+                    Selecione um tópico ou subtópico
+                  </option>
+
+                  {topicGroups.map(
+                    (group) => (
+                      <optgroup
+                        key={group.name}
+                        label={group.name}
+                      >
+                        {group.topics.flatMap(
+                          (topic) => [
+                            <option
+                              key={topic.id}
+                              value={encodeTopicChoice(
+                                topic.id,
+                              )}
+                            >
+                              {topic.name}
+                            </option>,
+
+                            ...topic.subtopics.map(
+                              (subtopic) => (
+                                <option
+                                  key={subtopic.id}
+                                  value={encodeSubtopicChoice(
+                                    subtopic.id,
+                                  )}
+                                >
+                                  {SUBTOPIC_PREFIX}
+                                  {subtopic.name}
+                                </option>
+                              ),
+                            ),
+                          ],
+                        )}
+                      </optgroup>
+                    ),
+                  )}
+                </select>
+              </label>
+
+              <button
+                type="submit"
+                className={styles.secondaryButton}
+              >
+                Salvar classificação
+              </button>
+            </form>
+
+            {taxonomyTopics.length === 0 ? (
+              <p className={styles.hint}>
+                Esta disciplina ainda não possui
+                tópicos ativos. Questões nas
+                disciplinas antigas do ENEM aguardam
+                a definição da disciplina — use a
+                sugestão automática quando houver.
+              </p>
+            ) : null}
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div>
+                <h2 className={styles.cardTitle}>
+                  Publicação
+                </h2>
+
+                <p className={styles.cardMeta}>
+                  {canPublish
+                    ? "Tudo pronto para publicar."
+                    : "Resolva os itens pendentes."}
+                </p>
+              </div>
+            </div>
+
+            <ul className={styles.checklist}>
+              {checklist.map(
+                (item) => (
+                  <li
+                    key={item.key}
+                    className={
+                      item.ok
+                        ? styles.checkOk
+                        : styles.checkPending
+                    }
+                  >
+                    <span aria-hidden="true">
+                      {item.ok
+                        ? "✓"
+                        : "!"}
+                    </span>
+                    {item.label}
+                  </li>
+                ),
+              )}
+            </ul>
+
+            <form
+              action={
+                publishQuestionAction
               }
             >
               <input
@@ -686,364 +1175,23 @@ export default async function ReviewQuestionPage(
                 value={question.id}
               />
 
-              <input
-                type="hidden"
-                name="taskId"
-                value={suggestion.id}
-              />
-
               <button
                 type="submit"
-                className={styles.saveButton}
+                className={styles.publishButton}
+                disabled={!canPublish}
               >
-                Aplicar sugestão
+                Publicar questão
               </button>
             </form>
-          ) : null}
-        </section>
-      ) : null}
 
-      {errorMessage ? (
-        <div className={styles.noticeError}>
-          {errorMessage}
-        </div>
-      ) : null}
-
-      <section className={styles.editor}>
-        <div>
-          <h2 className={styles.editorTitle}>
-            Classificação e publicação
-          </h2>
-
-          <p
-            className={
-              styles.editorDescription
-            }
-          >
-            Escolha o tópico ou, quando possível,
-            o subtópico da disciplina desta questão.
-            A publicação só é liberada quando todas
-            as regras do banco de questões forem
-            atendidas.
-          </p>
-        </div>
-
-        <form
-          action={
-            saveQuestionClassificationAction
-          }
-          className={styles.formRow}
-        >
-          <input
-            type="hidden"
-            name="questionId"
-            value={question.id}
-          />
-
-          <label className={styles.field}>
-            <span>
-              Classificação em{" "}
-              {question.discipline?.name ??
-                "disciplina não definida"}
-            </span>
-
-            <select
-              name="classification"
-              defaultValue={
-                currentChoice
-              }
-              className={styles.select}
-              required
-            >
-              <option value="">
-                Selecione um tópico ou subtópico
-              </option>
-
-              {topicGroups.map(
-                (group) => (
-                  <optgroup
-                    key={group.name}
-                    label={group.name}
-                  >
-                    {group.topics.flatMap(
-                      (topic) => [
-                        <option
-                          key={topic.id}
-                          value={encodeTopicChoice(
-                            topic.id,
-                          )}
-                        >
-                          {topic.name}
-                        </option>,
-
-                        ...topic.subtopics.map(
-                          (subtopic) => (
-                            <option
-                              key={subtopic.id}
-                              value={encodeSubtopicChoice(
-                                subtopic.id,
-                              )}
-                            >
-                              {SUBTOPIC_PREFIX}
-                              {subtopic.name}
-                            </option>
-                          ),
-                        ),
-                      ],
-                    )}
-                  </optgroup>
-                ),
-              )}
-            </select>
-          </label>
-
-          <button
-            type="submit"
-            className={styles.saveButton}
-          >
-            Salvar classificação
-          </button>
-        </form>
-
-        {taxonomyTopics.length === 0 ? (
-          <p className={styles.publishHint}>
-            Esta disciplina ainda não possui
-            tópicos ativos. Questões nas
-            disciplinas antigas do ENEM aguardam
-            reclassificação de disciplina.
-          </p>
-        ) : null}
-
-        <form
-          action={
-            publishQuestionAction
-          }
-        >
-          <input
-            type="hidden"
-            name="questionId"
-            value={question.id}
-          />
-
-          <button
-            type="submit"
-            className={
-              styles.publishButton
-            }
-            disabled={!canPublish}
-          >
-            Publicar questão
-          </button>
-        </form>
-
-        {!canPublish ? (
-          <p className={styles.publishHint}>
-            Resolva as pendências abaixo para
-            habilitar a publicação.
-          </p>
-        ) : (
-          <p className={styles.publishHint}>
-            A questão está pronta. Ao publicar,
-            o gabarito será marcado como
-            VERIFIED.
-          </p>
-        )}
-      </section>
-
-      <section className={styles.reviewBox}>
-        <strong>
-          Pendências para publicação
-        </strong>
-
-        {publicationIssues.length >
-        0 ? (
-          <ul>
-            {publicationIssues.map(
-              (issue) => (
-                <li key={issue}>
-                  {issueLabels[
-                    issue
-                  ]}
-                </li>
-              ),
-            )}
-          </ul>
-        ) : (
-          <p>
-            Nenhuma pendência da política de
-            publicação.
-          </p>
-        )}
-
-        {!answerKeyIsReady ? (
-          <p>
-            O gabarito ainda não está
-            definido.
-          </p>
-        ) : null}
-
-        {!taxonomyIsValid &&
-        question.topicId ? (
-          <p>
-            A classificação de tópico é
-            inconsistente com a disciplina.
-          </p>
-        ) : null}
-      </section>
-
-      <section className={styles.meta}>
-        {question.knowledgeArea ? (
-          <span>
-            Área:{" "}
-            {question.knowledgeArea.name}
-          </span>
-        ) : null}
-
-        <span>
-          Disciplina:{" "}
-          {question.discipline?.name ??
-            "Não definida"}
-        </span>
-
-        <span>
-          Classificação:{" "}
-          {classificationPath ||
-            "Não definida"}
-        </span>
-
-        <span>
-          Gabarito:{" "}
-          {question.answerKeyStatus}
-        </span>
-
-        {question.examination ? (
-          <span>
-            Prova:{" "}
-            {question.examination.title}
-          </span>
-        ) : null}
-      </section>
-
-      {question.supportLinks.length >
-      0 ? (
-        <section className={styles.support}>
-          {question.supportLinks.map(
-            (link) => (
-              <p
-                key={
-                  link.supportContent.id
-                }
-              >
-                {
-                  link.supportContent
-                    .content
-                }
-              </p>
-            ),
-          )}
-        </section>
-      ) : null}
-
-      <section className={styles.question}>
-        <div className={styles.statement}>
-          {question.statement}
-        </div>
-
-        <QuestionMedia
-          media={questionMedia}
-          fallbackAlt="Imagem da questão"
-        />
-
-        <div className={styles.alternatives}>
-          {question.alternatives.map(
-            (alternative) => {
-              const media =
-                alternative.mediaLinks.map(
-                  (link) => ({
-                    id:
-                      link.mediaAsset.id,
-
-                    url:
-                      `/api/media/${link.mediaAsset.id}`,
-
-                    mimeType:
-                      link.mediaAsset
-                        .mimeType,
-
-                    width:
-                      link.mediaAsset
-                        .width,
-
-                    height:
-                      link.mediaAsset
-                        .height,
-
-                    altText:
-                      link.mediaAsset
-                        .altText,
-
-                    position:
-                      link.position,
-                  }),
-                );
-
-              return (
-                <div
-                  key={alternative.id}
-                  className={
-                    styles.alternative
-                  }
-                >
-                  <div
-                    className={
-                      styles.alternativeHeader
-                    }
-                  >
-                    <strong>
-                      {
-                        alternative.label
-                      }
-                    </strong>
-
-                    {alternative.isCorrect ? (
-                      <span
-                        className={
-                          styles.correct
-                        }
-                      >
-                        Gabarito
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {alternative.content.trim() ? (
-                    <p>
-                      {
-                        alternative.content
-                      }
-                    </p>
-                  ) : (
-                    <p
-                      className={
-                        styles.empty
-                      }
-                    >
-                      Alternativa sem
-                      conteúdo textual
-                    </p>
-                  )}
-
-                  <QuestionMedia
-                    media={media}
-                    variant="alternative"
-                    fallbackAlt={`Imagem da alternativa ${alternative.label}`}
-                  />
-                </div>
-              );
-            },
-          )}
-        </div>
-      </section>
+            <p className={styles.hint}>
+              {canPublish
+                ? "Ao publicar, a questão fica disponível para os alunos e o gabarito é marcado como verificado."
+                : "A publicação segue sempre a política do banco de questões."}
+            </p>
+          </section>
+        </aside>
+      </div>
     </main>
   );
 }
