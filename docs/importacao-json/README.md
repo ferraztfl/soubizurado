@@ -28,6 +28,10 @@ por script ou à mão.
 
 Anuladas: `annulled: true` e `answer: null` — não são importadas (como nos leitores de PDF).
 
+Provas parciais: `exam.partial: true` aceita só algumas questões, com os números **originais**
+(sem exigir 1..N). `exam.provenance` registra a origem da transcrição na fonte da questão. Arquivos
+parciais da mesma prova (mesma banca, órgão, cargo e ano) usam o mesmo registro de prova.
+
 ## Código
 
 - Esquema, validação e conversão (puro): `src/modules/imports/application/official-exams/exam-json.ts`

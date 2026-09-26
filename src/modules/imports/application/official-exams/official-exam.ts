@@ -68,6 +68,8 @@ export type DetectedExamMetadata = Readonly<{
 }>;
 
 export type OfficialExamAnalysis = Readonly<{
+  /** Internal provenance of a transcription (JSON imports); absent for PDFs. */
+  provenance?: string | null;
   version: 1;
   uploadId: string;
   createdAt: string;

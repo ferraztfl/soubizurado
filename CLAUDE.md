@@ -40,7 +40,10 @@ autenticação Supabase, mídia no Supabase Storage (bucket privado). Comunicaç
 - Edição manual de questões só por `/admin/questoes/[id]/editar` (grava `question_revisions`).
 - Aplicar sugestões de classificação só via `applyClassificationSuggestion`.
 - Não reimportar ENEM 2024 nem refazer importações para corrigir taxonomia ou mídia.
-- Não raspar bancos de questões de terceiros (ex.: Gran Cursos); fonte = PDFs oficiais das bancas.
+- Não raspar sites de questões de terceiros. Fonte preferencial = PDFs oficiais das bancas.
+  Decisão do usuário (26/09/2026): questões de concursos públicos vindas de simulados exportados
+  podem entrar **só com o texto e os metadados da prova oficial de origem** (JSON `partial`, com
+  `provenance`); nunca IDs, classificações ou comentários da plataforma. Classificação sempre nossa.
 - `data-private/` (PDFs, uploads, staging, logs de reversão) não vai para o Git — ausência é esperada.
 - Gravações em massa: dry-run primeiro + log de reversão em `data-private/`.
 

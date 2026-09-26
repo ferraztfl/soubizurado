@@ -128,6 +128,16 @@ export async function analyzeExamJson(
 
   const exam = parsed.value;
   const issues = validateExamJson(exam);
+
+  // Several partial files of the same exam must land on one examination:
+  // identify a partial exam by its metadata, not by the file bytes.
+  const identity = exam.exam.partial
+    ? sha256(
+        new TextEncoder().encode(
+          [exam.exam.board, exam.exam.organization, exam.exam.role, exam.exam.year].join("|").toLowerCase(),
+        ),
+      )
+    : checksum;
   const refs = examJsonImageRefs(exam);
 
   if (refs.length > 0) {
@@ -157,6 +167,8 @@ export async function analyzeExamJson(
 
   return {
     ...base,
+    bookletChecksum: identity,
+    provenance: exam.exam.provenance,
     suggestedBoardSlug: suggestBoardSlug(exam.exam.board),
     detected: {
       organization: exam.exam.organization,

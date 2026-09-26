@@ -83,6 +83,14 @@ export const examJsonSchema = z
         level: z.string().trim().max(40).nullable().default(null),
         notice: z.string().trim().max(160).nullable().default(null),
         title: z.string().trim().max(240).nullable().default(null),
+        /**
+         * Only some questions of the official exam, numbered with their
+         * ORIGINAL numbers (gaps allowed). Used for questions collected
+         * from several exams: one file per source exam.
+         */
+        partial: z.boolean().default(false),
+        /** Where the transcription came from, kept as internal provenance. */
+        provenance: z.string().trim().max(300).nullable().default(null),
       })
       .strict(),
     supportTexts: z.array(supportTextSchema).max(300).default([]),
@@ -201,10 +209,13 @@ export function validateExamJson(exam: ExamJson): string[] {
     }
   }
 
-  // Every number from 1 to the highest must be present (annulled items included).
+  // A complete exam has every number from 1 to the highest (annulled
+  // items included); a partial one keeps the original numbers.
   const numbers = new Set(exam.questions.map((question) => question.number));
   const highest = Math.max(...numbers);
-  const missing = Array.from({ length: highest }, (_, index) => index + 1).filter((number) => !numbers.has(number));
+  const missing = exam.exam.partial
+    ? []
+    : Array.from({ length: highest }, (_, index) => index + 1).filter((number) => !numbers.has(number));
 
   if (missing.length > 0) {
     issues.push(`Faltam as questões: ${missing.slice(0, 30).join(", ")}${missing.length > 30 ? "…" : ""}.`);

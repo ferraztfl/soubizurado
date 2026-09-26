@@ -168,4 +168,42 @@ Exemplo de arquivo válido: [`exemplo-ufba-2016-libras.json`](exemplo-ufba-2016-
   centavos de dólar em modelos "flash". Meça no seu painel de gastos antes de processar em
   massa.
 - **Fonte:** use somente PDFs oficiais das bancas (ou reproduções fiéis, como o PCI Concursos).
-  Não use simulados exportados de plataformas de terceiros (Gran, QConcursos etc.).
+  Simulados exportados de plataformas: só pelo modo simulado (seção 6), com texto e metadados da
+  prova oficial de origem, sem IDs nem classificações da plataforma.
+
+---
+
+## 6. Modo simulado (questões de várias provas num arquivo, gabarito no fim)
+
+Decisão do projeto (26/09/2026): questões de concursos públicos coletadas em simulados podem ser
+importadas **somente com o texto da questão e os metadados da prova oficial de origem**. Não entram
+identificadores, classificações, comentários ou estatísticas da plataforma de onde o arquivo veio.
+A classificação é sempre a do SouBizurado.
+
+Mensagem para o app:
+
+```text
+No modo "Simulado (Arquivo Único)":
+
+1. Limites de cada questão: começa no número da questão do simulado e termina na linha
+   "Fonte: <banca ano> / <órgão> / <cargo> / Questão: <n>". Tudo entre um início e a próxima
+   linha Fonte pertence à mesma questão (inclusive textos longos que atravessam páginas).
+2. Gabarito: leia a seção "Gabarito" do fim do arquivo e aplique pela numeração DO SIMULADO,
+   antes de qualquer renumeração.
+3. Agrupe as questões pela prova de origem da linha Fonte (banca + ano + órgão + cargo) e gere
+   UM JSON por prova de origem, com:
+   - exam.board, exam.organization, exam.role, exam.year = os da linha Fonte;
+   - exam.partial = true;
+   - exam.provenance = "Simulado <nome do arquivo> exportado pelo administrador em <data>";
+   - number = o número ORIGINAL da linha "Questão: <n>" (não o número no simulado);
+   - section = null (a classificação é feita pelo SouBizurado).
+4. Remova do texto: códigos da plataforma (ex.: "[Q1234567]"), a linha "Disciplinas/Assuntos
+   vinculados", a linha "Fonte:", cabeçalhos/rodapés da plataforma e datas de criação.
+5. Etapa D por arquivo: tipos não misturados, alternativas completas, gabarito entre as letras,
+   sem números repetidos. Não exija sequência 1..N (partial=true).
+6. Download: um .zip com um JSON por prova de origem (nome: <orgao>-<ano>-<cargo>.json).
+```
+
+Importe cada JSON separadamente em "Importar arquivo JSON". Arquivos parciais da mesma prova caem no
+mesmo registro de prova; se o caderno oficial for importado depois, as questões iguais são
+reconhecidas como duplicatas.

@@ -125,6 +125,23 @@ describe("SouBizurado Exam JSON", () => {
     ]);
   });
 
+  it("accepts original question numbers with gaps in a partial exam", () => {
+    const questions = [
+      { ...multipleChoice.questions[0], number: 12 },
+      { ...multipleChoice.questions[0], number: 25, supportTextId: null },
+    ];
+    const complete = parse({ ...multipleChoice, questions });
+    const partial = parse({
+      ...multipleChoice,
+      exam: { ...multipleChoice.exam, partial: true, provenance: "Simulado exportado pelo administrador" },
+      questions,
+    });
+
+    expect(validateExamJson(complete).join(" ")).toContain("Faltam as questões: 1, 2");
+    expect(validateExamJson(partial)).toEqual([]);
+    expect(examJsonToQuestions(partial).map((question) => question.key)).toEqual(["12", "25"]);
+  });
+
   it("refuses to mix question types in one file", () => {
     const exam = parse({
       ...multipleChoice,

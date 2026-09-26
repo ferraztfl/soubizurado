@@ -208,7 +208,9 @@ export async function runOfficialExamImport(
     sourceType: "OFFICIAL_EXAM",
     licenseStatus: "UNKNOWN",
     licenseName: null,
-    licenseNotes: `Prova oficial publicada pela banca (${input.metadata.examiningBoardName}), enviada pelo administrador. Arquivo: ${analysis.bookletFileName} (sha256 ${analysis.bookletChecksum}).`,
+    licenseNotes: analysis.provenance
+      ? `Questões de prova oficial (${input.metadata.examiningBoardName}) importadas de JSON. Origem da transcrição: ${analysis.provenance}. Conferir com o caderno oficial da banca. Arquivo: ${analysis.bookletFileName}.`.slice(0, 2000)
+      : `Prova oficial publicada pela banca (${input.metadata.examiningBoardName}), enviada pelo administrador. Arquivo: ${analysis.bookletFileName} (sha256 ${analysis.bookletChecksum}).`,
   });
 
   const useCase = new ImportProviderQuestionsUseCase(provider, repository);
