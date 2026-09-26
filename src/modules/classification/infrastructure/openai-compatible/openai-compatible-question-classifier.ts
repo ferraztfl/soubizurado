@@ -99,7 +99,8 @@ const SYSTEM_PROMPT = [
 export class OpenAiCompatibleQuestionClassifier implements QuestionClassifier {
   public readonly provider: string;
   public readonly model: string;
-  public readonly version = "openai-compatible-v1";
+  /** Includes the model so switching models re-classifies cleanly. */
+  public readonly version: string;
 
   public constructor(
     private readonly config: OpenAiCompatibleConfig,
@@ -107,6 +108,7 @@ export class OpenAiCompatibleQuestionClassifier implements QuestionClassifier {
   ) {
     this.provider = config.providerLabel;
     this.model = config.model;
+    this.version = `oa-v1:${config.model}`.slice(0, 40);
   }
 
   public async classify(

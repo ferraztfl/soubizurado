@@ -21,6 +21,9 @@ export type ProcessClassificationQueueInput = Readonly<{
   minimumConfidence: number;
   retryBaseSeconds?: number;
   retryMaxSeconds?: number;
+  /** Provider calls per minute across all workers (free-tier limits). */
+  requestsPerMinute?: number;
+  sleep?: (milliseconds: number) => Promise<void>;
 }>;
 
 export type ProcessClassificationQueueOutput = Readonly<{
@@ -33,6 +36,33 @@ export type ProcessClassificationQueueOutput = Readonly<{
 }>;
 
 type Outcome = "COMPLETED" | "REVIEW_REQUIRED" | "RETRIED" | "FAILED";
+
+/**
+ * Spaces provider calls evenly across concurrent workers: each call
+ * reserves the next free slot, so N workers never exceed the rate.
+ */
+export function createRateLimiter(
+  requestsPerMinute: number | undefined,
+  sleep: (milliseconds: number) => Promise<void>,
+  now: () => number = Date.now,
+): () => Promise<void> {
+  if (!requestsPerMinute) {
+    return async () => {};
+  }
+
+  const intervalMs = 60_000 / requestsPerMinute;
+  let nextSlot = 0;
+
+  return async () => {
+    const current = now();
+    const slot = Math.max(current, nextSlot);
+    nextSlot = slot + intervalMs;
+
+    if (slot > current) {
+      await sleep(slot - current);
+    }
+  };
+}
 
 export function classificationRetryDelaySeconds(
   attempts: number,
@@ -61,6 +91,7 @@ async function processOne(
   task: ClaimedClassificationTask,
   retryBaseSeconds: number,
   retryMaxSeconds: number,
+  waitForSlot: () => Promise<void>,
 ): Promise<Outcome> {
   const question = await input.repository.loadQuestionInput(task.questionId);
 
@@ -74,6 +105,8 @@ async function processOne(
   }
 
   try {
+    await waitForSlot();
+
     const providerResult = await input.classifier.classify(
       question,
       input.taxonomy,
@@ -162,6 +195,22 @@ export async function processClassificationQueue(
     throw new Error("Classification minimumConfidence must be between 0 and 1.");
   }
 
+  if (
+    input.requestsPerMinute !== undefined &&
+    (!Number.isFinite(input.requestsPerMinute) ||
+      input.requestsPerMinute <= 0 ||
+      input.requestsPerMinute > 10_000)
+  ) {
+    throw new Error("Classification requestsPerMinute must be between 0 and 10000.");
+  }
+
+  const waitForSlot = createRateLimiter(
+    input.requestsPerMinute,
+    input.sleep ??
+      ((milliseconds) =>
+        new Promise((resolve) => setTimeout(resolve, milliseconds))),
+  );
+
   const retryBaseSeconds = input.retryBaseSeconds ?? 60;
   const retryMaxSeconds = input.retryMaxSeconds ?? 3_600;
 
@@ -178,7 +227,8 @@ export async function processClassificationQueue(
   const outcomes = await mapWithConcurrency(
     tasks,
     input.concurrency,
-    (task) => processOne(input, task, retryBaseSeconds, retryMaxSeconds),
+    (task) =>
+      processOne(input, task, retryBaseSeconds, retryMaxSeconds, waitForSlot),
   );
 
   const count = (outcome: Outcome) =>

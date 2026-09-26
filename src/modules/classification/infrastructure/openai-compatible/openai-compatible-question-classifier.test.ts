@@ -72,7 +72,10 @@ describe("OpenAiCompatibleQuestionClassifier", () => {
       ),
     );
 
-    const result = await classifierWith(fetchImpl).classify(input, index);
+    const classifier = classifierWith(fetchImpl);
+    expect(classifier.version).toBe("oa-v1:test-model");
+
+    const result = await classifier.classify(input, index);
 
     expect(result).toMatchObject({
       discipline: "Matemática",

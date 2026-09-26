@@ -10,6 +10,7 @@ import { TaxonomyIndex } from "../domain/taxonomy-index";
 import type { ClassificationTaskRepository } from "./ports/classification-task-repository";
 import {
   classificationRetryDelaySeconds,
+  createRateLimiter,
   processClassificationQueue,
 } from "./process-classification-queue";
 
@@ -149,6 +150,29 @@ describe("processClassificationQueue", () => {
         }),
       }),
     ).rejects.toThrow("concurrency");
+  });
+});
+
+describe("createRateLimiter", () => {
+  it("spaces calls evenly even when requested at the same time", async () => {
+    const waits: number[] = [];
+    const limiter = createRateLimiter(
+      30,
+      async (milliseconds) => {
+        waits.push(milliseconds);
+      },
+      () => 1_000,
+    );
+
+    await Promise.all([limiter(), limiter(), limiter()]);
+
+    expect(waits).toEqual([2_000, 4_000]);
+  });
+
+  it("does nothing without a rate", async () => {
+    const sleep = vi.fn();
+    await createRateLimiter(undefined, sleep)();
+    expect(sleep).not.toHaveBeenCalled();
   });
 });
 
