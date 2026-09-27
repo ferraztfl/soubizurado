@@ -16,6 +16,7 @@ import { getPrismaClient } from "../src/shared/infrastructure/database/prisma";
  * verification).
  *
  *   npm run questions:publish            # dry-run, prints the reasons
+ *   npm run questions:publish -- --list  # dry-run listing the publishable questions
  *   npm run questions:publish -- --apply # writes, after a reversal log
  */
 
@@ -39,6 +40,7 @@ async function main(): Promise<void> {
       where: { status: "IN_REVIEW" },
       select: {
         id: true,
+        publicNumber: true,
         type: true,
         statement: true,
         answerKeyStatus: true,
@@ -100,7 +102,11 @@ async function main(): Promise<void> {
         continue;
       }
 
+      // Legacy ENEM imports lost context texts, leaving only the final
+      // command. Board exams often have short complete statements
+      // ("Assinale a alternativa correta"), so the guard is ENEM-only.
       if (
+        question.examination?.title.startsWith("ENEM") &&
         plain(question.statement).length < MIN_STANDALONE_STATEMENT &&
         question._count.supportLinks === 0 &&
         question._count.mediaLinks === 0
@@ -125,8 +131,14 @@ async function main(): Promise<void> {
       ),
     );
 
+    if (process.argv.includes("--list")) {
+      for (const question of questions.filter((item) => publishable.includes(item.id))) {
+        console.log(`  Q${question.publicNumber}  ${plain(question.statement).slice(0, 90)}`);
+      }
+    }
+
     if (!apply || publishable.length === 0) {
-      if (!apply) console.log("Dry-run only. Re-run with --apply to publish.");
+      if (!apply) console.log("Dry-run only. Re-run with --apply to publish (--list shows the questions).");
       return;
     }
 
