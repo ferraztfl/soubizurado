@@ -183,6 +183,15 @@
   font-weight: 650;
 }
 
+.code {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sb-text-strong);
+  color: #fff;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
 .discipline {
   color: var(--sb-text-strong);
   font-weight: 800;

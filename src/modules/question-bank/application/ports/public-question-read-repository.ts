@@ -48,6 +48,8 @@ export type PublicQuestionExaminationReference =
 
 export type PublicQuestionReadRecord = Readonly<{
   id: string;
+  /** Sequential public number, shown as the code "Q" + number. */
+  publicNumber: number;
   type: QuestionType;
   statement: string;
 

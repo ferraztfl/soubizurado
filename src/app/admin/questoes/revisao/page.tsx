@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { Prisma } from "@/generated/prisma/client";
+import { formatQuestionCode, parseQuestionCode } from "@/modules/question-bank/domain/question-code";
 import {
   buildReviewQueueHref,
   parseReviewQueueSearchParams,
@@ -89,13 +90,16 @@ export default async function ReviewQuestionsPage({
       : query.topic === "assigned"
         ? { topicId: { not: null } }
         : {}),
+    // "Q100001" finds that question; other text searches the statement.
     ...(query.search
-      ? {
-          statement: {
-            contains: query.search,
-            mode: "insensitive",
-          },
-        }
+      ? parseQuestionCode(query.search) !== null
+        ? { publicNumber: parseQuestionCode(query.search)! }
+        : {
+            statement: {
+              contains: query.search,
+              mode: "insensitive",
+            },
+          }
       : {}),
     AND: [
       query.media === "with"
@@ -146,6 +150,7 @@ export default async function ReviewQuestionsPage({
       take: query.pageSize,
       select: {
         id: true,
+        publicNumber: true,
         statement: true,
         answerKeyStatus: true,
 
@@ -294,7 +299,7 @@ export default async function ReviewQuestionsPage({
             type="search"
             name="q"
             defaultValue={query.search ?? ""}
-            placeholder="Ex.: reta de tendência"
+            placeholder="Texto do enunciado ou código (Q100001)"
             maxLength={200}
           />
         </label>
@@ -401,6 +406,10 @@ export default async function ReviewQuestionsPage({
                   className={styles.card}
                 >
                   <div className={styles.cardTop}>
+                    <span className={styles.code}>
+                      {formatQuestionCode(question.publicNumber)}
+                    </span>
+
                     <span className={styles.discipline}>
                       {question.discipline?.name ?? "Sem disciplina"}
                     </span>

@@ -55,6 +55,7 @@ function createPrismaMock() {
 
 const validPublicRow = {
   id: "question-1",
+  publicNumber: 100001,
   type: "MULTIPLE_CHOICE",
   statement: "Qual alternativa esta correta?",
   alternatives: [
@@ -194,17 +195,29 @@ describe("PrismaPublicQuestionReadRepository", () => {
 
     const result =
       await repository.findPublishedById(
-        "question-1",
+        "00d64e4d-d040-40a5-94bb-76f7bd99216d",
       );
 
     expect(questionFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          id: "question-1",
+          id: "00d64e4d-d040-40a5-94bb-76f7bd99216d",
           status: "PUBLISHED",
         },
       }),
     );
+
+    await repository.findPublishedById("Q100001");
+
+    expect(questionFindFirst).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: { publicNumber: 100001, status: "PUBLISHED" },
+      }),
+    );
+
+    const callsBefore = questionFindFirst.mock.calls.length;
+    expect(await repository.findPublishedById("question-1")).toBeNull();
+    expect(questionFindFirst.mock.calls.length).toBe(callsBefore);
 
     const call =
       questionFindFirst.mock.calls[0]?.[0];
@@ -313,7 +326,7 @@ describe("PrismaPublicQuestionReadRepository", () => {
 
     await expect(
       repository.findPublishedById(
-        "question-1",
+        "00d64e4d-d040-40a5-94bb-76f7bd99216d",
       ),
     ).rejects.toThrow(
       "Published question question-1 is missing required taxonomy.",

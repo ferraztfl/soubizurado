@@ -430,6 +430,8 @@ model QuestionSource {
 
 model Question {
   id                   String                  @id @default(uuid()) @db.Uuid
+  /// Short public code shown as "Q" + number (e.g. Q100001).
+  publicNumber         Int                     @unique @default(autoincrement()) @map("public_number")
   type                 QuestionType
   status               QuestionStatus          @default(DRAFT)
   answerKeyStatus      QuestionAnswerKeyStatus @default(MISSING) @map("answer_key_status")

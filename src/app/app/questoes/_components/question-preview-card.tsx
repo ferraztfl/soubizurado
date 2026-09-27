@@ -45,6 +45,8 @@ export function QuestionPreviewCard({
   return (
     <article className={styles.card}>
       <div className={styles.meta}>
+        <span className={styles.code}>{question.code}</span>
+
         <span className={styles.type}>
           {questionTypeLabel(question.type)}
         </span>
@@ -91,7 +93,7 @@ export function QuestionPreviewCard({
         </span>
 
         <Link
-          href={`/app/questoes/${question.id}`}
+          href={`/app/questoes/${question.code}`}
           className={styles.open}
         >
           Abrir questão

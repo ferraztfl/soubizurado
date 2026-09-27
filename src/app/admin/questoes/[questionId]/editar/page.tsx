@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
+import { formatQuestionCode } from "@/modules/question-bank/domain/question-code";
 import {
   QUESTION_STATUS_LABELS,
   QUESTION_TYPE_LABELS,
@@ -47,6 +48,7 @@ export default async function EditQuestionPage(props: PageProps) {
     where: { id: questionId },
     select: {
       id: true,
+      publicNumber: true,
       type: true,
       status: true,
       statement: true,
@@ -123,7 +125,7 @@ export default async function EditQuestionPage(props: PageProps) {
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Banco de questões</p>
-          <h1>Editar questão</h1>
+          <h1>Editar questão {formatQuestionCode(question.publicNumber)}</h1>
           {question.examination ? (
             <p className={styles.subtitle}>
               {[question.examination.title, board].filter(Boolean).join(" · ")}

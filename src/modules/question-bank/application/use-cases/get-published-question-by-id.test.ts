@@ -21,6 +21,7 @@ import {
 
 const publishedQuestion: PublicQuestionReadRecord = {
   id: "question-1",
+  publicNumber: 100001,
   type: QUESTION_TYPES.MULTIPLE_CHOICE,
   statement: "Qual alternativa esta correta?",
   alternatives: [

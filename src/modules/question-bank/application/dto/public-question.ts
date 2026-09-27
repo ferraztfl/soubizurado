@@ -44,6 +44,8 @@ export type PublicQuestionExaminationDto = Readonly<{
 
 export type PublicQuestionDto = Readonly<{
   id: string;
+  /** Public code, e.g. "Q100001" (URLs, cards, search). */
+  code: string;
   type: QuestionType;
   statement: string;
 

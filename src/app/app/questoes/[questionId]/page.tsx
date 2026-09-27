@@ -79,6 +79,8 @@ export default async function QuestionDetailPage({
       <section className={styles.layout}>
         <article className={styles.question}>
           <div className={styles.meta}>
+            <span className={styles.code}>{question.code}</span>
+
             <span className={styles.type}>
               {question.type === "MULTIPLE_CHOICE"
                 ? "Múltipla escolha"

@@ -1,3 +1,4 @@
+import { formatQuestionCode } from "../../domain/question-code";
 import type {
   PublicQuestionDto,
   PublicQuestionMediaDto,
@@ -80,6 +81,8 @@ export function toPublicQuestionDto(
   return {
     id:
       question.id,
+    code:
+      formatQuestionCode(question.publicNumber),
     type:
       question.type,
     statement:

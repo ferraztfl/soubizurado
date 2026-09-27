@@ -1,4 +1,6 @@
 import Link from "next/link";
+
+import { formatQuestionCode } from "@/modules/question-bank/domain/question-code";
 import {
   notFound,
 } from "next/navigation";
@@ -174,6 +176,7 @@ export default async function ReviewQuestionPage(
 
       select: {
         id: true,
+        publicNumber: true,
         status: true,
         statement: true,
         type: true,
@@ -775,7 +778,7 @@ export default async function ReviewQuestionPage(
           </p>
 
           <h1>
-            Revisar questão
+            Revisar questão {formatQuestionCode(question.publicNumber)}
           </h1>
 
           {examinationLine ? (

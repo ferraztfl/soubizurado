@@ -2,6 +2,7 @@ import type {
   Prisma,
   PrismaClient,
 } from "@/generated/prisma/client";
+import { parseQuestionCode, parseQuestionReference } from "@/modules/question-bank/domain/question-code";
 
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -16,6 +17,7 @@ import type {
 
 const publicQuestionSelect = {
   id: true,
+  publicNumber: true,
   type: true,
   statement: true,
   supportLinks: {
@@ -140,13 +142,16 @@ function buildPublicQuestionWhere(
 
   return {
     status: "PUBLISHED",
+    // A search for a question code ("Q100001") finds that question.
     ...(filters.search
-      ? {
-          statement: {
-            contains: filters.search,
-            mode: "insensitive",
-          },
-        }
+      ? parseQuestionCode(filters.search) !== null
+        ? { publicNumber: parseQuestionCode(filters.search)! }
+        : {
+            statement: {
+              contains: filters.search,
+              mode: "insensitive",
+            },
+          }
       : {}),
     ...(filters.disciplineId
       ? { disciplineId: filters.disciplineId }
@@ -260,6 +265,7 @@ function toPublicQuestionReadRecord(
 
   return {
     id: question.id,
+    publicNumber: question.publicNumber,
     type: question.type,
     statement: question.statement,
     ...(supportContents.length > 0
@@ -315,13 +321,22 @@ export class PrismaPublicQuestionReadRepository
     };
   }
 
+  /** Accepts the public code (Q100001) or the internal UUID. */
   public async findPublishedById(
     questionId: string,
   ): Promise<PublicQuestionReadRecord | null> {
+    const reference = parseQuestionReference(questionId);
+
+    if (reference.kind === "invalid") {
+      return null;
+    }
+
     const question =
       await this.prisma.question.findFirst({
         where: {
-          id: questionId,
+          ...(reference.kind === "code"
+            ? { publicNumber: reference.publicNumber }
+            : { id: reference.id }),
           status: "PUBLISHED",
         },
         select: publicQuestionSelect,
