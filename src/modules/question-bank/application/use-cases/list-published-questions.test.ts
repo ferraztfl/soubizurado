@@ -219,7 +219,7 @@ describe("ListPublishedQuestionsUseCase", () => {
 
     await expect(
       useCase.execute({
-        pageSize: 51,
+        pageSize: 101,
       }),
     ).rejects.toMatchObject({
       code: "VALIDATION_ERROR",

@@ -11,7 +11,7 @@ type RawSearchParamValue =
 export type QuestionExplorerRawSearchParams =
   Readonly<Record<string, RawSearchParamValue>>;
 
-export const QUESTION_EXPLORER_PAGE_SIZES = [10, 20, 50] as const;
+export const QUESTION_EXPLORER_PAGE_SIZES = [10, 20, 50, 100] as const;
 export type QuestionExplorerPageSize = (typeof QUESTION_EXPLORER_PAGE_SIZES)[number];
 
 /** URL value → repository sort. */
@@ -22,8 +22,21 @@ export const QUESTION_EXPLORER_SORTS = {
 } as const;
 export type QuestionExplorerSortParam = keyof typeof QUESTION_EXPLORER_SORTS;
 
-const DEFAULT_PAGE_SIZE: QuestionExplorerPageSize = 10;
+const DEFAULT_PAGE_SIZE: QuestionExplorerPageSize = 20;
 const DEFAULT_SORT: QuestionExplorerSortParam = "recentes";
+
+/**
+ * Cookies that remember the student's last page size and sort, so the choice
+ * survives filter changes and links that do not carry `por` / `ordem`.
+ */
+export const QUESTION_EXPLORER_PAGE_SIZE_COOKIE = "sb_questoes_por";
+export const QUESTION_EXPLORER_SORT_COOKIE = "sb_questoes_ordem";
+
+/** Saved preferences (raw cookie values); the URL always wins over them. */
+export type QuestionExplorerPreferences = Readonly<{
+  pageSize?: string;
+  sort?: string;
+}>;
 
 export type QuestionExplorerQuery = Readonly<{
   page: number;
@@ -122,8 +135,23 @@ function parseQuestionType(
   return undefined;
 }
 
+function parsePageSize(value: RawSearchParamValue): QuestionExplorerPageSize | undefined {
+  const parsed = parsePositiveInteger(value);
+
+  return QUESTION_EXPLORER_PAGE_SIZES.find((size) => size === parsed);
+}
+
+function parseSort(value: RawSearchParamValue): QuestionExplorerSortParam | undefined {
+  const normalized = normalizeText(value);
+
+  return normalized && Object.hasOwn(QUESTION_EXPLORER_SORTS, normalized)
+    ? (normalized as QuestionExplorerSortParam)
+    : undefined;
+}
+
 export function parseQuestionExplorerSearchParams(
   params: QuestionExplorerRawSearchParams,
+  preferences: QuestionExplorerPreferences = {},
 ): QuestionExplorerQuery {
   const search = normalizeText(params.q);
   const disciplineId = normalizeText(
@@ -135,12 +163,9 @@ export function parseQuestionExplorerSearchParams(
   const page =
     parsePositiveInteger(params.page) ?? 1;
 
-  const pageSizeValue = parsePositiveInteger(params.por);
   const pageSize =
-    QUESTION_EXPLORER_PAGE_SIZES.find((size) => size === pageSizeValue) ?? DEFAULT_PAGE_SIZE;
-  const sortValue = normalizeText(params.ordem);
-  const sort =
-    sortValue && sortValue in QUESTION_EXPLORER_SORTS ? (sortValue as QuestionExplorerSortParam) : DEFAULT_SORT;
+    parsePageSize(params.por) ?? parsePageSize(preferences.pageSize) ?? DEFAULT_PAGE_SIZE;
+  const sort = parseSort(params.ordem) ?? parseSort(preferences.sort) ?? DEFAULT_SORT;
 
   return {
     page,

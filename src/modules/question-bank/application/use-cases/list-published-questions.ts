@@ -27,7 +27,7 @@ import type {
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
-const MAX_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
 const MAX_SEARCH_LENGTH = 120;
 
 export type ListPublishedQuestionsQuery = Readonly<{

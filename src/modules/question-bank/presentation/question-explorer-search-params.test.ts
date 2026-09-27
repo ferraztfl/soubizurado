@@ -26,7 +26,7 @@ describe("question explorer search params", () => {
       }),
     ).toEqual({
       page: 3,
-      pageSize: 10,
+      pageSize: 20,
       sort: "recentes",
       filters: {
         search: "constitucional",
@@ -40,9 +40,27 @@ describe("question explorer search params", () => {
 
   it("reads page size and sort, falling back to the defaults", () => {
     expect(parseQuestionExplorerSearchParams({ por: "50", ordem: "ano" })).toMatchObject({ pageSize: 50, sort: "ano" });
-    expect(parseQuestionExplorerSearchParams({ por: "13", ordem: "x" })).toMatchObject({ pageSize: 10, sort: "recentes" });
-    expect(buildQuestionExplorerHref({ pageSize: 20, sort: "antigas", page: 2 })).toBe("/app/questoes?por=20&ordem=antigas&page=2");
-    expect(buildQuestionExplorerHref({ pageSize: 10, sort: "recentes" })).toBe("/app/questoes");
+    expect(parseQuestionExplorerSearchParams({ por: "13", ordem: "x" })).toMatchObject({ pageSize: 20, sort: "recentes" });
+    expect(buildQuestionExplorerHref({ pageSize: 50, sort: "antigas", page: 2 })).toBe("/app/questoes?por=50&ordem=antigas&page=2");
+    expect(buildQuestionExplorerHref({ pageSize: 20, sort: "recentes" })).toBe("/app/questoes");
+  });
+
+  it("uses saved preferences when the URL has none, and the URL when it does", () => {
+    const saved = { pageSize: "100", sort: "antigas" };
+
+    expect(parseQuestionExplorerSearchParams({ page: "2" }, saved)).toMatchObject({
+      page: 2,
+      pageSize: 100,
+      sort: "antigas",
+    });
+    expect(parseQuestionExplorerSearchParams({ por: "10", ordem: "ano" }, saved)).toMatchObject({
+      pageSize: 10,
+      sort: "ano",
+    });
+    expect(parseQuestionExplorerSearchParams({}, { pageSize: "7", sort: "toString" })).toMatchObject({
+      pageSize: 20,
+      sort: "recentes",
+    });
   });
 
   it("falls back safely for malformed URL values", () => {
@@ -55,7 +73,7 @@ describe("question explorer search params", () => {
       }),
     ).toEqual({
       page: 1,
-      pageSize: 10,
+      pageSize: 20,
       sort: "recentes",
       filters: {},
     });
@@ -69,7 +87,7 @@ describe("question explorer search params", () => {
       }),
     ).toEqual({
       page: 2,
-      pageSize: 10,
+      pageSize: 20,
       sort: "recentes",
       filters: {
         year: 2025,

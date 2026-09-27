@@ -1,7 +1,13 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
+
+import {
+  QUESTION_EXPLORER_PAGE_SIZE_COOKIE,
+  QUESTION_EXPLORER_PAGE_SIZES,
+  QUESTION_EXPLORER_SORT_COOKIE,
+} from "@/modules/question-bank/presentation/question-explorer-search-params";
 
 import styles from "./question-results-toolbar.module.css";
 
@@ -13,7 +19,6 @@ type QuestionResultsToolbarProps = Readonly<{
   sort: string;
 }>;
 
-const PAGE_SIZES = [10, 20, 50];
 const SORTS = [
   { value: "recentes", label: "Mais recentes" },
   { value: "antigas", label: "Mais antigas" },
@@ -21,23 +26,35 @@ const SORTS = [
 ];
 
 const numberFormatter = new Intl.NumberFormat("pt-BR");
+const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 
-/** Count, page size and sort; changes go straight to the URL (page 1). */
+function savePreference(name: string, value: string) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${ONE_YEAR_IN_SECONDS}; SameSite=Lax`;
+}
+
+/**
+ * Count, page size and sort. Changes go to the URL (page 1) and to a cookie,
+ * so the choice survives filters, pagination and later visits.
+ */
 export function QuestionResultsToolbar({ total, firstItem, lastItem, pageSize, sort }: QuestionResultsToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  function update(name: "por" | "ordem", value: string, defaultValue: string) {
+  // Keep the cookie in step with what is on screen (e.g. a shared link with ?por=50).
+  useEffect(() => {
+    savePreference(QUESTION_EXPLORER_PAGE_SIZE_COOKIE, String(pageSize));
+    savePreference(QUESTION_EXPLORER_SORT_COOKIE, sort);
+  }, [pageSize, sort]);
+
+  function update(name: "por" | "ordem", value: string) {
+    savePreference(name === "por" ? QUESTION_EXPLORER_PAGE_SIZE_COOKIE : QUESTION_EXPLORER_SORT_COOKIE, value);
+
+    // Always explicit in the URL, so the navigation happens even when the
+    // new value equals the default and the old one came from the cookie.
     const params = new URLSearchParams(searchParams.toString());
-
-    if (value === defaultValue) {
-      params.delete(name);
-    } else {
-      params.set(name, value);
-    }
-
+    params.set(name, value);
     params.delete("page");
     const query = params.toString();
 
@@ -61,8 +78,8 @@ export function QuestionResultsToolbar({ total, firstItem, lastItem, pageSize, s
       <div className={styles.controls}>
         <label className={styles.control}>
           <span>Questões por página</span>
-          <select value={pageSize} onChange={(event) => update("por", event.target.value, "10")} disabled={isPending}>
-            {PAGE_SIZES.map((size) => (
+          <select value={pageSize} onChange={(event) => update("por", event.target.value)} disabled={isPending}>
+            {QUESTION_EXPLORER_PAGE_SIZES.map((size) => (
               <option key={size} value={size}>
                 {size}
               </option>
@@ -72,7 +89,7 @@ export function QuestionResultsToolbar({ total, firstItem, lastItem, pageSize, s
 
         <label className={styles.control}>
           <span>Ordenar por</span>
-          <select value={sort} onChange={(event) => update("ordem", event.target.value, "recentes")} disabled={isPending}>
+          <select value={sort} onChange={(event) => update("ordem", event.target.value)} disabled={isPending}>
             {SORTS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}

@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -8,6 +9,8 @@ import {
 import {
   buildQuestionExplorerHref,
   parseQuestionExplorerSearchParams,
+  QUESTION_EXPLORER_PAGE_SIZE_COOKIE,
+  QUESTION_EXPLORER_SORT_COOKIE,
   QUESTION_EXPLORER_SORTS,
   type QuestionExplorerRawSearchParams,
 } from "@/modules/question-bank/presentation/question-explorer-search-params";
@@ -27,7 +30,11 @@ type QuestionExplorerPageProps = Readonly<{
 }>;
 
 export default async function QuestionExplorerPage({ searchParams }: QuestionExplorerPageProps) {
-  const query = parseQuestionExplorerSearchParams(await searchParams);
+  const cookieStore = await cookies();
+  const query = parseQuestionExplorerSearchParams(await searchParams, {
+    pageSize: cookieStore.get(QUESTION_EXPLORER_PAGE_SIZE_COOKIE)?.value,
+    sort: cookieStore.get(QUESTION_EXPLORER_SORT_COOKIE)?.value,
+  });
 
   const [result, facets] = await Promise.all([
     createListPublishedQuestionsUseCase().execute({
