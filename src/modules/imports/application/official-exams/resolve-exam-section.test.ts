@@ -66,6 +66,12 @@ describe("resolveExamSection", () => {
     for (const section of ["Extravagante", "Legislação Extravagante", "Legislação Especial e Extravagante"]) {
       expect(resolve(section)).toEqual({ kind: "KNOWLEDGE_AREA", knowledgeAreaSlug: "ciencias-juridicas" });
     }
+
+    // "Administração Pública" in exams is administrative law, even if a
+    // management discipline has the alias "Administração".
+    for (const section of ["Administração Pública", "Noções de Administração Pública"]) {
+      expect(resolve(section)).toEqual({ kind: "KNOWLEDGE_AREA", knowledgeAreaSlug: "ciencias-juridicas" });
+    }
   });
 
   it("leaves unknown sections for a reviewer", () => {

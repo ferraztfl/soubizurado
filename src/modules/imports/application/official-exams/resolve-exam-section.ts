@@ -37,6 +37,13 @@ const KNOWLEDGE_AREA_RULES: readonly Readonly<{
 /** "Extravagante", "Legislação Extravagante", "Legislação Especial e Extravagante". */
 const MIXED_LAW_SECTION = /^(?:legislacao\s+)?(?:especial\s+e\s+)?extravagante$/;
 
+/**
+ * "Administração Pública" / "Noções de Administração Pública": in exams it
+ * is the legal field (servants' statute, procurement, administrative
+ * procedure), not management theory. Only the area is fixed.
+ */
+const PUBLIC_ADMINISTRATION_SECTION = /^(?:nocoes\s+de\s+)?administracao\s+publica$/;
+
 function contains(haystack: string, needle: string): boolean {
   return ` ${haystack} `.includes(` ${needle} `);
 }
@@ -61,7 +68,7 @@ export function resolveExamSection(
   // with the state military statute). Checked before the aliases,
   // which still map "Legislação Penal Extravagante" to the penal
   // discipline.
-  if (MIXED_LAW_SECTION.test(normalized)) {
+  if (MIXED_LAW_SECTION.test(normalized) || PUBLIC_ADMINISTRATION_SECTION.test(normalized)) {
     return { kind: "KNOWLEDGE_AREA", knowledgeAreaSlug: "ciencias-juridicas" };
   }
 

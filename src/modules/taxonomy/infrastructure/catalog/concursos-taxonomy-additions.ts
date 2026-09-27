@@ -42,11 +42,13 @@ function area(
 
 export const JURIDICAS = "ciencias-juridicas";
 export const TECNOLOGIA = "tecnologia-da-informacao";
+export const ADMINISTRACAO = "administracao-e-gestao";
 const MATEMATICA = "matematica-e-suas-tecnologias";
 
 export const CONCURSOS_KNOWLEDGE_AREAS: readonly CatalogKnowledgeArea[] = [
   { slug: JURIDICAS, name: "Ciências Jurídicas" },
   { slug: TECNOLOGIA, name: "Tecnologia da Informação" },
+  { slug: ADMINISTRACAO, name: "Administração e Gestão" },
 ];
 
 /** Areas added to existing ENEM disciplines, keyed by discipline name. */
@@ -425,6 +427,67 @@ export const CONCURSOS_DISCIPLINES: readonly CatalogDiscipline[] = [
         topic("Estimação e Intervalos de Confiança"),
         topic("Testes de Hipóteses"),
         topic("Correlação e Regressão"),
+      ]),
+    ],
+  },
+
+  // --------------------------------------------------------------
+  // v5 — cargos administrativos (ex.: UFBA 2016, Administrador).
+  {
+    name: "Administração Geral",
+    knowledgeAreaSlug: ADMINISTRACAO,
+    aliases: ["Administração", "Noções de Administração", "Administração Geral e Pública", "Teoria Geral da Administração"],
+    areas: [
+      area("Teorias da Administração", [
+        topic("Evolução do Pensamento Administrativo"),
+        topic("Abordagens Clássica e Científica", ["Taylor", "Fayol"], ["Administração Científica"]),
+        topic("Abordagem Burocrática", ["Weber"]),
+        topic("Abordagem Humanística e Comportamental", [], ["Relações Humanas"]),
+        topic("Abordagens Sistêmica e Contingencial"),
+      ]),
+      area("Gestão Organizacional", [
+        topic("Cultura, Aprendizagem e Mudança Organizacional"),
+        topic("Conflitos e Comportamento Organizacional"),
+        topic("Organização, Sistemas e Métodos", ["Rotinas e fluxos de trabalho", "Manuais e formulários"], ["OSM", "O&M"]),
+        topic("Gestão de Projetos"),
+        topic("Planejamento e Gestão Estratégica"),
+        topic("Responsabilidade Social e Ética Empresarial"),
+      ]),
+      area("Gestão de Pessoas", [
+        topic("Administração de Recursos Humanos", ["Recrutamento e seleção", "Treinamento e desenvolvimento", "Avaliação de desempenho"]),
+      ]),
+      area("Administração Financeira e de Materiais", [
+        topic("Administração Financeira"),
+        topic("Administração de Materiais e Logística"),
+      ]),
+      area("Administração Pública", [
+        topic("Modelos de Administração Pública", ["Patrimonialista", "Burocrático", "Gerencial"]),
+      ]),
+    ],
+  },
+
+  // --------------------------------------------------------------
+  // v6 — Libras (tradutor e intérprete; ex.: UFBA 2016).
+  {
+    name: "Libras",
+    knowledgeAreaSlug: "linguagens-codigos-e-suas-tecnologias",
+    aliases: ["Língua Brasileira de Sinais", "Língua Brasileira de Sinais – Libras"],
+    areas: [
+      area("Linguística da Libras", [
+        topic("Estudos Linguísticos da Libras", ["Parâmetros (fonologia)", "Morfologia e sintaxe", "Classificadores"]),
+      ]),
+      area("Tradução e Interpretação", [
+        topic("Competências do Tradutor-Intérprete"),
+        topic("Código de Ética do Tradutor-Intérprete"),
+        topic("Tipos e Modelos de Tradução e Interpretação", ["Interpretação simultânea e consecutiva"]),
+        topic("Atuação do Intérprete Educacional"),
+      ]),
+      area("Educação e Cultura Surda", [
+        topic("Identidades e Cultura Surda"),
+        topic("Educação de Surdos", ["Oralismo", "Comunicação total", "Bilinguismo"]),
+      ]),
+      area("Legislação sobre Libras e Acessibilidade", [
+        topic("Legislação da Libras", ["Lei 10.436/2002", "Decreto 5.626/2005", "Lei 12.319/2010"]),
       ]),
     ],
   },

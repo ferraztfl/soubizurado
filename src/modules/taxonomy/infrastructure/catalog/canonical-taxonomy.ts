@@ -17,13 +17,16 @@ import { ENEM_CANONICAL_TAXONOMY_V1 } from "./enem-canonical-taxonomy-v1";
  *   military/servant statutes, state police organic laws).
  * - v4: + "Estatuto da Pessoa com Deficiência" in Legislação Penal
  *   Especial.
+ * - v5: + "Administração Geral" (new area "Administração e Gestão") for
+ *   administrative positions.
+ * - v6: + "Libras" (Linguagens) for sign-language interpreter exams.
  *
  * The seed is create-only, so applying v2 over v1 only adds entries.
  */
 export const CANONICAL_TAXONOMY: CanonicalTaxonomyCatalog = {
-  version: 4,
+  version: 6,
   summary:
-    "Catálogo canônico v3: ENEM/Ensino Médio + disciplinas de concursos públicos (jurídicas, informática, raciocínio lógico, estatística), história regional, legislação estadual e Estatuto da Pessoa com Deficiência.",
+    "Catálogo canônico v6: ENEM/Ensino Médio + disciplinas de concursos públicos (jurídicas, informática, raciocínio lógico, estatística, administração geral, Libras), história regional, legislação estadual e Estatuto da Pessoa com Deficiência.",
   knowledgeAreas: [
     ...ENEM_CANONICAL_TAXONOMY_V1.knowledgeAreas,
     ...CONCURSOS_KNOWLEDGE_AREAS,
