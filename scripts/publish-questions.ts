@@ -47,7 +47,7 @@ async function main(): Promise<void> {
         disciplineId: true,
         topicId: true,
         source: { select: { sourceType: true } },
-        examination: { select: { boardId: true, year: true } },
+        examination: { select: { boardId: true, year: true, title: true } },
         topic: { select: { disciplineId: true, isActive: true } },
         _count: { select: { mediaLinks: true, supportLinks: true } },
         alternatives: { select: { content: true, isCorrect: true, _count: { select: { mediaLinks: true } } } },
@@ -74,7 +74,7 @@ async function main(): Promise<void> {
         statement: question.statement,
         sourceId: question.sourceId,
         sourceType: question.source?.sourceType ?? null,
-        examination: question.examination,
+        examination: question.examination ? { boardId: question.examination.boardId, year: question.examination.year } : null,
         disciplineId: question.disciplineId,
         topicId: question.topicId,
         correctTrueFalse: question.correctTrueFalse,
@@ -87,6 +87,16 @@ async function main(): Promise<void> {
 
       if (issues.length > 0) {
         count(`política: ${issues[0]}`);
+        continue;
+      }
+
+      // ENEM always has A–E; fewer means lost alternatives and a suspect answer key.
+      if (
+        question.type === "MULTIPLE_CHOICE" &&
+        question.examination?.title.startsWith("ENEM") &&
+        question.alternatives.length < 5
+      ) {
+        count("ENEM com menos de 5 alternativas (gabarito suspeito)");
         continue;
       }
 
