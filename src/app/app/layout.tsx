@@ -1,8 +1,15 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
+import {
+  FONT_SCALE_COOKIE,
+  parseFontScale,
+  parseTheme,
+  THEME_COOKIE,
+} from "./_components/reading-preferences";
 import { StudentAppShell } from "./_components/student-app-shell";
 
 type StudentAppLayoutProps = Readonly<{
@@ -36,11 +43,15 @@ export default async function StudentAppLayout({
   const firstName =
     displayName.trim().split(/\s+/)[0] || "Aluno";
 
+  const cookieStore = await cookies();
+
   return (
     <StudentAppShell
       displayName={displayName}
       email={user.email}
       firstName={firstName}
+      initialTheme={parseTheme(cookieStore.get(THEME_COOKIE)?.value)}
+      initialFontScale={parseFontScale(cookieStore.get(FONT_SCALE_COOKIE)?.value)}
     >
       {children}
     </StudentAppShell>

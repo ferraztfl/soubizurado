@@ -121,7 +121,7 @@
     linear-gradient(
       150deg,
       var(--sb-brand-subtle) 0%,
-      #ffffff 76%
+      var(--sb-surface) 76%
     );
 }
 
@@ -145,7 +145,7 @@
   padding: 3px 6px;
   border: 1px solid #f0cbc7;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--sb-surface);
   color: var(--sb-brand-strong);
   font-size: 7px;
   font-weight: 850;

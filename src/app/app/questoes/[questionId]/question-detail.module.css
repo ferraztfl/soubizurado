@@ -89,7 +89,7 @@
 .supportContent p {
   margin: 0;
   color: var(--sb-text);
-  font-size: 14px;
+  font-size: calc(14px * var(--sb-reading-scale, 1));
   line-height: 1.7;
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -110,7 +110,7 @@
 .statement {
   margin-top: 22px;
   color: var(--sb-text-strong);
-  font-size: clamp(15px, 1.2vw, 16px);
+  font-size: calc(clamp(15px, 1.2vw, 16px) * var(--sb-reading-scale, 1));
   font-weight: 500;
   line-height: 1.75;
   white-space: pre-line;
@@ -147,7 +147,7 @@
   place-items: center;
   border: 1px solid var(--sb-border-strong);
   border-radius: 9px;
-  background: #ffffff;
+  background: var(--sb-surface);
   color: var(--sb-text-muted);
   font-size: 10px;
   font-weight: 850;

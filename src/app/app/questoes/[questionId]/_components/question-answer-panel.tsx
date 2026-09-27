@@ -74,6 +74,22 @@ function isWrongSelectedAlternative(
   );
 }
 
+/** Share of all attempts that chose this option, once the answer is in. */
+function optionShare(
+  result: StudyAnswerActionResult | null,
+  optionKey: string,
+): number | null {
+  const statistics = result?.ok === true ? result.data.statistics : null;
+
+  if (!statistics || statistics.totalAttempts === 0) {
+    return null;
+  }
+
+  return Math.round(((statistics.byOption[optionKey] ?? 0) / statistics.totalAttempts) * 100);
+}
+
+const countFormatter = new Intl.NumberFormat("pt-BR");
+
 function trueFalseLabel(
   value: boolean,
 ): string {
@@ -310,6 +326,8 @@ export function QuestionAnswerPanel({
                       Sua resposta
                     </span>
                   ) : null}
+
+                  <OptionShare share={optionShare(result, alternative.id)} />
                 </button>
                 </div>
               );
@@ -394,6 +412,8 @@ export function QuestionAnswerPanel({
                     Sua resposta
                   </span>
                 ) : null}
+
+                <OptionShare share={optionShare(result, String(value))} />
               </button>
             );
           })}
@@ -447,6 +467,20 @@ export function QuestionAnswerPanel({
               explicação cadastrada.
             </p>
           )}
+
+          {result.data.statistics && result.data.statistics.totalAttempts > 0 ? (
+            <p className={styles.statistics}>
+              <strong>
+                {Math.round(
+                  (result.data.statistics.correctAttempts / result.data.statistics.totalAttempts) * 100,
+                )}
+                %
+              </strong>{" "}
+              das respostas acertaram esta questão ·{" "}
+              {countFormatter.format(result.data.statistics.totalAttempts)}{" "}
+              {result.data.statistics.totalAttempts === 1 ? "resposta" : "respostas"} no total
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -480,5 +514,18 @@ export function QuestionAnswerPanel({
         </span>
       </div>
     </div>
+  );
+}
+
+function OptionShare({ share }: Readonly<{ share: number | null }>) {
+  if (share === null) {
+    return null;
+  }
+
+  return (
+    <span className={styles.share} title={`${share}% das respostas marcaram esta opção`}>
+      <span className={styles.shareBar} style={{ width: `${share}%` }} aria-hidden="true" />
+      <span className={styles.shareValue}>{share}%</span>
+    </span>
   );
 }

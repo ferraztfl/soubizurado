@@ -15,6 +15,8 @@ type MobileNavigationDrawerProps = Readonly<{
   onClose: () => void;
   id?: string;
   label?: string;
+  /** The drawer is portalled out of the shell, so it repeats the theme. */
+  theme?: string;
 }>;
 
 export function MobileNavigationDrawer({
@@ -23,6 +25,7 @@ export function MobileNavigationDrawer({
   onClose,
   id = "student-mobile-navigation",
   label = "Menu principal",
+  theme,
 }: MobileNavigationDrawerProps) {
   const closeButtonRef =
     useRef<HTMLButtonElement>(null);
@@ -78,7 +81,7 @@ export function MobileNavigationDrawer({
   }
 
   return createPortal(
-    <div className={styles.layer}>
+    <div className={styles.layer} data-theme={theme}>
       <button
         type="button"
         className={styles.backdrop}

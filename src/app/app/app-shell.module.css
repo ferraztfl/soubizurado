@@ -2,6 +2,7 @@
   width: 100%;
   min-height: 100dvh;
   background: var(--sb-background);
+  color: var(--sb-text);
 }
 
 .desktopSidebar {

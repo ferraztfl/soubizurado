@@ -1,16 +1,35 @@
 "use client";
 
+import { ReadingControls } from "./reading-controls";
+import type { FontScale, StudentTheme } from "./reading-preferences";
 import styles from "./student-topbar.module.css";
 
 type StudentTopbarProps = Readonly<{
   firstName: string;
   onMenuClick: () => void;
+  theme: StudentTheme;
+  fontScale: FontScale;
+  onThemeChange: (theme: StudentTheme) => void;
+  onFontScaleChange: (scale: FontScale) => void;
 }>;
 
 export function StudentTopbar({
   firstName,
   onMenuClick,
+  theme,
+  fontScale,
+  onThemeChange,
+  onFontScaleChange,
 }: StudentTopbarProps) {
+  const readingControls = (
+    <ReadingControls
+      theme={theme}
+      fontScale={fontScale}
+      onThemeChange={onThemeChange}
+      onFontScaleChange={onFontScaleChange}
+    />
+  );
+
   return (
     <header className={styles.topbar}>
       <div className={styles.inner}>
@@ -26,6 +45,8 @@ export function StudentTopbar({
           </div>
 
           <div className={styles.statusGroup}>
+            {readingControls}
+
             <span className={styles.planStatus}>
               Plano gratuito
             </span>
@@ -62,6 +83,8 @@ export function StudentTopbar({
               Olá, {firstName}
             </strong>
           </div>
+
+          <div className={styles.mobileControls}>{readingControls}</div>
         </div>
       </div>
     </header>

@@ -7,6 +7,10 @@ import type {
 import {
   createSubmitStudyQuestionAnswerUseCase,
 } from "@/modules/study/infrastructure/composition/study-application";
+import {
+  loadQuestionAnswerStatistics,
+  type QuestionAnswerStatistics,
+} from "@/modules/study/infrastructure/queries/question-answer-statistics";
 import { ApplicationError } from "@/shared/errors/application-error";
 import type {
   ErrorCode,
@@ -31,6 +35,8 @@ export type StudyAnswerActionSuccess =
       selectedAnswer: StudyAnswerDisplay;
       correctAnswer: StudyAnswerDisplay;
       explanation: string | null;
+      /** How all students answered, this attempt included; null if unavailable. */
+      statistics: QuestionAnswerStatistics | null;
     }>;
   }>;
 
@@ -136,6 +142,8 @@ export async function submitStudyAnswerAction(
         correctAnswer:
           result.correctAnswer,
         explanation: result.explanation,
+        // Statistics are a bonus: a failure here must not hide the answer.
+        statistics: await loadQuestionAnswerStatistics(result.questionId).catch(() => null),
       },
     };
   } catch (caught) {

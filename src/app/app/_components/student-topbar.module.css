@@ -10,7 +10,7 @@
     1px solid var(--sb-gray-200);
 
   background:
-    rgba(255, 255, 255, 0.97);
+    color-mix(in srgb, var(--sb-surface) 97%, transparent);
 
   backdrop-filter: blur(14px);
 
@@ -336,7 +336,7 @@
 
   .title {
     max-width:
-      calc(100vw - 88px);
+      calc(100vw - 230px);
   }
 }
 
@@ -349,4 +349,14 @@
   .menuButton {
     transition: none;
   }
+}
+
+/* A− / A+ / theme on phones: pushed to the right of the greeting. */
+.mobileControls {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.statusGroup {
+  flex-wrap: wrap;
 }

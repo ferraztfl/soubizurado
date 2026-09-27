@@ -75,6 +75,65 @@
   --sb-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/*
+ * Student area dark theme (data-theme="dark" on the student shell only; the
+ * admin stays light). Redefines the semantic tokens; components follow.
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --sb-brand: #ff4d3d;
+  --sb-brand-strong: #ff8175;
+  --sb-brand-soft: #3a1714;
+  --sb-brand-subtle: #2a1412;
+
+  --sb-background: #0e1015;
+  --sb-surface: #171a21;
+  --sb-surface-muted: #1d2129;
+  --sb-surface-raised: #1f232c;
+  --sb-sidebar: #13161c;
+  --sb-sidebar-active: #2a1714;
+
+  --sb-text: #d9dce3;
+  --sb-text-strong: #f3f4f7;
+  --sb-text-muted: #a1a7b3;
+  --sb-text-subtle: #7b8190;
+
+  --sb-border: #2a2f39;
+  --sb-border-strong: #3a404c;
+
+  --sb-success: #3ccf8e;
+  --sb-success-soft: #12301f;
+  --sb-warning: #f0a93b;
+  --sb-warning-soft: #33250f;
+  --sb-danger: #ff6b61;
+  --sb-danger-soft: #3a1715;
+  --sb-info: #7aa5ff;
+  --sb-info-soft: #152238;
+
+  --sb-ink-900: #eceef2;
+  --sb-ink-700: #c3c7cf;
+  --sb-gray-700: #b3b8c2;
+  --sb-gray-400: #5d6370;
+  --sb-gray-100: #232730;
+
+  --sb-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sb-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  /* Aliases are resolved where declared, so they must be repeated here. */
+  --sb-red: var(--sb-brand);
+  --sb-red-dark: var(--sb-brand-strong);
+  --sb-red-soft: var(--sb-brand-soft);
+  --sb-ink-950: var(--sb-text-strong);
+  --sb-ink-800: var(--sb-text);
+  --sb-gray-600: var(--sb-text-muted);
+  --sb-gray-500: var(--sb-text-subtle);
+  --sb-gray-300: var(--sb-border-strong);
+  --sb-gray-200: var(--sb-border);
+  --sb-gray-50: var(--sb-surface-muted);
+  --sb-page: var(--sb-background);
+}
+
 *,
 *::before,
 *::after {

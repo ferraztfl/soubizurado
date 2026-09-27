@@ -1,12 +1,20 @@
-﻿"use client";
+"use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   useCallback,
   useState,
 } from "react";
 
 import { MobileNavigationDrawer } from "./mobile-navigation-drawer";
+import {
+  FONT_SCALE_COOKIE,
+  savePreferenceCookie,
+  THEME_COOKIE,
+  themeCookieValue,
+  type FontScale,
+  type StudentTheme,
+} from "./reading-preferences";
 import { StudentSidebar } from "./student-sidebar";
 import { StudentTopbar } from "./student-topbar";
 
@@ -17,6 +25,8 @@ type StudentAppShellProps = Readonly<{
   displayName: string;
   email?: string;
   firstName: string;
+  initialTheme: StudentTheme;
+  initialFontScale: FontScale;
 }>;
 
 export function StudentAppShell({
@@ -24,9 +34,13 @@ export function StudentAppShell({
   displayName,
   email,
   firstName,
+  initialTheme,
+  initialFontScale,
 }: StudentAppShellProps) {
   const [navigationOpen, setNavigationOpen] =
     useState(false);
+  const [theme, setTheme] = useState(initialTheme);
+  const [fontScale, setFontScale] = useState(initialFontScale);
 
   const openNavigation = useCallback(() => {
     setNavigationOpen(true);
@@ -36,8 +50,23 @@ export function StudentAppShell({
     setNavigationOpen(false);
   }, []);
 
+  const changeTheme = useCallback((next: StudentTheme) => {
+    setTheme(next);
+    savePreferenceCookie(THEME_COOKIE, themeCookieValue(next));
+  }, []);
+
+  const changeFontScale = useCallback((next: FontScale) => {
+    setFontScale(next);
+    savePreferenceCookie(FONT_SCALE_COOKIE, String(next));
+  }, []);
+
   return (
-    <div className={styles.shell}>
+    <div
+      className={styles.shell}
+      data-theme={theme}
+      // Question text sizes multiply by this (A− / A+).
+      style={{ "--sb-reading-scale": fontScale / 100 } as CSSProperties}
+    >
       <div className={styles.desktopSidebar}>
         <StudentSidebar
           displayName={displayName}
@@ -50,6 +79,10 @@ export function StudentAppShell({
         <StudentTopbar
           firstName={firstName}
           onMenuClick={openNavigation}
+          theme={theme}
+          fontScale={fontScale}
+          onThemeChange={changeTheme}
+          onFontScaleChange={changeFontScale}
         />
 
         <main className={styles.content}>
@@ -58,6 +91,7 @@ export function StudentAppShell({
       </div>
 
       <MobileNavigationDrawer
+        theme={theme}
         open={navigationOpen}
         onClose={closeNavigation}
       >

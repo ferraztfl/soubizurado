@@ -19,6 +19,8 @@
   max-height: 560px;
   object-fit: contain;
   border-radius: 0.75rem;
+  /* Exam images often have transparent backgrounds: keep them legible in the dark theme. */
+  background: #ffffff;
 }
 
 .compact {

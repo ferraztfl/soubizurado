@@ -171,7 +171,7 @@
 .support p {
   margin: 10px 0 0;
   color: var(--sb-text);
-  font-size: 14px;
+  font-size: calc(14px * var(--sb-reading-scale, 1));
   line-height: 1.7;
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -183,7 +183,7 @@
 
 .statement {
   color: var(--sb-text-strong);
-  font-size: 15px;
+  font-size: calc(15px * var(--sb-reading-scale, 1));
   font-weight: 500;
   line-height: 1.75;
   white-space: pre-line;
