@@ -56,7 +56,7 @@ export function QuestionMedia({
   return (
     <span className={className}>
       {media.map(
-        (item) => {
+        (item, index) => {
           if (
             item.mimeType.startsWith(
               "image/",
@@ -64,7 +64,7 @@ export function QuestionMedia({
           ) {
             return (
               <span
-                key={item.id}
+                key={`${item.id}-${index}`}
                 className={
                   styles.item
                 }
@@ -110,7 +110,7 @@ export function QuestionMedia({
           ) {
             return (
               <span
-                key={item.id}
+                key={`${item.id}-${index}`}
                 className={
                   styles.document
                 }
@@ -122,7 +122,7 @@ export function QuestionMedia({
 
           return (
             <span
-              key={item.id}
+              key={`${item.id}-${index}`}
               className={
                 styles.item
               }
