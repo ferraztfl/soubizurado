@@ -32,7 +32,14 @@ const correctionsSchema = z.object({
         officialNumber: z.number().int().positive(),
         reason: z.string().min(10).max(500),
         alternatives: z
-          .array(z.object({ label: z.string().regex(/^[A-E]$/), content: z.string().min(1).max(5000) }))
+          .array(
+            z.object({
+              label: z.string().regex(/^[A-E]$/),
+              content: z.string().min(1).max(5000),
+              /** Current (damaged) text of this alternative; its text becomes `content`. */
+              replaces: z.string().min(1).optional(),
+            }),
+          )
           .min(2),
         correctLabel: z.string().regex(/^[A-E]$/),
       }),
@@ -70,7 +77,7 @@ async function main(): Promise<void> {
     reason: string;
     before: Snapshot;
     after: Snapshot;
-    updates: { id: string; label: string; position: number; isCorrect: boolean }[];
+    updates: { id: string; label: string; position: number; isCorrect: boolean; content?: string }[];
     creates: { label: string; position: number; content: string; isCorrect: boolean }[];
   }[] = [];
 
@@ -106,13 +113,15 @@ async function main(): Promise<void> {
       const afterAlternatives: Snapshot["alternatives"] = [];
 
       correction.alternatives.forEach((official, position) => {
-        const match = [...unused.values()].find((item) => normalize(item.content) === normalize(official.content));
+        const wanted = normalize(official.replaces ?? official.content);
+        const match = [...unused.values()].find((item) => normalize(item.content) === wanted);
         const isCorrect = official.label === correction.correctLabel;
 
         if (match) {
           unused.delete(match.id);
-          updates.push({ id: match.id, label: official.label, position, isCorrect });
-          afterAlternatives.push({ id: match.id, label: official.label, content: match.content, isCorrect });
+          const content = official.replaces ? official.content : undefined;
+          updates.push({ id: match.id, label: official.label, position, isCorrect, ...(content ? { content } : {}) });
+          afterAlternatives.push({ id: match.id, label: official.label, content: content ?? match.content, isCorrect });
         } else {
           creates.push({ label: official.label, position, content: official.content, isCorrect });
           afterAlternatives.push({ id: "(nova)", label: official.label, content: official.content, isCorrect });
@@ -181,7 +190,12 @@ async function main(): Promise<void> {
         for (const update of plan.updates) {
           await transaction.questionAlternative.update({
             where: { id: update.id },
-            data: { label: update.label, position: update.position, isCorrect: update.isCorrect },
+            data: {
+              label: update.label,
+              position: update.position,
+              isCorrect: update.isCorrect,
+              ...(update.content ? { content: update.content } : {}),
+            },
           });
         }
 
@@ -205,6 +219,7 @@ async function main(): Promise<void> {
             editorProfileId: null,
             reason: plan.reason,
             changedFields: ["alternatives", "answerKey"],
+            // A content fix of a matched alternative is part of "alternatives".
             answerKeyChanged: true,
             questionStatus: question.status,
             before: plan.before,
