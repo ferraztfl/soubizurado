@@ -1,9 +1,10 @@
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 /*
- * Read-only: how the current student did on a page of questions, for the
- * "Resolvida / Acertou / Errou" marks of the question list. Looks the
- * profile up by auth user id and never creates it (answering does).
+ * Read-only helpers for the question explorer: the student's profile id (for
+ * the "Minhas questões" filter) and how they did on a page of questions (the
+ * "Resolvida / Acertou / Errou" marks). Never creates the profile — answering
+ * does.
  */
 
 export type AnsweredQuestionStatus = Readonly<{
@@ -11,23 +12,25 @@ export type AnsweredQuestionStatus = Readonly<{
   lastIsCorrect: boolean;
 }>;
 
+export async function findStudentProfileId(authUserId: string): Promise<string | null> {
+  const profile = await getPrismaClient().profile.findUnique({
+    where: { authUserId },
+    select: { id: true },
+  });
+
+  return profile?.id ?? null;
+}
+
 export async function loadAnsweredQuestionStatus(
-  authUserId: string,
+  profileId: string,
   questionIds: readonly string[],
 ): Promise<ReadonlyMap<string, AnsweredQuestionStatus>> {
   if (questionIds.length === 0) {
     return new Map();
   }
 
-  const prisma = getPrismaClient();
-  const profile = await prisma.profile.findUnique({ where: { authUserId }, select: { id: true } });
-
-  if (!profile) {
-    return new Map();
-  }
-
-  const attempts = await prisma.studyAnswerAttempt.findMany({
-    where: { profileId: profile.id, questionId: { in: [...questionIds] } },
+  const attempts = await getPrismaClient().studyAnswerAttempt.findMany({
+    where: { profileId, questionId: { in: [...questionIds] } },
     orderBy: { answeredAt: "desc" },
     select: { questionId: true, isCorrect: true },
   });

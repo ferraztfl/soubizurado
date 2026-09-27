@@ -78,9 +78,25 @@ export type PublicQuestionReadFilters = Readonly<{
   topicId?: string;
   subtopicId?: string;
   boardId?: string;
+  organizationId?: string;
+  careerPositionId?: string;
   examinationId?: string;
   year?: number;
   type?: QuestionType;
+  /** "Minhas questões": questions this profile has / has not answered. */
+  answered?: PublicQuestionAnsweredFilter;
+}>;
+
+export const PUBLIC_QUESTION_ANSWERED_STATUSES = ["unanswered", "wrong", "correct"] as const;
+export type PublicQuestionAnsweredStatus = (typeof PUBLIC_QUESTION_ANSWERED_STATUSES)[number];
+
+/**
+ * unanswered: no attempt yet; wrong / correct: at least one wrong / right
+ * attempt (a question answered both ways appears in both).
+ */
+export type PublicQuestionAnsweredFilter = Readonly<{
+  profileId: string;
+  status: PublicQuestionAnsweredStatus;
 }>;
 
 /** recent: latest published first; oldest: by code; year: exam year, newest first. */
@@ -100,8 +116,22 @@ export type ListPublicQuestionsRepositoryResult =
     total: number;
   }>;
 
+export type QuestionExplorerAreaFacet = PublicQuestionTaxonomyReference &
+  Readonly<{ disciplineId: string }>;
+
+export type QuestionExplorerTopicFacet = PublicQuestionTaxonomyReference &
+  Readonly<{ areaId: string }>;
+
+export type QuestionExplorerOrganizationFacet = PublicQuestionTaxonomyReference &
+  Readonly<{ acronym: string | null }>;
+
 export type QuestionExplorerFacets = Readonly<{
   disciplines: readonly PublicQuestionTaxonomyReference[];
+  /** Tópicos (areas) and subtópicos (topics) with published questions, for the cascade. */
+  areas: readonly QuestionExplorerAreaFacet[];
+  topics: readonly QuestionExplorerTopicFacet[];
+  organizations: readonly QuestionExplorerOrganizationFacet[];
+  careerPositions: readonly PublicQuestionTaxonomyReference[];
   boards: readonly PublicQuestionBoardReference[];
   years: readonly number[];
   types: readonly QuestionType[];

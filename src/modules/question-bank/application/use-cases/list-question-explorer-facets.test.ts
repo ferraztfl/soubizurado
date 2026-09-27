@@ -31,6 +31,10 @@ class FakePublicQuestionReadRepository
 
   public async listExplorerFacets(): Promise<QuestionExplorerFacets> {
     return {
+      areas: [],
+      topics: [],
+      organizations: [],
+      careerPositions: [],
       disciplines: [
         {
           id: "discipline-1",
@@ -63,6 +67,10 @@ describe("ListQuestionExplorerFacetsUseCase", () => {
     await expect(
       useCase.execute(),
     ).resolves.toEqual({
+      areas: [],
+      topics: [],
+      organizations: [],
+      careerPositions: [],
       disciplines: [
         {
           id: "discipline-1",

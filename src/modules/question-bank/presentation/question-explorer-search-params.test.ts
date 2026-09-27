@@ -45,6 +45,30 @@ describe("question explorer search params", () => {
     expect(buildQuestionExplorerHref({ pageSize: 20, sort: "recentes" })).toBe("/app/questoes");
   });
 
+  it("reads and writes the cascade, organization, career and situation filters", () => {
+    const query = parseQuestionExplorerSearchParams({
+      discipline: "d1",
+      area: "a1",
+      topic: "t1",
+      org: "o1",
+      cargo: "c1",
+      situacao: "erradas",
+    });
+
+    expect(query.filters).toEqual({
+      disciplineId: "d1",
+      areaId: "a1",
+      topicId: "t1",
+      organizationId: "o1",
+      careerPositionId: "c1",
+      situation: "erradas",
+    });
+    expect(buildQuestionExplorerHref(query.filters)).toBe(
+      "/app/questoes?discipline=d1&area=a1&topic=t1&org=o1&cargo=c1&situacao=erradas",
+    );
+    expect(parseQuestionExplorerSearchParams({ situacao: "constructor" }).filters).toEqual({});
+  });
+
   it("uses saved preferences when the URL has none, and the URL when it does", () => {
     const saved = { pageSize: "100", sort: "antigas" };
 

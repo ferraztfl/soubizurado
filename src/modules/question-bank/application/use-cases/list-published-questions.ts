@@ -19,10 +19,12 @@ import {
   toPublicQuestionDto,
 } from "../mappers/to-public-question-dto";
 
-import type {
-  PublicQuestionReadFilters,
-  PublicQuestionReadRepository,
-  PublicQuestionSort,
+import {
+  PUBLIC_QUESTION_ANSWERED_STATUSES,
+  type PublicQuestionAnsweredFilter,
+  type PublicQuestionReadFilters,
+  type PublicQuestionReadRepository,
+  type PublicQuestionSort,
 } from "../ports/public-question-read-repository";
 
 const DEFAULT_PAGE = 1;
@@ -172,13 +174,31 @@ function normalizeFilters(
           ),
         }
       : {}),
+    ...(normalizeOptionalText(filters.organizationId)
+      ? { organizationId: normalizeOptionalText(filters.organizationId) }
+      : {}),
+    ...(normalizeOptionalText(filters.careerPositionId)
+      ? { careerPositionId: normalizeOptionalText(filters.careerPositionId) }
+      : {}),
     ...(filters.year !== undefined
       ? { year: filters.year }
       : {}),
     ...(filters.type !== undefined
       ? { type: filters.type }
       : {}),
+    ...(filters.answered ? { answered: requireValidAnsweredFilter(filters.answered) } : {}),
   };
+}
+
+function requireValidAnsweredFilter(answered: PublicQuestionAnsweredFilter): PublicQuestionAnsweredFilter {
+  if (
+    normalizeOptionalText(answered.profileId) === undefined ||
+    !PUBLIC_QUESTION_ANSWERED_STATUSES.includes(answered.status)
+  ) {
+    throw new ApplicationError(ERROR_CODES.VALIDATION_ERROR, "Answered filter is invalid.");
+  }
+
+  return { profileId: answered.profileId.trim(), status: answered.status };
 }
 
 export class ListPublishedQuestionsUseCase {

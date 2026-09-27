@@ -24,6 +24,17 @@ function createPrismaMock() {
   const disciplineFindMany = vi.fn();
   const boardFindMany = vi.fn();
   const examinationFindMany = vi.fn();
+  const areaFindMany = vi.fn().mockResolvedValue([
+    { id: "area-1", name: "Direitos Fundamentais", disciplineId: "discipline-1" },
+  ]);
+  const topicFindMany = vi.fn().mockResolvedValue([
+    { id: "topic-1", name: "Direitos Individuais", areaId: "area-1" },
+    { id: "topic-legacy", name: "Sem tópico", areaId: null },
+  ]);
+  const organizationFindMany = vi.fn().mockResolvedValue([
+    { id: "org-1", name: "Polícia Militar de Pernambuco", acronym: "PMPE" },
+  ]);
+  const careerPositionFindMany = vi.fn().mockResolvedValue([{ id: "career-1", name: "Soldado" }]);
 
   const prisma = {
     question: {
@@ -39,6 +50,18 @@ function createPrismaMock() {
     },
     examination: {
       findMany: examinationFindMany,
+    },
+    area: {
+      findMany: areaFindMany,
+    },
+    topic: {
+      findMany: topicFindMany,
+    },
+    publicOrganization: {
+      findMany: organizationFindMany,
+    },
+    careerPosition: {
+      findMany: careerPositionFindMany,
     },
   } as unknown as PrismaClient;
 
@@ -95,6 +118,46 @@ const validPublicRow = {
 } as const;
 
 describe("PrismaPublicQuestionReadRepository", () => {
+  it("filters by exam organization, career and the student's answers", async () => {
+    const { prisma, questionFindMany, questionCount } = createPrismaMock();
+    questionFindMany.mockResolvedValue([]);
+    questionCount.mockResolvedValue(0);
+    const repository = new PrismaPublicQuestionReadRepository(prisma);
+
+    await repository.listPublished({
+      filters: {
+        areaId: "area-1",
+        organizationId: "org-1",
+        careerPositionId: "career-1",
+        answered: { profileId: "profile-1", status: "unanswered" },
+      },
+      offset: 0,
+      limit: 20,
+    });
+
+    expect(questionCount).toHaveBeenLastCalledWith({
+      where: {
+        status: "PUBLISHED",
+        studyAnswerAttempts: { none: { profileId: "profile-1" } },
+        areaId: "area-1",
+        examination: { is: { organizationId: "org-1", careerPositionId: "career-1" } },
+      },
+    });
+
+    await repository.listPublished({
+      filters: { answered: { profileId: "profile-1", status: "wrong" } },
+      offset: 0,
+      limit: 20,
+    });
+
+    expect(questionCount).toHaveBeenLastCalledWith({
+      where: {
+        status: "PUBLISHED",
+        studyAnswerAttempts: { some: { profileId: "profile-1", isCorrect: false } },
+      },
+    });
+  });
+
   it("lists only published questions with safe public fields", async () => {
     const {
       prisma,
@@ -293,6 +356,11 @@ describe("PrismaPublicQuestionReadRepository", () => {
           name: "Direito Constitucional",
         },
       ],
+      areas: [{ id: "area-1", name: "Direitos Fundamentais", disciplineId: "discipline-1" }],
+      // Topics outside an area (legacy) are left out of the cascade.
+      topics: [{ id: "topic-1", name: "Direitos Individuais", areaId: "area-1" }],
+      organizations: [{ id: "org-1", name: "Polícia Militar de Pernambuco", acronym: "PMPE" }],
+      careerPositions: [{ id: "career-1", name: "Soldado" }],
       boards: [
         {
           id: "board-1",

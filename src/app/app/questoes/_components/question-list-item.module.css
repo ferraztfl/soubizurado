@@ -64,6 +64,15 @@
   text-decoration: underline;
 }
 
+.crumbs a.crumbLink {
+  color: var(--sb-text-muted);
+  font-weight: 500;
+}
+
+.crumbs a.crumbLink:hover {
+  color: var(--sb-brand-strong);
+}
+
 .separator {
   margin: 0 6px;
   color: var(--sb-text-subtle);

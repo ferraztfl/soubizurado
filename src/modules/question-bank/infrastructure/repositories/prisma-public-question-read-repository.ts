@@ -134,14 +134,26 @@ function buildPublicQuestionWhere(
     ...(filters.year !== undefined
       ? { year: filters.year }
       : {}),
+    ...(filters.organizationId ? { organizationId: filters.organizationId } : {}),
+    ...(filters.careerPositionId ? { careerPositionId: filters.careerPositionId } : {}),
   };
 
-  const hasExaminationFilters =
-    filters.boardId !== undefined ||
-    filters.year !== undefined;
+  const hasExaminationFilters = Object.keys(examinationFilters).length > 0;
+
+  const answered = filters.answered;
+  const answeredFilter: Prisma.QuestionWhereInput = !answered
+    ? {}
+    : answered.status === "unanswered"
+      ? { studyAnswerAttempts: { none: { profileId: answered.profileId } } }
+      : {
+          studyAnswerAttempts: {
+            some: { profileId: answered.profileId, isCorrect: answered.status === "correct" },
+          },
+        };
 
   return {
     status: "PUBLISHED",
+    ...answeredFilter,
     // A search for a question code ("Q100001") finds that question.
     ...(filters.search
       ? parseQuestionCode(filters.search) !== null
@@ -350,11 +362,18 @@ export class PrismaPublicQuestionReadRepository
   }
 
   public async listExplorerFacets(): Promise<QuestionExplorerFacets> {
+    const withPublishedQuestions = { some: { status: "PUBLISHED" as const } };
+    const examinationsWithPublishedQuestions = { some: { questions: withPublishedQuestions } };
+
     const [
       disciplines,
       boards,
       yearRows,
       typeRows,
+      areas,
+      topicRows,
+      organizations,
+      careerPositions,
     ] = await Promise.all([
       this.prisma.discipline.findMany({
         where: {
@@ -427,10 +446,36 @@ export class PrismaPublicQuestionReadRepository
           type: true,
         },
       }),
+      this.prisma.area.findMany({
+        where: { isActive: true, questions: withPublishedQuestions },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        select: { id: true, name: true, disciplineId: true },
+      }),
+      this.prisma.topic.findMany({
+        where: { isActive: true, areaId: { not: null }, questions: withPublishedQuestions },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        select: { id: true, name: true, areaId: true },
+      }),
+      this.prisma.publicOrganization.findMany({
+        where: { isActive: true, examinations: examinationsWithPublishedQuestions },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, acronym: true },
+      }),
+      this.prisma.careerPosition.findMany({
+        where: { isActive: true, examinations: examinationsWithPublishedQuestions },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
     ]);
 
     return {
       disciplines,
+      areas,
+      topics: topicRows.flatMap((topic) =>
+        topic.areaId === null ? [] : [{ id: topic.id, name: topic.name, areaId: topic.areaId }],
+      ),
+      organizations,
+      careerPositions,
       boards,
       years: yearRows.flatMap((row) =>
         row.year === null ? [] : [row.year],

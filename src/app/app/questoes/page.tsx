@@ -10,11 +10,15 @@ import {
   buildQuestionExplorerHref,
   parseQuestionExplorerSearchParams,
   QUESTION_EXPLORER_PAGE_SIZE_COOKIE,
+  QUESTION_EXPLORER_SITUATIONS,
   QUESTION_EXPLORER_SORT_COOKIE,
   QUESTION_EXPLORER_SORTS,
   type QuestionExplorerRawSearchParams,
 } from "@/modules/question-bank/presentation/question-explorer-search-params";
-import { loadAnsweredQuestionStatus } from "@/modules/study/infrastructure/queries/answered-question-status";
+import {
+  findStudentProfileId,
+  loadAnsweredQuestionStatus,
+} from "@/modules/study/infrastructure/queries/answered-question-status";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { PageHeader } from "@/shared/ui/page-header";
@@ -24,6 +28,8 @@ import { QuestionListItem } from "./_components/question-list-item";
 import { QuestionResultsToolbar } from "./_components/question-results-toolbar";
 
 import styles from "./question-explorer.module.css";
+
+const NO_PROFILE_ID = "00000000-0000-0000-0000-000000000000";
 
 type QuestionExplorerPageProps = Readonly<{
   searchParams: Promise<QuestionExplorerRawSearchParams>;
@@ -36,12 +42,29 @@ export default async function QuestionExplorerPage({ searchParams }: QuestionExp
     sort: cookieStore.get(QUESTION_EXPLORER_SORT_COOKIE)?.value,
   });
 
+  // The signed-in student's profile: "Minhas questões" filter and the
+  // "Resolvida / acertou / errou" marks.
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const profileId = user ? await findStudentProfileId(user.id) : null;
+
+  const { situation, ...filters } = query.filters;
+  const answeredStatus = situation ? QUESTION_EXPLORER_SITUATIONS[situation] : undefined;
+  // Without a profile nothing was answered yet: "não resolvidas" is everything,
+  // "erradas" / "acertadas" is nothing (a profile id that matches no attempt).
+  const answeredFilter =
+    answeredStatus === undefined || (answeredStatus === "unanswered" && !profileId)
+      ? undefined
+      : { profileId: profileId ?? NO_PROFILE_ID, status: answeredStatus };
+
   const [result, facets] = await Promise.all([
     createListPublishedQuestionsUseCase().execute({
       page: query.page,
       pageSize: query.pageSize,
       sort: QUESTION_EXPLORER_SORTS[query.sort],
-      filters: query.filters,
+      filters: { ...filters, ...(answeredFilter ? { answered: answeredFilter } : {}) },
     }),
     createListQuestionExplorerFacetsUseCase().execute(),
   ]);
@@ -52,13 +75,8 @@ export default async function QuestionExplorerPage({ searchParams }: QuestionExp
     redirect(buildQuestionExplorerHref({ ...hrefBase, page: result.totalPages }));
   }
 
-  // "Resolvida / acertou / errou" marks for the signed-in student.
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const answered = user
-    ? await loadAnsweredQuestionStatus(user.id, result.items.map((question) => question.id))
+  const answered = profileId
+    ? await loadAnsweredQuestionStatus(profileId, result.items.map((question) => question.id))
     : new Map();
 
   const firstItem = result.total === 0 ? 0 : (result.page - 1) * result.pageSize + 1;
@@ -72,7 +90,7 @@ export default async function QuestionExplorerPage({ searchParams }: QuestionExp
         description="Filtre por matéria, banca, ano e tipo, e resolva as questões aqui mesmo. O gabarito só aparece depois da sua resposta."
       />
 
-      <QuestionExplorerFilters facets={facets} query={query} />
+      <QuestionExplorerFilters key={JSON.stringify(query.filters)} facets={facets} query={query} />
 
       <section className={styles.results} aria-label="Questões encontradas">
         <QuestionResultsToolbar

@@ -76,6 +76,10 @@ class FakePublicQuestionReadRepository
 
   public async listExplorerFacets(): Promise<QuestionExplorerFacets> {
     return {
+      areas: [],
+      topics: [],
+      organizations: [],
+      careerPositions: [],
       disciplines: [],
       boards: [],
       years: [],

@@ -501,6 +501,12 @@ Vale sobre §1/§12 onde divergir.
   botão de riscar alternativa, selo "Resolvida · acertou/errou" (`study/infrastructure/queries/
   answered-question-status.ts`, só leitura). Barra com "Questões por página" (`por` = 10/20/50) e
   "Ordenar por" (`ordem` = recentes/antigas/ano). `question-preview-card` removido.
-- **Próximas fases (propostas, não aprovadas):** Fase 2 — filtros completos (cascata Matéria→Tópico,
-  Órgão, Cargo, chips "Minhas questões"); Fase 3 — A+/A−, modo escuro, favoritos, anotações,
+- **Preferências:** "por página" (padrão 20; 10/20/50/100) e ordenação ficam em cookies
+  (`sb_questoes_por`, `sb_questoes_ordem`); a URL vale quando tem `por`/`ordem`.
+- **Fase 2 (concluída):** filtros Matéria → Tópico (`area`) → Subtópico (`topic`) em cascata, Órgão
+  (`org`), Cargo (`cargo`), "Minhas questões" (`situacao` = nao-resolvidas/erradas/acertadas; "erradas"
+  e "acertadas" = ao menos uma tentativa assim), chips de filtros aplicados com ×, trilha da questão
+  clicável. No celular o painel começa recolhido ("Filtros (n)"). Hoje só 4 órgãos e 145 questões com
+  cargo — os filtros crescem com as importações.
+- **Próxima (proposta, não aprovada):** Fase 3 — A+/A−, modo escuro, favoritos, anotações,
   estatísticas, reportar erro.

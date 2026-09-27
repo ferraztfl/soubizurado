@@ -38,29 +38,42 @@ export type QuestionExplorerPreferences = Readonly<{
   sort?: string;
 }>;
 
+/** "Minhas questões" (URL value `situacao`) → repository answered status. */
+export const QUESTION_EXPLORER_SITUATIONS = {
+  "nao-resolvidas": "unanswered",
+  erradas: "wrong",
+  acertadas: "correct",
+} as const;
+export type QuestionExplorerSituation = keyof typeof QUESTION_EXPLORER_SITUATIONS;
+
+export type QuestionExplorerFilters = Readonly<{
+  search?: string;
+  disciplineId?: string;
+  /** Tópico (Area). */
+  areaId?: string;
+  /** Subtópico (Topic). */
+  topicId?: string;
+  boardId?: string;
+  organizationId?: string;
+  careerPositionId?: string;
+  year?: number;
+  type?: QuestionType;
+  situation?: QuestionExplorerSituation;
+}>;
+
 export type QuestionExplorerQuery = Readonly<{
   page: number;
   pageSize: QuestionExplorerPageSize;
   sort: QuestionExplorerSortParam;
-  filters: Readonly<{
-    search?: string;
-    disciplineId?: string;
-    boardId?: string;
-    year?: number;
-    type?: QuestionType;
-  }>;
+  filters: QuestionExplorerFilters;
 }>;
 
-export type QuestionExplorerHrefInput = Readonly<{
-  page?: number;
-  pageSize?: QuestionExplorerPageSize;
-  sort?: QuestionExplorerSortParam;
-  search?: string;
-  disciplineId?: string;
-  boardId?: string;
-  year?: number;
-  type?: QuestionType;
-}>;
+export type QuestionExplorerHrefInput = QuestionExplorerFilters &
+  Readonly<{
+    page?: number;
+    pageSize?: QuestionExplorerPageSize;
+    sort?: QuestionExplorerSortParam;
+  }>;
 
 function firstValue(
   value: RawSearchParamValue,
@@ -157,9 +170,18 @@ export function parseQuestionExplorerSearchParams(
   const disciplineId = normalizeText(
     params.discipline,
   );
+  const areaId = normalizeText(params.area);
+  const topicId = normalizeText(params.topic);
   const boardId = normalizeText(params.board);
+  const organizationId = normalizeText(params.org);
+  const careerPositionId = normalizeText(params.cargo);
   const year = parseYear(params.year);
   const type = parseQuestionType(params.type);
+  const situationValue = normalizeText(params.situacao);
+  const situation =
+    situationValue && Object.hasOwn(QUESTION_EXPLORER_SITUATIONS, situationValue)
+      ? (situationValue as QuestionExplorerSituation)
+      : undefined;
   const page =
     parsePositiveInteger(params.page) ?? 1;
 
@@ -176,9 +198,14 @@ export function parseQuestionExplorerSearchParams(
       ...(disciplineId
         ? { disciplineId }
         : {}),
+      ...(areaId ? { areaId } : {}),
+      ...(topicId ? { topicId } : {}),
       ...(boardId ? { boardId } : {}),
+      ...(organizationId ? { organizationId } : {}),
+      ...(careerPositionId ? { careerPositionId } : {}),
       ...(year !== undefined ? { year } : {}),
       ...(type !== undefined ? { type } : {}),
+      ...(situation ? { situation } : {}),
     },
   };
 }
@@ -199,8 +226,24 @@ export function buildQuestionExplorerHref(
     );
   }
 
+  if (input.areaId) {
+    params.set("area", input.areaId);
+  }
+
+  if (input.topicId) {
+    params.set("topic", input.topicId);
+  }
+
   if (input.boardId) {
     params.set("board", input.boardId);
+  }
+
+  if (input.organizationId) {
+    params.set("org", input.organizationId);
+  }
+
+  if (input.careerPositionId) {
+    params.set("cargo", input.careerPositionId);
   }
 
   if (input.year !== undefined) {
@@ -209,6 +252,10 @@ export function buildQuestionExplorerHref(
 
   if (input.type !== undefined) {
     params.set("type", input.type);
+  }
+
+  if (input.situation) {
+    params.set("situacao", input.situation);
   }
 
   if (input.pageSize !== undefined && input.pageSize !== DEFAULT_PAGE_SIZE) {

@@ -94,6 +94,10 @@ class FakePublicQuestionReadRepository
 
   public async listExplorerFacets(): Promise<QuestionExplorerFacets> {
     return {
+      areas: [],
+      topics: [],
+      organizations: [],
+      careerPositions: [],
       disciplines: [],
       boards: [],
       years: [],
@@ -198,6 +202,31 @@ describe("ListPublishedQuestionsUseCase", () => {
       limit: 10,
       sort: "recent",
     });
+  });
+
+  it("passes organization, career and answered filters through, rejecting invalid ones", async () => {
+    const repository = new FakePublicQuestionReadRepository();
+    const useCase = new ListPublishedQuestionsUseCase(repository);
+
+    await useCase.execute({
+      filters: {
+        organizationId: " org-1 ",
+        careerPositionId: "career-1",
+        answered: { profileId: "profile-1", status: "correct" },
+      },
+    });
+
+    expect(repository.lastInput?.filters).toEqual({
+      organizationId: "org-1",
+      careerPositionId: "career-1",
+      answered: { profileId: "profile-1", status: "correct" },
+    });
+
+    await expect(
+      useCase.execute({
+        filters: { answered: { profileId: "profile-1", status: "maybe" as "correct" } },
+      }),
+    ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
   });
 
   it("rejects invalid pagination and filters", async () => {

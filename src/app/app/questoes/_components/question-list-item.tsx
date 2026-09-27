@@ -28,11 +28,21 @@ export function QuestionListItem({ question, position, status }: QuestionListIte
   const supports = question.supportContents.filter(
     (support) => removeMarkdownImages(support.content).length > 0,
   );
-  const crumbs = [
-    question.classification.area?.name,
-    question.classification.topic.name,
-    question.classification.subtopic?.name,
-  ].filter((value): value is string => Boolean(value));
+  const { discipline, area, topic, subtopic } = question.classification;
+  // Tópico and Subtópico filter the list (within the Matéria); Detalhe is text only.
+  const crumbs: ReadonlyArray<{ key: string; name: string; href?: string }> = [
+    ...(area
+      ? [{ key: "area", name: area.name, href: buildQuestionExplorerHref({ disciplineId: discipline.id, areaId: area.id }) }]
+      : []),
+    {
+      key: "topic",
+      name: topic.name,
+      ...(area
+        ? { href: buildQuestionExplorerHref({ disciplineId: discipline.id, areaId: area.id, topicId: topic.id }) }
+        : {}),
+    },
+    ...(subtopic ? [{ key: "subtopic", name: subtopic.name }] : []),
+  ];
 
   return (
     <article className={styles.item} aria-labelledby={`q-${question.code}`}>
@@ -44,15 +54,19 @@ export function QuestionListItem({ question, position, status }: QuestionListIte
         </Link>
 
         <p className={styles.crumbs}>
-          <Link href={buildQuestionExplorerHref({ disciplineId: question.classification.discipline.id })}>
-            {question.classification.discipline.name}
-          </Link>
+          <Link href={buildQuestionExplorerHref({ disciplineId: discipline.id })}>{discipline.name}</Link>
           {crumbs.map((crumb) => (
-            <span key={crumb}>
+            <span key={crumb.key}>
               <span className={styles.separator} aria-hidden="true">
                 ›
               </span>
-              {crumb}
+              {crumb.href ? (
+                <Link href={crumb.href} className={styles.crumbLink}>
+                  {crumb.name}
+                </Link>
+              ) : (
+                crumb.name
+              )}
             </span>
           ))}
         </p>
