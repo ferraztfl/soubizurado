@@ -543,3 +543,17 @@ Vale sobre §1/§12 onde divergir.
 - **Pendências:** 85 ENEM com contexto perdido (precisam das provas oficiais de 2010–2017 e uma ferramenta
   para reescrever enunciado/texto de apoio), 47 sem tópico, 1 sem matéria (Libras), `.env`
   `CLASSIFIER_MAX_AI_CALLS_PER_RUN` → 500.
+
+### 13.9 Contextos perdidos do ENEM restaurados (27/09/2026, madrugada)
+
+- 56 questões ENEM (2012–2023) tinham só o comando final. Contextos recuperados das provas oficiais do INEP
+  (`data-private/enem-oficial/`): `scripts/enem-context-extract.ts` localiza a região (posição do texto no
+  PDF, colunas, páginas de coluna única, cabeçalho/rodapé e marca d'água descartados; ajustes manuais em
+  `contexts-manual.json`), recorta imagens e monta parágrafos (itálico `_…_`, ligaduras, listas).
+- Gravação: `questions:attach-context` (imagem da prova como texto de apoio `![…](media:<id>)`), depois
+  `questions:context-to-text` trocou 55 por texto revisado (`contexts-as-text.json`; fórmulas em Unicode) —
+  legível no celular e com A+/A−. Q100938 segue como imagem (índices dₐ). Tudo com `question_revisions`
+  e logs em `data-private/revisions/`. 45 publicadas; 10 aguardam tópico.
+- A tela aceita `media:<id>` em textos (só imagens ligadas à própria questão); figuras abrem ampliadas.
+- `questions:publish`: trava de "enunciado incompleto" só para ENEM (39 questões de concurso liberadas);
+  `--list` mostra o que seria publicado.

@@ -49,10 +49,23 @@ describe("toPublicQuestionDto", () => {
     expect(dto.alternatives[1]?.media?.map((item) => item.id)).toEqual(["asset-b"]);
   });
 
+  it("resolves our own uploads written as media:<id>, only when linked to the question", () => {
+    const dto = toPublicQuestionDto({
+      ...record,
+      supportContents: [
+        { id: "context", content: "![Contexto](media:asset-figure) ![](media:asset-elsewhere)", position: 0 },
+      ],
+    });
+
+    expect(dto.textImages["media:asset-figure"]).toBe("/api/media/asset-figure");
+    expect(dto.textImages["media:asset-elsewhere"]).toBeUndefined();
+    expect(dto.media?.map((item) => item.id)).toEqual(["asset-n1", "asset-n2"]);
+  });
+
   it("keeps every attachment when there is no image map", () => {
     const dto = toPublicQuestionDto({ ...record, textImageAssets: undefined });
 
     expect(dto.media).toHaveLength(3);
-    expect(dto.textImages).toEqual({});
+    expect(Object.keys(dto.textImages).every((key) => key.startsWith("media:"))).toBe(true);
   });
 });

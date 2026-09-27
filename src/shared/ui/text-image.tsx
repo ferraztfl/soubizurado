@@ -36,7 +36,7 @@ export function TextImage({ src, alt, inline }: TextImageProps) {
     }
   }, []);
 
-  return (
+  const image = (
     // eslint-disable-next-line @next/next/no-img-element -- private media route, sizes unknown
     <img
       ref={ref}
@@ -47,5 +47,14 @@ export function TextImage({ src, alt, inline }: TextImageProps) {
       onLoad={(event) => measure(event.currentTarget)}
       className={isFigure ? styles.blockImage : styles.inlineImage}
     />
+  );
+
+  // Figures open at full size (small screens shrink them).
+  return isFigure ? (
+    <a href={src} target="_blank" rel="noopener noreferrer" className={styles.zoom} title="Abrir imagem ampliada">
+      {image}
+    </a>
+  ) : (
+    image
   );
 }

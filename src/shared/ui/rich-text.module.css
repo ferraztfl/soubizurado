@@ -21,3 +21,8 @@
   background: #ffffff;
   border-radius: 0.75rem;
 }
+
+.zoom {
+  display: block;
+  cursor: zoom-in;
+}

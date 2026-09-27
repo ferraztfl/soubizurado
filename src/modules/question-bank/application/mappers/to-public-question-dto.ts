@@ -54,7 +54,14 @@ function referencedAssetIds(
 export function toPublicQuestionDto(
   question: PublicQuestionReadRecord,
 ): PublicQuestionDto {
-  const assets = question.textImageAssets ?? {};
+  // Images written in the texts: imported ones by source URL, and our own
+  // uploads as "media:<asset id>" — only assets linked to this question.
+  const assets: Record<string, string> = { ...(question.textImageAssets ?? {}) };
+
+  for (const media of [...(question.media ?? []), ...question.alternatives.flatMap((item) => item.media ?? [])]) {
+    assets[`media:${media.id}`] = media.id;
+  }
+
   const supportContents = question.supportContents ?? [];
   const inQuestionText = referencedAssetIds(
     [question.statement, ...supportContents.map((support) => support.content)],
