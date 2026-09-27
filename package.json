@@ -46,7 +46,8 @@
     "import:official-exam": "npx --yes tsx scripts/analyze-official-exam.ts",
     "media:migrate-supabase": "npx --yes tsx scripts/migrate-media-to-supabase.ts",
     "media:dedupe-links": "npx --yes tsx scripts/media-dedupe-question-links.ts",
-    "questions:unpublish-incomplete-enem": "npx --yes tsx scripts/questions-unpublish-incomplete-enem.ts"
+    "questions:unpublish-incomplete-enem": "npx --yes tsx scripts/questions-unpublish-incomplete-enem.ts",
+    "questions:rebuild-alternatives": "npx --yes tsx scripts/questions-rebuild-alternatives.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
