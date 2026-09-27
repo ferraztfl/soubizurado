@@ -49,7 +49,7 @@
 .eliminateActive {
   border-color: var(--sb-text-strong);
   background: var(--sb-text-strong);
-  color: #fff;
+  color: var(--sb-surface);
 }
 
 .struck .optionText {
