@@ -520,3 +520,26 @@ Vale sobre §1/§12 onde divergir.
   questões continua quebrado — entra na recuperação das ~85 questões ENEM pelos PDFs oficiais.
 - **Drift conhecido:** `prisma migrate diff` aponta 6 renomeações de índices antigos (nomes longos). Não
   foram incluídas em migration; inofensivo.
+
+### 13.8 Gabaritos ENEM, Desempenho, Simulados e novas matérias (27/09/2026, noite)
+
+- **Alternativas perdidas (ENEM):** as 18 questões com < 5 alternativas foram reconstruídas pelas provas
+  oficiais do INEP (`data-private/enem-oficial/`, cadernos azuis) com `npm run questions:rebuild-alternatives
+  -- <correcoes.json> [--apply]` (casa por texto, `replaces` ou `currentLabel`; recorta imagem do PDF com
+  `image`; grava `question_revisions`; pula as já corretas). 7 tinham gabarito errado (Q102816, Q102830,
+  Q100867, Q100374, Q100534, Q102718, além do "0" perdido). Todas republicadas. `questions:publish` recusa
+  ENEM com < 5 alternativas. O `data-private/ENEM 2024.pdf` é exportação do Gran — não usar como fonte.
+- **Imagens no texto:** `RichText` desenha imagens do texto no lugar (símbolos em linha, figuras em bloco
+  pelo tamanho real — `text-image.tsx`), usando o mapa URL→asset de `import_media_tasks`; não repete nos
+  anexos. Escapes Markdown (`\+`) viram o caractere.
+- **Desempenho (`/app/desempenho`)** e **Início com dados reais** (`student-performance.ts`, fuso
+  America/Sao_Paulo). Menu: Desempenho, Revisar (= erradas) e Simulados ativos.
+- **Simulados (`/app/simulados`)**: migration `20260927200000_study_simulations` (aditiva, RLS). Sorteio
+  pelos filtros do explorador, cronômetro opcional, respostas salvas ao marcar, correção pelo caso de uso
+  normal de resposta (conta no Desempenho), resultado por matéria e gabarito.
+- **Taxonomia v5/v6:** "Administração Geral" (área "Administração e Gestão") e "Libras". Seção de prova
+  "Administração Pública" agora fixa só a área jurídica. Cadernos UFBA 2016 Administrador (100) e Libras
+  (85) importados, classificados (184 aplicadas; custo ~US$ 0,09) e publicados.
+- **Pendências:** 85 ENEM com contexto perdido (precisam das provas oficiais de 2010–2017 e uma ferramenta
+  para reescrever enunciado/texto de apoio), 47 sem tópico, 1 sem matéria (Libras), `.env`
+  `CLASSIFIER_MAX_AI_CALLS_PER_RUN` → 500.
