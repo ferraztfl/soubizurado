@@ -39,13 +39,9 @@ export function DashboardHero({ attempts, today }: Readonly<{ attempts: number; 
             Resolver questões
           </Link>
 
-          <button
-            type="button"
-            className={styles.secondaryAction}
-            disabled
-          >
+          <Link href="/app/simulados" className={styles.secondaryAction}>
             Criar simulado
-          </button>
+          </Link>
         </div>
       </div>
 

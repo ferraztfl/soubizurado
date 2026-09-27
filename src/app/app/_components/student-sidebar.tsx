@@ -39,7 +39,7 @@ const navigationGroups: readonly NavigationGroup[] = [
   {
     label: "Evolução",
     items: [
-      { label: "Simulados", href: null },
+      { label: "Simulados", href: "/app/simulados" },
       { label: "Missões", href: null },
       { label: "Ranking", href: null },
     ],

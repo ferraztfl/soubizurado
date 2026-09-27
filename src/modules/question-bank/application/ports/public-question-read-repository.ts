@@ -90,6 +90,8 @@ export type PublicQuestionReadFilters = Readonly<{
   answered?: PublicQuestionAnsweredFilter;
   /** "Minhas questões › Favoritas": questions this profile starred. */
   favoriteOfProfileId?: string;
+  /** Only these questions (e.g. the questions of a simulation). */
+  ids?: readonly string[];
 }>;
 
 export const PUBLIC_QUESTION_ANSWERED_STATUSES = ["unanswered", "wrong", "correct"] as const;
@@ -152,4 +154,7 @@ export interface PublicQuestionReadRepository {
   ): Promise<PublicQuestionReadRecord | null>;
 
   listExplorerFacets(): Promise<QuestionExplorerFacets>;
+
+  /** Ids of all published questions matching the filters (to draw a simulation). */
+  listPublishedIds(filters: PublicQuestionReadFilters): Promise<readonly string[]>;
 }

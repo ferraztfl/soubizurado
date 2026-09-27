@@ -29,6 +29,10 @@ class FakePublicQuestionReadRepository
     return null;
   }
 
+  public async listPublishedIds(): Promise<readonly string[]> {
+    return [];
+  }
+
   public async listExplorerFacets(): Promise<QuestionExplorerFacets> {
     return {
       areas: [],

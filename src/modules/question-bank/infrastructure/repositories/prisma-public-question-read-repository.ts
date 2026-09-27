@@ -162,6 +162,7 @@ function buildPublicQuestionWhere(
     ...(filters.favoriteOfProfileId
       ? { studyFavorites: { some: { profileId: filters.favoriteOfProfileId } } }
       : {}),
+    ...(filters.ids ? { id: { in: [...filters.ids] } } : {}),
     // A search for a question code ("Q100001") finds that question.
     ...(filters.search
       ? parseQuestionCode(filters.search) !== null
@@ -346,6 +347,15 @@ export class PrismaPublicQuestionReadRepository
       ),
       total,
     };
+  }
+
+  public async listPublishedIds(filters: PublicQuestionReadFilters): Promise<readonly string[]> {
+    const rows = await this.prisma.question.findMany({
+      where: buildPublicQuestionWhere(filters),
+      select: { id: true },
+    });
+
+    return rows.map((row) => row.id);
   }
 
   /** Accepts the public code (Q100001) or the internal UUID. */

@@ -102,6 +102,7 @@ model Profile {
   studyQuestionNotes     StudyQuestionNote[]
   reportedQuestionErrors QuestionErrorReport[]   @relation("QuestionErrorReportReporter")
   resolvedQuestionErrors QuestionErrorReport[]   @relation("QuestionErrorReportResolver")
+  studySimulations       StudySimulation[]
 
   @@map("profiles")
 }
@@ -481,6 +482,7 @@ model Question {
   revisions           QuestionRevision[]
   studyNotes          StudyQuestionNote[]
   errorReports        QuestionErrorReport[]
+  simulationQuestions StudySimulationQuestion[]
 
   @@index([status, type])
   @@index([status, disciplineId])
@@ -901,4 +903,45 @@ model QuestionErrorReport {
   @@index([status, createdAt])
   @@index([questionId, status])
   @@map("question_error_reports")
+}
+
+/// A timed practice exam built from explorer filters ("Simulados").
+/// status: IN_PROGRESS | FINISHED (CHECK constraint in the migration).
+model StudySimulation {
+  id               String    @id @default(uuid()) @db.Uuid
+  profileId        String    @map("profile_id") @db.Uuid
+  title            String    @db.VarChar(160)
+  filters          Json
+  questionCount    Int       @map("question_count")
+  timeLimitMinutes Int?      @map("time_limit_minutes")
+  status           String    @default("IN_PROGRESS") @db.VarChar(20)
+  correctCount     Int?      @map("correct_count")
+  startedAt        DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt       DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  profile   Profile                   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  questions StudySimulationQuestion[]
+
+  @@index([profileId, startedAt])
+  @@map("study_simulations")
+}
+
+/// One question of a simulation, with the answer chosen during the exam.
+model StudySimulationQuestion {
+  id                    String   @id @default(uuid()) @db.Uuid
+  simulationId          String   @map("simulation_id") @db.Uuid
+  questionId            String   @map("question_id") @db.Uuid
+  position              Int
+  selectedAlternativeId String?  @map("selected_alternative_id") @db.Uuid
+  selectedTrueFalse     Boolean? @map("selected_true_false")
+  isCorrect             Boolean? @map("is_correct")
+  attemptId             String?  @map("attempt_id") @db.Uuid
+
+  simulation StudySimulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  question   Question        @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([simulationId, position])
+  @@unique([simulationId, questionId])
+  @@index([questionId])
+  @@map("study_simulation_questions")
 }

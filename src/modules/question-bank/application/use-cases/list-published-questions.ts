@@ -190,7 +190,18 @@ function normalizeFilters(
     ...(normalizeOptionalText(filters.favoriteOfProfileId)
       ? { favoriteOfProfileId: normalizeOptionalText(filters.favoriteOfProfileId) }
       : {}),
+    ...(filters.ids ? { ids: requireIds(filters.ids) } : {}),
   };
+}
+
+const MAX_IDS = 200;
+
+function requireIds(ids: readonly string[]): readonly string[] {
+  if (ids.length > MAX_IDS || ids.some((id) => typeof id !== "string" || id.trim().length === 0)) {
+    throw new ApplicationError(ERROR_CODES.VALIDATION_ERROR, "Question ids are invalid.");
+  }
+
+  return ids.map((id) => id.trim());
 }
 
 function requireValidAnsweredFilter(answered: PublicQuestionAnsweredFilter): PublicQuestionAnsweredFilter {

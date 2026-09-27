@@ -74,6 +74,10 @@ class FakePublicQuestionReadRepository
     return this.found;
   }
 
+  public async listPublishedIds(): Promise<readonly string[]> {
+    return [];
+  }
+
   public async listExplorerFacets(): Promise<QuestionExplorerFacets> {
     return {
       areas: [],
