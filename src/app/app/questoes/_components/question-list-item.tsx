@@ -3,12 +3,14 @@ import Link from "next/link";
 import type { PublicQuestionDto } from "@/modules/question-bank/application/dto/public-question";
 import { buildQuestionExplorerHref } from "@/modules/question-bank/presentation/question-explorer-search-params";
 import type { AnsweredQuestionStatus } from "@/modules/study/infrastructure/queries/answered-question-status";
+import type { QuestionStudyToolsState } from "@/modules/study/infrastructure/queries/question-study-tools";
 import { removeMarkdownImages } from "@/shared/ui/inline-markdown";
 import { RichText } from "@/shared/ui/rich-text";
 
 import { QuestionAnswerPanel } from "../[questionId]/_components/question-answer-panel";
 
 import { QuestionMedia } from "./question-media";
+import { QuestionStudyTools } from "./question-study-tools";
 import styles from "./question-list-item.module.css";
 
 type QuestionListItemProps = Readonly<{
@@ -16,6 +18,7 @@ type QuestionListItemProps = Readonly<{
   /** 1-based position in the result list (across pages). */
   position: number;
   status: AnsweredQuestionStatus | null;
+  tools: QuestionStudyToolsState;
 }>;
 
 /**
@@ -23,7 +26,7 @@ type QuestionListItemProps = Readonly<{
  * public code and classification, exam facts that act as filters, the
  * shared text (collapsible), the statement and the answer panel.
  */
-export function QuestionListItem({ question, position, status }: QuestionListItemProps) {
+export function QuestionListItem({ question, position, status, tools }: QuestionListItemProps) {
   const board = question.examination?.board ?? null;
   const supports = question.supportContents.filter(
     (support) => removeMarkdownImages(support.content).length > 0,
@@ -133,6 +136,8 @@ export function QuestionListItem({ question, position, status }: QuestionListIte
         <QuestionMedia media={question.media} fallbackAlt={`Imagem da questão ${question.code}`} />
 
         <QuestionAnswerPanel question={question} compact />
+
+        <QuestionStudyTools questionId={question.id} code={question.code} initial={tools} />
       </div>
     </article>
   );

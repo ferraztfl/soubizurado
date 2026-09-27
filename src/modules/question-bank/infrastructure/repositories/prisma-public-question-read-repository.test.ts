@@ -156,6 +156,19 @@ describe("PrismaPublicQuestionReadRepository", () => {
         studyAnswerAttempts: { some: { profileId: "profile-1", isCorrect: false } },
       },
     });
+
+    await repository.listPublished({
+      filters: { favoriteOfProfileId: "profile-1" },
+      offset: 0,
+      limit: 20,
+    });
+
+    expect(questionCount).toHaveBeenLastCalledWith({
+      where: {
+        status: "PUBLISHED",
+        studyFavorites: { some: { profileId: "profile-1" } },
+      },
+    });
   });
 
   it("lists only published questions with safe public fields", async () => {

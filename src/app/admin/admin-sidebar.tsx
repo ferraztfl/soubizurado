@@ -43,6 +43,10 @@ const navigationGroups: readonly NavigationGroup[] = [
         href: "/admin/classificacao",
       },
       {
+        label: "Reportes de erro",
+        href: "/admin/questoes/reportes",
+      },
+      {
         label: "Todas as questões",
         href: null,
       },

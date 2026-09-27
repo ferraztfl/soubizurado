@@ -7,13 +7,20 @@ import type {
 import {
   createGetPublishedQuestionByIdUseCase,
 } from "@/modules/question-bank/infrastructure/composition/question-bank-application";
+import { findStudentProfileId } from "@/modules/study/infrastructure/queries/answered-question-status";
+import {
+  EMPTY_QUESTION_STUDY_TOOLS,
+  loadQuestionStudyTools,
+} from "@/modules/study/infrastructure/queries/question-study-tools";
 import { ApplicationError } from "@/shared/errors/application-error";
 import { ERROR_CODES } from "@/shared/errors/error-code";
 import { PageHeader } from "@/shared/ui/page-header";
 import { removeMarkdownImages } from "@/shared/ui/inline-markdown";
+import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 import { RichText } from "@/shared/ui/rich-text";
 
 import { QuestionMedia } from "../_components/question-media";
+import { QuestionStudyTools } from "../_components/question-study-tools";
 import { QuestionAnswerPanel } from "./_components/question-answer-panel";
 
 import styles from "./question-detail.module.css";
@@ -47,6 +54,16 @@ export default async function QuestionDetailPage({
 
     throw error;
   }
+
+  // The student's favorite / note / open report for this question.
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const profileId = user ? await findStudentProfileId(user.id) : null;
+  const tools = profileId
+    ? ((await loadQuestionStudyTools(profileId, [question.id])).get(question.id) ?? EMPTY_QUESTION_STUDY_TOOLS)
+    : EMPTY_QUESTION_STUDY_TOOLS;
 
   // Support texts that only held an image rendered by QuestionMedia.
   const visibleSupportContents =
@@ -135,6 +152,8 @@ export default async function QuestionDetailPage({
           <QuestionAnswerPanel
             question={question}
           />
+
+          <QuestionStudyTools questionId={question.id} code={question.code} initial={tools} />
         </article>
 
         <aside className={styles.context}>

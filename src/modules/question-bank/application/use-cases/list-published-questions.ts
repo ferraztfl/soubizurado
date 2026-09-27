@@ -187,6 +187,9 @@ function normalizeFilters(
       ? { type: filters.type }
       : {}),
     ...(filters.answered ? { answered: requireValidAnsweredFilter(filters.answered) } : {}),
+    ...(normalizeOptionalText(filters.favoriteOfProfileId)
+      ? { favoriteOfProfileId: normalizeOptionalText(filters.favoriteOfProfileId) }
+      : {}),
   };
 }
 

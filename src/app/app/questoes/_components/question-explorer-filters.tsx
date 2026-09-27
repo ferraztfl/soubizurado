@@ -25,6 +25,7 @@ const SITUATIONS: ReadonlyArray<{ value: QuestionExplorerSituation | ""; label: 
   { value: "nao-resolvidas", label: "Não resolvidas" },
   { value: "erradas", label: "Que já errei" },
   { value: "acertadas", label: "Que já acertei" },
+  { value: "favoritas", label: "★ Favoritas" },
 ];
 
 const TYPE_LABELS: Record<QuestionType, string> = {

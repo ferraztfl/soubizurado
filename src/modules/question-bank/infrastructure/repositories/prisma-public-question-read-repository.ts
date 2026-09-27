@@ -154,6 +154,9 @@ function buildPublicQuestionWhere(
   return {
     status: "PUBLISHED",
     ...answeredFilter,
+    ...(filters.favoriteOfProfileId
+      ? { studyFavorites: { some: { profileId: filters.favoriteOfProfileId } } }
+      : {}),
     // A search for a question code ("Q100001") finds that question.
     ...(filters.search
       ? parseQuestionCode(filters.search) !== null

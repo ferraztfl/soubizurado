@@ -508,5 +508,15 @@ Vale sobre §1/§12 onde divergir.
   e "acertadas" = ao menos uma tentativa assim), chips de filtros aplicados com ×, trilha da questão
   clicável. No celular o painel começa recolhido ("Filtros (n)"). Hoje só 4 órgãos e 145 questões com
   cargo — os filtros crescem com as importações.
-- **Próxima (proposta, não aprovada):** Fase 3 — A+/A−, modo escuro, favoritos, anotações,
-  estatísticas, reportar erro.
+- **Fase 3 (concluída):** A−/A+ (`sb_fonte`, escala `--sb-reading-scale` no texto das questões) e tema
+  escuro (`sb_tema`; tokens redefinidos em `[data-theme="dark"]` só no shell do aluno — o admin segue
+  claro; imagens de prova ganham fundo branco). Estatísticas após responder (`% por opção` e taxa de
+  acerto, só contagens agregadas). Favoritar (tabela antiga `study_favorites`), Anotar (`study_question_notes`,
+  1 por aluno/questão) e Reportar erro (`question_error_reports`, 1 aberto por aluno/questão) — migration
+  `20260927120000_study_notes_and_question_reports` (aditiva, RLS). "Minhas questões › Favoritas" no
+  explorador. Admin: `/admin/questoes/reportes` (resolver/descartar; correção pela página de edição).
+- **Mídia repetida:** `npm run media:dedupe-links` removeu 15 ligações repetidas em 8 questões ENEM
+  (símbolos do texto extraídos como imagem); log em `data-private/media-dedupe/`. O texto dessas
+  questões continua quebrado — entra na recuperação das ~85 questões ENEM pelos PDFs oficiais.
+- **Drift conhecido:** `prisma migrate diff` aponta 6 renomeações de índices antigos (nomes longos). Não
+  foram incluídas em migration; inofensivo.

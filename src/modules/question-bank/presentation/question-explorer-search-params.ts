@@ -38,11 +38,15 @@ export type QuestionExplorerPreferences = Readonly<{
   sort?: string;
 }>;
 
-/** "Minhas questões" (URL value `situacao`) → repository answered status. */
+/**
+ * "Minhas questões" (URL value `situacao`) → repository filter: an answered
+ * status, or "favorite" for the starred questions.
+ */
 export const QUESTION_EXPLORER_SITUATIONS = {
   "nao-resolvidas": "unanswered",
   erradas: "wrong",
   acertadas: "correct",
+  favoritas: "favorite",
 } as const;
 export type QuestionExplorerSituation = keyof typeof QUESTION_EXPLORER_SITUATIONS;
 

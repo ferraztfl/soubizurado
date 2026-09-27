@@ -85,6 +85,8 @@ export type PublicQuestionReadFilters = Readonly<{
   type?: QuestionType;
   /** "Minhas questões": questions this profile has / has not answered. */
   answered?: PublicQuestionAnsweredFilter;
+  /** "Minhas questões › Favoritas": questions this profile starred. */
+  favoriteOfProfileId?: string;
 }>;
 
 export const PUBLIC_QUESTION_ANSWERED_STATUSES = ["unanswered", "wrong", "correct"] as const;

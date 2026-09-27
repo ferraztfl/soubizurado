@@ -1,0 +1,138 @@
+.tools {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sb-border);
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tool,
+.toolActive {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 999px;
+  background: var(--sb-surface);
+  color: var(--sb-text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.tool:hover:not(:disabled) {
+  border-color: var(--sb-brand);
+  color: var(--sb-brand-strong);
+}
+
+.toolActive {
+  border-color: var(--sb-brand);
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand-strong);
+}
+
+.tool:disabled,
+.toolActive:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--sb-border);
+  border-radius: 12px;
+  background: var(--sb-surface-muted);
+}
+
+.panel label {
+  color: var(--sb-text-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.panel textarea,
+.panel select {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 10px;
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.panel select {
+  min-height: 40px;
+  padding: 0 10px;
+}
+
+.panelActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.counter {
+  margin-right: auto;
+  color: var(--sb-text-subtle);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.primary,
+.secondary {
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.primary {
+  border: 1px solid var(--sb-brand);
+  background: var(--sb-brand);
+  color: #ffffff;
+}
+
+.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary {
+  border: 1px solid var(--sb-border-strong);
+  background: var(--sb-surface);
+  color: var(--sb-text-muted);
+}
+
+.ok,
+.error {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.ok {
+  color: var(--sb-success);
+}
+
+.error {
+  color: var(--sb-danger);
+}

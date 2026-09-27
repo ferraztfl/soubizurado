@@ -19,6 +19,10 @@ import {
   findStudentProfileId,
   loadAnsweredQuestionStatus,
 } from "@/modules/study/infrastructure/queries/answered-question-status";
+import {
+  EMPTY_QUESTION_STUDY_TOOLS,
+  loadQuestionStudyTools,
+} from "@/modules/study/infrastructure/queries/question-study-tools";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { PageHeader } from "@/shared/ui/page-header";
@@ -51,20 +55,23 @@ export default async function QuestionExplorerPage({ searchParams }: QuestionExp
   const profileId = user ? await findStudentProfileId(user.id) : null;
 
   const { situation, ...filters } = query.filters;
-  const answeredStatus = situation ? QUESTION_EXPLORER_SITUATIONS[situation] : undefined;
-  // Without a profile nothing was answered yet: "não resolvidas" is everything,
-  // "erradas" / "acertadas" is nothing (a profile id that matches no attempt).
-  const answeredFilter =
-    answeredStatus === undefined || (answeredStatus === "unanswered" && !profileId)
-      ? undefined
-      : { profileId: profileId ?? NO_PROFILE_ID, status: answeredStatus };
+  const mySituation = situation ? QUESTION_EXPLORER_SITUATIONS[situation] : undefined;
+  // Without a profile nothing was answered or starred yet: "não resolvidas" is
+  // everything, the others are nothing (a profile id that matches no row).
+  const myProfileId = profileId ?? NO_PROFILE_ID;
+  const myFilters =
+    mySituation === undefined || (mySituation === "unanswered" && !profileId)
+      ? {}
+      : mySituation === "favorite"
+        ? { favoriteOfProfileId: myProfileId }
+        : { answered: { profileId: myProfileId, status: mySituation } };
 
   const [result, facets] = await Promise.all([
     createListPublishedQuestionsUseCase().execute({
       page: query.page,
       pageSize: query.pageSize,
       sort: QUESTION_EXPLORER_SORTS[query.sort],
-      filters: { ...filters, ...(answeredFilter ? { answered: answeredFilter } : {}) },
+      filters: { ...filters, ...myFilters },
     }),
     createListQuestionExplorerFacetsUseCase().execute(),
   ]);
@@ -75,9 +82,13 @@ export default async function QuestionExplorerPage({ searchParams }: QuestionExp
     redirect(buildQuestionExplorerHref({ ...hrefBase, page: result.totalPages }));
   }
 
-  const answered = profileId
-    ? await loadAnsweredQuestionStatus(profileId, result.items.map((question) => question.id))
-    : new Map();
+  const pageQuestionIds = result.items.map((question) => question.id);
+  const [answered, studyTools] = profileId
+    ? await Promise.all([
+        loadAnsweredQuestionStatus(profileId, pageQuestionIds),
+        loadQuestionStudyTools(profileId, pageQuestionIds),
+      ])
+    : [new Map(), new Map()];
 
   const firstItem = result.total === 0 ? 0 : (result.page - 1) * result.pageSize + 1;
   const lastItem = Math.min(result.page * result.pageSize, result.total);
@@ -117,6 +128,7 @@ export default async function QuestionExplorerPage({ searchParams }: QuestionExp
                   question={question}
                   position={firstItem + index}
                   status={answered.get(question.id) ?? null}
+                  tools={studyTools.get(question.id) ?? EMPTY_QUESTION_STUDY_TOOLS}
                 />
               </li>
             ))}

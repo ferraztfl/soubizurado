@@ -99,6 +99,9 @@ model Profile {
   taxonomyRevisions      TaxonomyRevision[]
   appliedClassifications QuestionClassificationTask[]
   questionRevisions      QuestionRevision[]
+  studyQuestionNotes     StudyQuestionNote[]
+  reportedQuestionErrors QuestionErrorReport[]   @relation("QuestionErrorReportReporter")
+  resolvedQuestionErrors QuestionErrorReport[]   @relation("QuestionErrorReportResolver")
 
   @@map("profiles")
 }
@@ -476,6 +479,8 @@ model Question {
 
   classificationTasks QuestionClassificationTask[]
   revisions           QuestionRevision[]
+  studyNotes          StudyQuestionNote[]
+  errorReports        QuestionErrorReport[]
 
   @@index([status, type])
   @@index([status, disciplineId])
@@ -856,4 +861,44 @@ model QuestionRevision {
   @@index([questionId, createdAt])
   @@index([answerKeyChanged, createdAt])
   @@map("question_revisions")
+}
+
+/// A student's private note on a question (one per student and question).
+model StudyQuestionNote {
+  id         String   @id @default(uuid()) @db.Uuid
+  profileId  String   @map("profile_id") @db.Uuid
+  questionId String   @map("question_id") @db.Uuid
+  content    String   @db.VarChar(2000)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile  Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, questionId])
+  @@index([questionId])
+  @@map("study_question_notes")
+}
+
+/// "Reportar erro": a student points out a problem in a published question.
+/// reason / status values are enforced by CHECK constraints in the migration.
+model QuestionErrorReport {
+  id                String    @id @default(uuid()) @db.Uuid
+  questionId        String    @map("question_id") @db.Uuid
+  reporterProfileId String?   @map("reporter_profile_id") @db.Uuid
+  reason            String    @db.VarChar(40)
+  details           String?   @db.VarChar(1000)
+  status            String    @default("OPEN") @db.VarChar(20)
+  resolutionNote    String?   @map("resolution_note") @db.VarChar(500)
+  resolverProfileId String?   @map("resolver_profile_id") @db.Uuid
+  resolvedAt        DateTime? @map("resolved_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  reporter Profile? @relation("QuestionErrorReportReporter", fields: [reporterProfileId], references: [id], onDelete: SetNull)
+  resolver Profile? @relation("QuestionErrorReportResolver", fields: [resolverProfileId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([questionId, status])
+  @@map("question_error_reports")
 }
