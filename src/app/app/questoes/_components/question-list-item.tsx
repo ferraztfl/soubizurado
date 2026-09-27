@@ -4,7 +4,7 @@ import type { PublicQuestionDto } from "@/modules/question-bank/application/dto/
 import { buildQuestionExplorerHref } from "@/modules/question-bank/presentation/question-explorer-search-params";
 import type { AnsweredQuestionStatus } from "@/modules/study/infrastructure/queries/answered-question-status";
 import type { QuestionStudyToolsState } from "@/modules/study/infrastructure/queries/question-study-tools";
-import { removeMarkdownImages } from "@/shared/ui/inline-markdown";
+import { hasVisibleContent } from "@/shared/ui/inline-markdown";
 import { RichText } from "@/shared/ui/rich-text";
 
 import { QuestionAnswerPanel } from "../[questionId]/_components/question-answer-panel";
@@ -29,7 +29,7 @@ type QuestionListItemProps = Readonly<{
 export function QuestionListItem({ question, position, status, tools }: QuestionListItemProps) {
   const board = question.examination?.board ?? null;
   const supports = question.supportContents.filter(
-    (support) => removeMarkdownImages(support.content).length > 0,
+    (support) => hasVisibleContent(support.content, question.textImages),
   );
   const { discipline, area, topic, subtopic } = question.classification;
   // Tópico and Subtópico filter the list (within the Matéria); Detalhe is text only.
@@ -123,14 +123,14 @@ export function QuestionListItem({ question, position, status, tools }: Question
             <summary>Texto de apoio</summary>
             {supports.map((support) => (
               <p key={support.id}>
-                <RichText text={support.content} />
+                <RichText text={support.content} images={question.textImages} />
               </p>
             ))}
           </details>
         ) : null}
 
         <div className={styles.statement}>
-          <RichText text={question.statement} />
+          <RichText text={question.statement} images={question.textImages} />
         </div>
 
         <QuestionMedia media={question.media} fallbackAlt={`Imagem da questão ${question.code}`} />

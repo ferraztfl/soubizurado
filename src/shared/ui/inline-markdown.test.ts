@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  hasVisibleContent,
   parseInlineMarkdown,
   removeMarkdownImages,
   stripInlineMarkdown,
@@ -74,5 +75,42 @@ describe("helpers", () => {
 
   it("removes images without touching the rest", () => {
     expect(removeMarkdownImages("a ![alt](https://x/y.png) b")).toBe("a  b");
+  });
+});
+
+describe("images with a local copy", () => {
+  const images = { "https://src/n1.jpg": "/api/media/n1", "https://src/fig.jpg": "/api/media/fig" };
+
+  it("renders mapped images where they are written, symbols inline", () => {
+    expect(parseInlineMarkdown("S = 5 ![](https://src/n1.jpg)\+ 4", images)).toEqual([
+      text("S = 5 "),
+      { type: "image", src: "/api/media/n1", alt: "", inline: true },
+      text("+ 4"),
+    ]);
+  });
+
+  it("marks an image alone on its line as a figure", () => {
+    expect(parseInlineMarkdown("Veja:\n![Gráfico](https://src/fig.jpg)\nFim", images)[1]).toEqual({
+      type: "image",
+      src: "/api/media/fig",
+      alt: "Gráfico",
+      inline: false,
+    });
+  });
+
+  it("drops images without a local copy (never hot-links)", () => {
+    expect(parseInlineMarkdown("a ![](https://elsewhere/x.png) b", images)).toEqual([text("a  b")]);
+  });
+
+  it("tells whether a text has anything to show", () => {
+    expect(hasVisibleContent("![](https://src/fig.jpg)", images)).toBe(true);
+    expect(hasVisibleContent("![](https://src/fig.jpg)")).toBe(false);
+    expect(hasVisibleContent("![](https://elsewhere/x.png)", images)).toBe(false);
+  });
+});
+
+describe("backslash escapes", () => {
+  it("shows the escaped character", () => {
+    expect(parseInlineMarkdown("PETRI, D. \[...\] 5 \+ 4 \* 2")).toEqual([text("PETRI, D. [...] 5 + 4 * 2")]);
   });
 });

@@ -118,6 +118,11 @@ const publicQuestionSelect = {
       },
     },
   },
+  // Where each image inside the texts was stored (source URL → asset).
+  mediaTasks: {
+    where: { mediaAssetId: { not: null } },
+    select: { sourceUrl: true, mediaAssetId: true },
+  },
 } satisfies Prisma.QuestionSelect;
 
 type PublicQuestionRow = Prisma.QuestionGetPayload<{
@@ -295,6 +300,11 @@ function toPublicQuestionReadRecord(
     topic: question.topic,
     subtopic: question.subtopic,
     examination: question.examination,
+    textImageAssets: Object.fromEntries(
+      (question.mediaTasks ?? []).flatMap((task) =>
+        task.mediaAssetId ? [[task.sourceUrl, task.mediaAssetId]] : [],
+      ),
+    ),
   };
 }
 

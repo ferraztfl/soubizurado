@@ -69,6 +69,9 @@ export type PublicQuestionReadRecord = Readonly<{
   examination:
     | PublicQuestionExaminationReference
     | null;
+
+  /** Imported image source URL → stored media asset id (images inside texts). */
+  textImageAssets?: Readonly<Record<string, string>>;
 }>;
 
 export type PublicQuestionReadFilters = Readonly<{

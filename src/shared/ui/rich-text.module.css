@@ -1,0 +1,23 @@
+/* A symbol inside a sentence (N₁, Δ, a small formula): follows the text size. */
+.inlineImage {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  max-height: 1.6em;
+  margin: 0 0.12em;
+  vertical-align: middle;
+  background: #ffffff;
+  border-radius: 3px;
+}
+
+/* A figure on its own line (graph, table, scheme). */
+.blockImage {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  max-height: 560px;
+  margin: 0.8em 0;
+  object-fit: contain;
+  background: #ffffff;
+  border-radius: 0.75rem;
+}

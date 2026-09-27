@@ -300,6 +300,7 @@ export function QuestionAnswerPanel({
                         text={
                           alternative.content
                         }
+                        images={question.textImages}
                       />
                     </span>
 

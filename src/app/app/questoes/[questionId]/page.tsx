@@ -15,7 +15,7 @@ import {
 import { ApplicationError } from "@/shared/errors/application-error";
 import { ERROR_CODES } from "@/shared/errors/error-code";
 import { PageHeader } from "@/shared/ui/page-header";
-import { removeMarkdownImages } from "@/shared/ui/inline-markdown";
+import { hasVisibleContent } from "@/shared/ui/inline-markdown";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 import { RichText } from "@/shared/ui/rich-text";
 
@@ -65,11 +65,10 @@ export default async function QuestionDetailPage({
     ? ((await loadQuestionStudyTools(profileId, [question.id])).get(question.id) ?? EMPTY_QUESTION_STUDY_TOOLS)
     : EMPTY_QUESTION_STUDY_TOOLS;
 
-  // Support texts that only held an image rendered by QuestionMedia.
+  // Skip support texts with nothing to show (e.g. an image without a local copy).
   const visibleSupportContents =
     question.supportContents.filter(
-      (support) =>
-        removeMarkdownImages(support.content).length > 0,
+      (support) => hasVisibleContent(support.content, question.textImages),
     );
 
   const board =
@@ -131,6 +130,7 @@ export default async function QuestionDetailPage({
                   <p key={support.id}>
                     <RichText
                       text={support.content}
+                      images={question.textImages}
                     />
                   </p>
                 ),
@@ -141,6 +141,7 @@ export default async function QuestionDetailPage({
           <div className={styles.statement}>
             <RichText
               text={question.statement}
+              images={question.textImages}
             />
           </div>
 
