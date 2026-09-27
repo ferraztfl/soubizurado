@@ -110,3 +110,16 @@
     padding-inline: 16px;
   }
 }
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: var(--sb-brand);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+}

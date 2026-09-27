@@ -32,8 +32,8 @@ const navigationGroups: readonly NavigationGroup[] = [
       { label: "Início", href: "/app" },
       { label: "Explorar questões", href: "/app/questoes" },
       { label: "Estudar", href: null },
-      { label: "Revisar", href: null },
-      { label: "Desempenho", href: null },
+      { label: "Revisar", href: "/app/questoes?situacao=erradas" },
+      { label: "Desempenho", href: "/app/desempenho" },
     ],
   },
   {

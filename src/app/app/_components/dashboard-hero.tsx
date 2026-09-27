@@ -2,7 +2,18 @@ import Link from "next/link";
 
 import styles from "./dashboard-hero.module.css";
 
-export function DashboardHero() {
+/** Daily goal of the hero card. */
+export const DAILY_GOAL = 10;
+
+export function DashboardHero({ attempts, today }: Readonly<{ attempts: number; today: number }>) {
+  const done = Math.min(today, DAILY_GOAL);
+  const objective =
+    attempts === 0
+      ? "Resolver sua primeira questão"
+      : today >= DAILY_GOAL
+        ? "Meta de hoje concluída!"
+        : `Resolver ${DAILY_GOAL} questões hoje`;
+
   return (
     <section className={styles.hero}>
       <div className={styles.content}>
@@ -44,22 +55,22 @@ export function DashboardHero() {
             Próximo objetivo
           </span>
 
-          <strong>
-            Resolver sua primeira questão
-          </strong>
+          <strong>{objective}</strong>
 
           <div
             className={styles.progress}
             role="progressbar"
             aria-label="Progresso do objetivo"
             aria-valuemin={0}
-            aria-valuemax={10}
-            aria-valuenow={0}
+            aria-valuemax={DAILY_GOAL}
+            aria-valuenow={done}
           >
-            <span />
+            <span style={{ width: `${(done / DAILY_GOAL) * 100}%` }} />
           </div>
 
-          <small>0 de 10 questões</small>
+          <small>
+            {done} de {DAILY_GOAL} questões hoje
+          </small>
         </article>
       </div>
     </section>

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { EmptyState } from "@/shared/ui/empty-state";
 
 import styles from "./performance-card.module.css";
@@ -12,7 +14,8 @@ const placeholderBars = [
   76,
 ] as const;
 
-export function PerformanceCard() {
+/** Teaser of the performance page; before the first answer it explains what will appear. */
+export function PerformanceCard({ attempts }: Readonly<{ attempts: number }>) {
   return (
     <article className={styles.card}>
       <header className={styles.header}>
@@ -47,11 +50,24 @@ export function PerformanceCard() {
         </div>
 
         <div className={styles.emptyState}>
-          <EmptyState
-            icon="↗"
-            title="Seus dados aparecerão aqui"
-            description="Resolva questões para começar a acompanhar sua evolução, precisão e ritmo de estudo."
-          />
+          {attempts > 0 ? (
+            <EmptyState
+              icon="↗"
+              title="Sua evolução já está sendo medida"
+              description="Veja acertos por matéria, a evolução semanal e os tópicos que merecem revisão."
+              action={
+                <Link href="/app/desempenho" className={styles.cta}>
+                  Ver meu desempenho
+                </Link>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon="↗"
+              title="Seus dados aparecerão aqui"
+              description="Resolva questões para começar a acompanhar sua evolução, precisão e ritmo de estudo."
+            />
+          )}
         </div>
       </div>
     </article>
