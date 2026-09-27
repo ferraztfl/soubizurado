@@ -22,6 +22,7 @@ import {
 import type {
   PublicQuestionReadFilters,
   PublicQuestionReadRepository,
+  PublicQuestionSort,
 } from "../ports/public-question-read-repository";
 
 const DEFAULT_PAGE = 1;
@@ -32,6 +33,7 @@ const MAX_SEARCH_LENGTH = 120;
 export type ListPublishedQuestionsQuery = Readonly<{
   page?: number;
   pageSize?: number;
+  sort?: PublicQuestionSort;
   filters?: PublicQuestionReadFilters;
 }>;
 
@@ -223,6 +225,7 @@ export class ListPublishedQuestionsUseCase {
         ),
         offset,
         limit: pageSize,
+        sort: query.sort ?? "recent",
       });
 
     return {

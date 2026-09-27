@@ -147,7 +147,7 @@ describe("PrismaPublicQuestionReadRepository", () => {
         take: 10,
         orderBy: [
           { publishedAt: "desc" },
-          { id: "asc" },
+          { publicNumber: "desc" },
         ],
       }),
     );

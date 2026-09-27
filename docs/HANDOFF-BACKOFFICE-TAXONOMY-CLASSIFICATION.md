@@ -491,3 +491,16 @@ Vale sobre §1/§12 onde divergir.
   na taxonomia, e 12 restantes).
 - Área do aluno conferida: 3.015 publicadas, filtro por banca (INEP, Instituto AOCP), resolução e correção OK.
 - V/F: cabeçalho "Texto N" sem faixa de itens e formatação do texto de apoio (título/autor/fonte) corrigidos.
+
+### 13.7 Código público e Explorar questões estilo lista (27/09/2026)
+
+- `questions.public_number` (Q100001…), rota `/app/questoes/Q100001` aceita código ou UUID.
+- **Fase 1 do explorador (concluída):** `/app/questoes` virou lista de questões respondíveis
+  (`_components/question-list-item.tsx`): código, Matéria › Tópico › Subtópico, Ano/Banca como
+  links de filtro, texto de apoio recolhível, resposta inline (`QuestionAnswerPanel compact`) com
+  botão de riscar alternativa, selo "Resolvida · acertou/errou" (`study/infrastructure/queries/
+  answered-question-status.ts`, só leitura). Barra com "Questões por página" (`por` = 10/20/50) e
+  "Ordenar por" (`ordem` = recentes/antigas/ano). `question-preview-card` removido.
+- **Próximas fases (propostas, não aprovadas):** Fase 2 — filtros completos (cascata Matéria→Tópico,
+  Órgão, Cargo, chips "Minhas questões"); Fase 3 — A+/A−, modo escuro, favoritos, anotações,
+  estatísticas, reportar erro.

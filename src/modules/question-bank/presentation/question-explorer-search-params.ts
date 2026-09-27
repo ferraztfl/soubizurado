@@ -11,9 +11,24 @@ type RawSearchParamValue =
 export type QuestionExplorerRawSearchParams =
   Readonly<Record<string, RawSearchParamValue>>;
 
+export const QUESTION_EXPLORER_PAGE_SIZES = [10, 20, 50] as const;
+export type QuestionExplorerPageSize = (typeof QUESTION_EXPLORER_PAGE_SIZES)[number];
+
+/** URL value → repository sort. */
+export const QUESTION_EXPLORER_SORTS = {
+  recentes: "recent",
+  antigas: "oldest",
+  ano: "year",
+} as const;
+export type QuestionExplorerSortParam = keyof typeof QUESTION_EXPLORER_SORTS;
+
+const DEFAULT_PAGE_SIZE: QuestionExplorerPageSize = 10;
+const DEFAULT_SORT: QuestionExplorerSortParam = "recentes";
+
 export type QuestionExplorerQuery = Readonly<{
   page: number;
-  pageSize: 12;
+  pageSize: QuestionExplorerPageSize;
+  sort: QuestionExplorerSortParam;
   filters: Readonly<{
     search?: string;
     disciplineId?: string;
@@ -25,6 +40,8 @@ export type QuestionExplorerQuery = Readonly<{
 
 export type QuestionExplorerHrefInput = Readonly<{
   page?: number;
+  pageSize?: QuestionExplorerPageSize;
+  sort?: QuestionExplorerSortParam;
   search?: string;
   disciplineId?: string;
   boardId?: string;
@@ -118,9 +135,17 @@ export function parseQuestionExplorerSearchParams(
   const page =
     parsePositiveInteger(params.page) ?? 1;
 
+  const pageSizeValue = parsePositiveInteger(params.por);
+  const pageSize =
+    QUESTION_EXPLORER_PAGE_SIZES.find((size) => size === pageSizeValue) ?? DEFAULT_PAGE_SIZE;
+  const sortValue = normalizeText(params.ordem);
+  const sort =
+    sortValue && sortValue in QUESTION_EXPLORER_SORTS ? (sortValue as QuestionExplorerSortParam) : DEFAULT_SORT;
+
   return {
     page,
-    pageSize: 12,
+    pageSize,
+    sort,
     filters: {
       ...(search ? { search } : {}),
       ...(disciplineId
@@ -159,6 +184,14 @@ export function buildQuestionExplorerHref(
 
   if (input.type !== undefined) {
     params.set("type", input.type);
+  }
+
+  if (input.pageSize !== undefined && input.pageSize !== DEFAULT_PAGE_SIZE) {
+    params.set("por", String(input.pageSize));
+  }
+
+  if (input.sort !== undefined && input.sort !== DEFAULT_SORT) {
+    params.set("ordem", input.sort);
   }
 
   if (

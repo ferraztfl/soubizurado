@@ -118,6 +118,7 @@ describe("ListPublishedQuestionsUseCase", () => {
       filters: {},
       offset: 0,
       limit: 20,
+      sort: "recent",
     });
 
     expect(result.page).toBe(1);
@@ -195,6 +196,7 @@ describe("ListPublishedQuestionsUseCase", () => {
       },
       offset: 20,
       limit: 10,
+      sort: "recent",
     });
   });
 

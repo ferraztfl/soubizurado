@@ -26,7 +26,8 @@ describe("question explorer search params", () => {
       }),
     ).toEqual({
       page: 3,
-      pageSize: 12,
+      pageSize: 10,
+      sort: "recentes",
       filters: {
         search: "constitucional",
         disciplineId: "discipline-1",
@@ -35,6 +36,13 @@ describe("question explorer search params", () => {
         type: QUESTION_TYPES.MULTIPLE_CHOICE,
       },
     });
+  });
+
+  it("reads page size and sort, falling back to the defaults", () => {
+    expect(parseQuestionExplorerSearchParams({ por: "50", ordem: "ano" })).toMatchObject({ pageSize: 50, sort: "ano" });
+    expect(parseQuestionExplorerSearchParams({ por: "13", ordem: "x" })).toMatchObject({ pageSize: 10, sort: "recentes" });
+    expect(buildQuestionExplorerHref({ pageSize: 20, sort: "antigas", page: 2 })).toBe("/app/questoes?por=20&ordem=antigas&page=2");
+    expect(buildQuestionExplorerHref({ pageSize: 10, sort: "recentes" })).toBe("/app/questoes");
   });
 
   it("falls back safely for malformed URL values", () => {
@@ -47,7 +55,8 @@ describe("question explorer search params", () => {
       }),
     ).toEqual({
       page: 1,
-      pageSize: 12,
+      pageSize: 10,
+      sort: "recentes",
       filters: {},
     });
   });
@@ -60,7 +69,8 @@ describe("question explorer search params", () => {
       }),
     ).toEqual({
       page: 2,
-      pageSize: 12,
+      pageSize: 10,
+      sort: "recentes",
       filters: {
         year: 2025,
       },

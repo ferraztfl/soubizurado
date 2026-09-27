@@ -24,6 +24,8 @@ import styles from "./question-answer-panel.module.css";
 
 type QuestionAnswerPanelProps = Readonly<{
   question: PublicQuestionDto;
+  /** Tighter spacing inside the question list. */
+  compact?: boolean;
 }>;
 
 type SelectedAnswer =
@@ -80,7 +82,11 @@ function trueFalseLabel(
 
 export function QuestionAnswerPanel({
   question,
+  compact = false,
 }: QuestionAnswerPanelProps) {
+  // Alternatives the student ruled out ("riscar"); purely visual.
+  const [eliminated, setEliminated] =
+    useState<ReadonlySet<string>>(() => new Set());
   const [selection, setSelection] =
     useState<SelectedAnswer>(null);
   const [result, setResult] =
@@ -129,7 +135,29 @@ export function QuestionAnswerPanel({
     });
   }
 
+  function toggleEliminated(alternativeId: string): void {
+    setEliminated((current) => {
+      const next = new Set(current);
+
+      if (next.has(alternativeId)) {
+        next.delete(alternativeId);
+      } else {
+        next.add(alternativeId);
+
+        if (
+          selection?.type === "MULTIPLE_CHOICE" &&
+          selection.alternativeId === alternativeId
+        ) {
+          setSelection(null);
+        }
+      }
+
+      return next;
+    });
+  }
+
   function resetAttempt(): void {
+    setEliminated(new Set());
     setSelection(null);
     setResult(null);
     setLocalError(null);
@@ -137,7 +165,7 @@ export function QuestionAnswerPanel({
   }
 
   return (
-    <div className={styles.panel}>
+    <div className={compact ? `${styles.panel} ${styles.compact}` : styles.panel}>
       {question.type ===
       "MULTIPLE_CHOICE" ? (
         <div
@@ -162,9 +190,52 @@ export function QuestionAnswerPanel({
                   alternative.id,
                 );
 
+              const struck =
+                eliminated.has(alternative.id) &&
+                !correct;
+
               return (
-                <button
+                <div
                   key={alternative.id}
+                  className={styles.optionRow}
+                >
+                <button
+                  type="button"
+                  className={[
+                    styles.eliminate,
+                    struck ? styles.eliminateActive : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  aria-pressed={struck}
+                  aria-label={
+                    struck
+                      ? `Restaurar alternativa ${alternative.label}`
+                      : `Riscar alternativa ${alternative.label}`
+                  }
+                  title={
+                    struck
+                      ? "Restaurar alternativa"
+                      : "Riscar alternativa"
+                  }
+                  disabled={isPending || submitted}
+                  onClick={() =>
+                    toggleEliminated(alternative.id)
+                  }
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    aria-hidden="true"
+                  >
+                    <circle cx="6" cy="6" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+
+                <button
                   type="button"
                   className={[
                     styles.option,
@@ -175,6 +246,7 @@ export function QuestionAnswerPanel({
                       ? styles.correct
                       : "",
                     wrong ? styles.wrong : "",
+                    struck ? styles.struck : "",
                   ]
                     .filter(Boolean)
                     .join(" ")}
@@ -188,6 +260,11 @@ export function QuestionAnswerPanel({
                       type: "MULTIPLE_CHOICE",
                       alternativeId:
                         alternative.id,
+                    });
+                    setEliminated((current) => {
+                      const next = new Set(current);
+                      next.delete(alternative.id);
+                      return next;
                     });
                     setLocalError(null);
                   }}
@@ -234,6 +311,7 @@ export function QuestionAnswerPanel({
                     </span>
                   ) : null}
                 </button>
+                </div>
               );
             },
           )}

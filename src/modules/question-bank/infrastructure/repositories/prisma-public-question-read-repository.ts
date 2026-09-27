@@ -302,10 +302,12 @@ export class PrismaPublicQuestionReadRepository
         where,
         skip: input.offset,
         take: input.limit,
-        orderBy: [
-          { publishedAt: "desc" },
-          { id: "asc" },
-        ],
+        orderBy:
+          input.sort === "oldest"
+            ? [{ publicNumber: "asc" }]
+            : input.sort === "year"
+              ? [{ examination: { year: "desc" } }, { publicNumber: "desc" }]
+              : [{ publishedAt: "desc" }, { publicNumber: "desc" }],
         select: publicQuestionSelect,
       }),
       this.prisma.question.count({

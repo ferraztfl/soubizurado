@@ -83,11 +83,15 @@ export type PublicQuestionReadFilters = Readonly<{
   type?: QuestionType;
 }>;
 
+/** recent: latest published first; oldest: by code; year: exam year, newest first. */
+export type PublicQuestionSort = "recent" | "oldest" | "year";
+
 export type ListPublicQuestionsRepositoryInput =
   Readonly<{
     filters: PublicQuestionReadFilters;
     offset: number;
     limit: number;
+    sort?: PublicQuestionSort;
   }>;
 
 export type ListPublicQuestionsRepositoryResult =
