@@ -678,3 +678,11 @@ Vale sobre §1/§12 onde divergir.
   das respostas, fila de revisão, sessões e simulados (`missions.ts` + `mission-progress.ts`, fuso de
   São Paulo, semana começa na segunda) — sem tabela nova, nada para "resgatar".
 - Simulados agora sorteiam com `drawPublishedIds` (não carregam mais todos os ids).
+
+### 13.17 Ranking (28/09/2026)
+
+- `/app/ranking` (semana desde segunda / mês desde o dia 1, São Paulo): pontos = questões **diferentes**
+  acertadas no período (repetir não soma); desempate por taxa de acerto. Top 50 + a posição do aluno se
+  estiver fora. Só quem não desativou `show_in_ranking`; só o nome de exibição sai do banco.
+- Índice `study_answer_attempts(answered_at)` (migration aditiva `20260928160000_…`) para agregar o período
+  sem varrer todas as respostas.

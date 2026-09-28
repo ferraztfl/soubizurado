@@ -835,6 +835,8 @@ model StudyAnswerAttempt {
   @@index([profileId, isCorrect, answeredAt])
   @@index([questionId, answeredAt])
   @@index([selectedAlternativeId])
+  /// Period-wide aggregations (ranking) without scanning every answer ever.
+  @@index([answeredAt])
   @@map("study_answer_attempts")
 }
 
