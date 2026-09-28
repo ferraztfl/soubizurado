@@ -278,3 +278,8 @@ export function formatContestDate(date: Date | null): string | null {
 export function toDayInput(date: Date | null): string {
   return date ? date.toISOString().slice(0, 10) : "";
 }
+
+/** Public address of a contest logo (served only while the contest is published). */
+export function contestLogoUrl(assetId: string): string {
+  return `/api/concursos/logos/${assetId}`;
+}

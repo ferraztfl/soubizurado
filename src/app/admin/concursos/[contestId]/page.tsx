@@ -78,6 +78,7 @@ export default async function EditContestPage(props: EditContestPageProps) {
             relatedOfferId: contest.relatedOfferId,
             isFeatured: contest.isFeatured,
             isPublished: contest.isPublished,
+            hasLogo: contest.logoAssetId !== null,
           }}
           {...options}
         />

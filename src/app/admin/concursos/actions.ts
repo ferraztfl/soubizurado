@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { planContest, type ContestError } from "@/modules/contests/domain/contest";
+import { storeContestLogo } from "@/modules/contests/infrastructure/contest-logo";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
+import { InvalidImageError, isFilledFile } from "@/modules/question-bank/infrastructure/uploaded-question-image";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -97,8 +99,22 @@ export async function saveContestAction(formData: FormData): Promise<void> {
     relatedOfferId ? prisma.offer.findUnique({ where: { id: relatedOfferId }, select: { id: true } }) : null,
   ]);
 
+  const logo = formData.get("logo");
+  let logoAssetId: string | null | undefined;
+  try {
+    logoAssetId = isFilledFile(logo)
+      ? await storeContestLogo(logo, contest.organizationName)
+      : formData.get("removeLogo") === "on"
+        ? null
+        : undefined;
+  } catch (error) {
+    if (error instanceof InvalidImageError) fail(back, error.message);
+    throw error;
+  }
+
   const data = {
     ...contest,
+    ...(logoAssetId !== undefined ? { logoAssetId } : {}),
     organizationId: organization?.id ?? null,
     boardId: board?.id ?? null,
     careerCategoryId: category?.id ?? null,

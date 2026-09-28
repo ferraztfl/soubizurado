@@ -774,6 +774,7 @@ model MediaAsset {
   blogCovers     BlogPost[]
   blogImages     BlogPostImage[]
   offerBanners   Offer[]
+  contestLogos   Contest[]
 
   @@index([storageProvider, bucket])
   @@index([mimeType])
@@ -1361,6 +1362,8 @@ model Contest {
   /// Official notice (https).
   noticeUrl         String?   @map("notice_url") @db.VarChar(500)
   relatedOfferId    String?   @map("related_offer_id") @db.Uuid
+  /// Logo / coat of arms of the organization (optional; shown on the cards).
+  logoAssetId       String?   @map("logo_asset_id") @db.Uuid
   isFeatured        Boolean   @default(false) @map("is_featured")
   isPublished       Boolean   @default(false) @map("is_published")
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1370,6 +1373,7 @@ model Contest {
   board          ExaminingBoard?     @relation(fields: [boardId], references: [id], onDelete: SetNull)
   careerCategory BlogCategory?       @relation(fields: [careerCategoryId], references: [id], onDelete: SetNull)
   relatedOffer   Offer?              @relation(fields: [relatedOfferId], references: [id], onDelete: SetNull)
+  logo           MediaAsset?         @relation(fields: [logoAssetId], references: [id], onDelete: SetNull)
   posts          BlogPost[]
 
   @@index([isPublished, status])

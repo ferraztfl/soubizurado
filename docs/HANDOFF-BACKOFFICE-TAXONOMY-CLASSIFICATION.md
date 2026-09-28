@@ -865,3 +865,10 @@ Vale sobre §1/§12 onde divergir.
   consistente; demais "a definir". Nenhum concurso ficou ligado a órgão do banco de questões (nomes diferentes).
 - Ajustes: post mostra "Ver a página do concurso"; "atualizado em" só para edições reais; selo do concurso usa a
   sigla entre parênteses (ex.: BACEN).
+
+### 13.30 Logos dos órgãos nos concursos (29/09/2026)
+
+- Migration aditiva `20260929120000_contest_logos` (`contests.logo_asset_id`). Admin do concurso: campo "Logo /
+  brasão do órgão" (PNG/JPG/WebP/SVG; `contest-logo.ts` recorta a borda vazia, encaixa em 256×256 e mantém a
+  transparência, WebP). Servida só para concursos publicados em `/api/concursos/logos/[id]` (liberada no robots).
+- Cartão e página do concurso mostram a logo num quadro branco; sem logo, continua o selo com a sigla.

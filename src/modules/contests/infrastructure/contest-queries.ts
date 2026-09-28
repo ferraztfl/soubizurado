@@ -18,6 +18,7 @@ export const contestCardSelect = {
   salaryMaxCents: true,
   examDate: true,
   registrationEnd: true,
+  logoAssetId: true,
   board: { select: { name: true } },
 } satisfies Prisma.ContestSelect;
 

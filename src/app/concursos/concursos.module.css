@@ -74,6 +74,37 @@
   overflow: hidden;
 }
 
+.logoTile,
+.logoTileLarge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 1px solid #ececf0;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.logoTile {
+  width: 72px;
+  height: 72px;
+  padding: 6px;
+}
+
+.logoTileLarge {
+  width: 96px;
+  height: 96px;
+  padding: 8px;
+  border-radius: 14px;
+}
+
+.logoTile img,
+.logoTileLarge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .badge small {
   font-size: 10px;
   font-weight: 700;

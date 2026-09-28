@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import {
   CONTEST_STATUSES,
+  contestLogoUrl,
   formatContestDate,
   isContestStatus,
   organizationBadge,
@@ -30,10 +31,17 @@ export function ContestCard({ contest }: Readonly<{ contest: ContestCardData }>)
     <Link href={`/concursos/${contest.slug}`} className={styles.card}>
       <strong className={styles.cardTitle}>{contest.name}</strong>
       <div className={styles.cardBody}>
-        <span className={styles.badge} aria-hidden="true">
-          {organizationBadge(contest.organizationName)}
-          {contest.stateCode ? <small>{contest.stateCode}</small> : null}
-        </span>
+        {contest.logoAssetId ? (
+          <span className={styles.logoTile}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- media route (private bucket) */}
+            <img src={contestLogoUrl(contest.logoAssetId)} alt={`Logo: ${contest.organizationName}`} loading="lazy" />
+          </span>
+        ) : (
+          <span className={styles.badge} aria-hidden="true">
+            {organizationBadge(contest.organizationName)}
+            {contest.stateCode ? <small>{contest.stateCode}</small> : null}
+          </span>
+        )}
         <span className={styles.cardFacts}>
           <b>{vacanciesLabel(contest.vacancies, contest.hasReserveList)}</b>
           <span>{salaryLabel(contest.salaryMinCents, contest.salaryMaxCents)}</span>

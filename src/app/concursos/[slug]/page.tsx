@@ -5,6 +5,7 @@ import { cache } from "react";
 
 import { BRAZIL_STATES, parseStateCode } from "@/modules/blog/domain/blog";
 import {
+  contestLogoUrl,
   EDUCATION_LEVELS,
   formatContestDate,
   organizationBadge,
@@ -120,9 +121,16 @@ export default async function ContestPage({ params }: ContestPageProps) {
       </nav>
 
       <header className={styles.detailHeader}>
-        <span className={styles.badgeLarge} aria-hidden="true">
-          {organizationBadge(contest.organizationName)}
-        </span>
+        {contest.logoAssetId ? (
+          <span className={styles.logoTileLarge}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- media route (private bucket) */}
+            <img src={contestLogoUrl(contest.logoAssetId)} alt={`Logo: ${contest.organizationName}`} />
+          </span>
+        ) : (
+          <span className={styles.badgeLarge} aria-hidden="true">
+            {organizationBadge(contest.organizationName)}
+          </span>
+        )}
         <div>
           <ContestStatusChip status={contest.status} />
           <h1>{contest.name}</h1>

@@ -48,6 +48,7 @@ export default async function NewContestPage(props: NewContestPageProps) {
             relatedOfferId: null,
             isFeatured: false,
             isPublished: false,
+            hasLogo: false,
           }}
           {...options}
         />

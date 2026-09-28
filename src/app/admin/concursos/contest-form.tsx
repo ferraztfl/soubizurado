@@ -27,6 +27,7 @@ export type ContestFormValues = Readonly<{
   relatedOfferId: string | null;
   isFeatured: boolean;
   isPublished: boolean;
+  hasLogo: boolean;
 }>;
 
 type Option = Readonly<{ id: string; name: string }>;
@@ -169,6 +170,20 @@ export function ContestForm({
         <span>Resumo — escrito por nós (situação, requisitos, etapas). Não copie texto de outros sites.</span>
         <textarea name="summary" defaultValue={values.summary} rows={8} maxLength={20000} />
       </label>
+
+      <label className={styles.field}>
+        <span>Logo / brasão do órgão (PNG com fundo transparente é o ideal){values.hasLogo ? " — já tem; envie outra para trocar" : ""}</span>
+        <input name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+      </label>
+      {values.hasLogo ? (
+        <div className={styles.checks}>
+          <label>
+            <input type="checkbox" name="removeLogo" /> Remover a logo
+          </label>
+        </div>
+      ) : (
+        <p className={styles.hint}>Sem logo, o cartão mostra a sigla do órgão.</p>
+      )}
 
       <label className={styles.field}>
         <span>Combo da Loja para este concurso</span>
