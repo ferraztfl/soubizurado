@@ -885,3 +885,6 @@ Vale sobre §1/§12 onde divergir.
   seções fixa; visão geral, tabela de cargos, cronograma (linha do tempo por situação + datas), etapas, questões da
   banca por matéria (dados reais do banco), notícias, perguntas frequentes (JSON-LD FAQPage), coluna lateral fixa
   (resumo, combo ou Premium, compartilhar) e relacionados.
+- Aplicado (autorizado pelo usuário): `npm run editorial:enrich -- data-private/editorial/enrich-2026-09-29.json --apply`
+  — cargos, taxa, etapas, locais e autorização nos 11 concursos. Log de reversão (valores anteriores):
+  `data-private/logs/contest-enrich-2026-09-28T19-50-21-943Z.json`.
