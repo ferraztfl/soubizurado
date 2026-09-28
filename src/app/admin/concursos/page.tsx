@@ -49,6 +49,9 @@ export default async function ContestsAdminPage(props: ContestsAdminPageProps) {
       <div>
         <Link href="/admin/concursos/novo" className={styles.primary} style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
           Novo concurso
+        </Link>{" "}
+        <Link href="/admin/concursos/importar" className={styles.secondary} style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
+          Importar do edital (PDF)
         </Link>
       </div>
 

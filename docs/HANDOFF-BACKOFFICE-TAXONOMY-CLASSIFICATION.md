@@ -888,3 +888,14 @@ Vale sobre §1/§12 onde divergir.
 - Aplicado (autorizado pelo usuário): `npm run editorial:enrich -- data-private/editorial/enrich-2026-09-29.json --apply`
   — cargos, taxa, etapas, locais e autorização nos 11 concursos. Log de reversão (valores anteriores):
   `data-private/logs/contest-enrich-2026-09-28T19-50-21-943Z.json`.
+
+### 13.32 Importar concurso do edital em PDF (29/09/2026)
+
+- `/admin/concursos/importar` (botão "Importar do edital (PDF)" na lista): PDF oficial (até 30 MB, com texto) + link
+  https opcional + "atualizar concurso existente" opcional → `pdftotext` → IA configurada em `CLASSIFIER_API_*` (a mesma
+  da classificação; hoje Gemini) com prompt "só fatos do edital, null quando não houver" → `noticeExtractionSchema`
+  (zod) → `toNoticeSuggestion` → formulário normal do concurso preenchido para revisão + rascunho de notícia.
+- Nada é salvo pela IA: o concurso só grava ao clicar em salvar (mesmas regras do cadastro); a notícia vira RASCUNHO
+  no Blog (editoria Editais, ligada ao concurso quando for atualização). Banca só casa com nome exato do catálogo.
+- `contest-form-values.ts` centraliza os valores do formulário (edição e importação).
+- Não testado ponta a ponta com um edital real (precisa de um PDF; custo de IA de centavos por edital).

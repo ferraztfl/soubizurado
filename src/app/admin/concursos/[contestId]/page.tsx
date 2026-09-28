@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { asEducationLevel, formatPositionLines, toDayInput } from "@/modules/contests/domain/contest";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import styles from "../../loja/loja.module.css";
 import { deleteContestAction } from "../actions";
 import { ContestForm } from "../contest-form";
+import { contestFormValues } from "../contest-form-values";
 import { loadContestFormOptions } from "../load-contest-form-options";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +16,6 @@ type EditContestPageProps = Readonly<{
   params: Promise<{ contestId: string }>;
   searchParams: Promise<Readonly<{ ok?: string; error?: string }>>;
 }>;
-
-function centsInput(cents: number | null): string {
-  return cents === null ? "" : (cents / 100).toFixed(2).replace(".", ",");
-}
 
 export default async function EditContestPage(props: EditContestPageProps) {
   await requireAdminUser();
@@ -58,38 +54,7 @@ export default async function EditContestPage(props: EditContestPageProps) {
 
       <section className={styles.card}>
         <ContestForm
-          values={{
-            id: contest.id,
-            name: contest.name,
-            slug: contest.slug,
-            organizationName: contest.organizationName,
-            stateCode: contest.stateCode,
-            status: contest.status,
-            vacancies: contest.vacancies === null ? "" : String(contest.vacancies),
-            hasReserveList: contest.hasReserveList,
-            salaryMin: centsInput(contest.salaryMinCents),
-            salaryMax: centsInput(contest.salaryMaxCents),
-            educationLevels: contest.educationLevels,
-            positions: contest.positions,
-            summary: contest.summary,
-            registrationStart: toDayInput(contest.registrationStart),
-            registrationEnd: toDayInput(contest.registrationEnd),
-            examDate: toDayInput(contest.examDate),
-            noticeUrl: contest.noticeUrl ?? "",
-            boardId: contest.boardId,
-            careerCategoryId: contest.careerCategoryId,
-            relatedOfferId: contest.relatedOfferId,
-            isFeatured: contest.isFeatured,
-            isPublished: contest.isPublished,
-            hasLogo: contest.logoAssetId !== null,
-            positionLines: formatPositionLines(
-              contest.contestPositions.map((position) => ({ ...position, educationLevel: asEducationLevel(position.educationLevel) })),
-            ),
-            feeText: contest.feeText ?? "",
-            stages: contest.stages,
-            examLocations: contest.examLocations ?? "",
-            authorization: contest.authorization ?? "",
-          }}
+          values={contestFormValues(contest)}
           {...options}
         />
       </section>
