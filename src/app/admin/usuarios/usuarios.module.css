@@ -231,3 +231,167 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.noticeError,
+.noticeSuccess {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.noticeError {
+  border: 1px solid #f1c4bf;
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand-strong);
+}
+
+.noticeSuccess {
+  border: 1px solid rgba(22, 134, 92, 0.25);
+  background: var(--sb-success-soft);
+  color: var(--sb-success);
+}
+
+.invite {
+  border: 1px solid var(--sb-border);
+  border-radius: 16px;
+  background: var(--sb-surface);
+}
+
+.invite summary {
+  padding: 14px 16px;
+  color: var(--sb-brand-strong);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inviteForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.inviteForm label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  color: var(--sb-text-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.inviteForm input:not([type="checkbox"]) {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 10px;
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.inviteForm .checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  color: var(--sb-text);
+  font-size: 0.86rem;
+}
+
+.inviteForm button {
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sb-brand);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.inviteHint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--sb-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.blocked {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--sb-brand-soft);
+  color: var(--sb-brand-strong);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sb-border);
+}
+
+.actionButton,
+.dangerButton {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 9px;
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.dangerButton {
+  border-color: #f1c4bf;
+  color: var(--sb-brand-strong);
+}
+
+.selfNote {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--sb-text-muted);
+  font-size: 0.82rem;
+}
+
+.audit {
+  display: grid;
+  gap: 8px;
+}
+
+.audit h2 {
+  margin: 0;
+  color: var(--sb-text-strong);
+  font-size: 1.05rem;
+}
+
+.audit ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--sb-text);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 760px) {
+  .inviteForm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

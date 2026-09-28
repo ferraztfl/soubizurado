@@ -622,3 +622,20 @@ Vale sobre §1/§12 onde divergir.
 - Busca por trecho em Todas as questões usa o índice trigram existente (`questions_statement_trgm_idx`,
   sobre `lower(statement)`) via SQL parametrizado — sem migration nova. Até 5.000 resultados exatos;
   termos mais amplos pedem refinamento.
+
+### 13.13 Nova questão de prova e ações em Usuários (28/09/2026)
+
+- `/admin/questoes/nova`: origem "Questão de prova" (banca do catálogo, ano, órgão, cargo, nº; reusa a prova
+  se banca+ano+órgão+cargo já existir; senão cria `manual-…`) ou "Autoral". Fontes: `soubizurado-manual-exam`
+  (OFFICIAL_EXAM) e `soubizurado-original` (ORIGINAL). Texto de apoio opcional; até 6 imagens no enunciado
+  (`[imagem N]` posiciona no texto → `![Imagem N](media:<id>)`) e 1 por alternativa (alternativa pode ser só
+  imagem). Uploads re-codificados no servidor com `sharp` (WebP, ≤1600px, sem metadados, ≤8 MB) →
+  bucket privado. Nasce em revisão; publicação só pela política. `sharp` agora é dependência direta.
+- `/admin/usuarios`: convidar conta (e-mail do Supabase; a pessoa define a senha em `/definir-senha`),
+  tornar/remover administrador, bloquear/desbloquear (ban no Supabase Auth), enviar redefinição de senha.
+  Proteções (`account-admin-policy.ts`): sem auto-remoção/auto-bloqueio; sempre ≥1 admin ativo.
+  Auditoria em `admin_audit_logs` (migration aditiva `20260928100000_admin_audit_logs`, RLS on, sem
+  policies; aplicada com `prisma migrate deploy`).
+- Configuração no painel do Supabase (usuário): em Auth → URL Configuration, incluir
+  `<site>/definir-senha` nas Redirect URLs; para volume de convites, configurar SMTP próprio (o envio
+  padrão tem limite de poucos e-mails por hora).

@@ -4,6 +4,7 @@ import { requireAdminUser } from "@/modules/identity/application/require-admin-u
 import { loadAuthUsers } from "@/modules/identity/infrastructure/auth-user-directory";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
+import { accountAction, inviteUserAction } from "./actions";
 import styles from "./usuarios.module.css";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +21,26 @@ const ROLES = [
 type Role = (typeof ROLES)[number]["value"];
 
 type UsersPageProps = Readonly<{
-  searchParams: Promise<Readonly<{ busca?: string; papel?: string; antes?: string }>>;
+  searchParams: Promise<Readonly<{ busca?: string; papel?: string; antes?: string; ok?: string; error?: string }>>;
 }>;
+
+const SUCCESS_MESSAGES: Readonly<Record<string, string>> = {
+  INVITE: "Convite enviado por e-mail. A pessoa define a própria senha pelo link.",
+  GRANT_ADMIN: "Acesso de administrador concedido.",
+  REVOKE_ADMIN: "Acesso de administrador removido.",
+  BLOCK: "Conta bloqueada: não consegue mais entrar.",
+  UNBLOCK: "Conta desbloqueada.",
+  PASSWORD_RESET: "Link de redefinição de senha enviado por e-mail.",
+};
+
+const AUDIT_LABELS: Readonly<Record<string, string>> = {
+  INVITE: "convidou",
+  GRANT_ADMIN: "tornou administrador",
+  REVOKE_ADMIN: "removeu administrador de",
+  BLOCK: "bloqueou",
+  UNBLOCK: "desbloqueou",
+  PASSWORD_RESET: "enviou redefinição de senha para",
+};
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -31,7 +50,7 @@ function daysAgo(days: number): Date {
 }
 
 export default async function UsersPage(props: UsersPageProps) {
-  await requireAdminUser();
+  const currentAdmin = await requireAdminUser();
 
   const params = await props.searchParams;
   const search = params.busca?.trim().slice(0, 120) ?? "";
@@ -61,6 +80,19 @@ export default async function UsersPage(props: UsersPageProps) {
     prisma.userRole.count({ where: { role: "ADMIN" } }),
     prisma.studyAnswerAttempt.groupBy({ by: ["profileId"], where: { answeredAt: { gte: weekAgo } } }),
   ]);
+
+  const auditLog = await prisma.adminAuditLog.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      id: true,
+      action: true,
+      createdAt: true,
+      actor: { select: { displayName: true } },
+      target: { select: { displayName: true } },
+    },
+  });
+  const success = params.ok ? SUCCESS_MESSAGES[params.ok] ?? null : null;
 
   const page = profiles.slice(0, PAGE_SIZE);
   const next = profiles.length > PAGE_SIZE ? page[page.length - 1]?.createdAt : undefined;
@@ -96,10 +128,21 @@ export default async function UsersPage(props: UsersPageProps) {
         <p className={styles.eyebrow}>Sistema</p>
         <h1 className={styles.title}>Usuários</h1>
         <p className={styles.description}>
-          Contas da plataforma, papéis e atividade de estudo. Os papéis são somente leitura aqui: a concessão de
-          acesso administrativo continua controlada no servidor.
+          Contas da plataforma, papéis e atividade de estudo. Convide contas, conceda ou remova acesso de
+          administrador, bloqueie acessos e envie redefinição de senha. Toda ação fica registrada abaixo.
         </p>
       </header>
+
+      {success ? (
+        <div className={styles.noticeSuccess} role="status">
+          {success}
+        </div>
+      ) : null}
+      {params.error ? (
+        <div className={styles.noticeError} role="alert">
+          {params.error.slice(0, 300)}
+        </div>
+      ) : null}
 
       <section className={styles.cards} aria-label="Resumo">
         <div className={styles.card}>
@@ -115,6 +158,30 @@ export default async function UsersPage(props: UsersPageProps) {
           <span>administradores</span>
         </div>
       </section>
+
+      <details className={styles.invite}>
+        <summary>Convidar nova conta</summary>
+        <form action={inviteUserAction} className={styles.inviteForm}>
+          <label>
+            <span>Nome</span>
+            <input name="displayName" required minLength={2} maxLength={120} autoComplete="off" />
+          </label>
+          <label>
+            <span>E-mail</span>
+            <input name="email" type="email" required maxLength={254} autoComplete="off" />
+          </label>
+          <label className={styles.checkbox}>
+            <input name="makeAdmin" type="checkbox" />
+            <span>Acesso de administrador</span>
+          </label>
+          <button type="submit">Enviar convite</button>
+          <p className={styles.inviteHint}>
+            A pessoa recebe um e-mail do Supabase e define a própria senha — ninguém digita senha por ela. O envio
+            padrão do Supabase tem limite de poucos e-mails por hora; para volume, configure um SMTP próprio no painel
+            do Supabase.
+          </p>
+        </form>
+      </details>
 
       <form className={styles.filters} action="/admin/usuarios" role="search">
         <label>
@@ -154,8 +221,9 @@ export default async function UsersPage(props: UsersPageProps) {
                   <strong>{profile.displayName ?? "Sem nome"}</strong>
                   <span className={styles.meta}>
                     {account?.email ?? "e-mail indisponível"}
-                    {account && !account.emailConfirmed ? " · e-mail não confirmado" : ""}
+                    {account && !account.emailConfirmed ? " · convite pendente" : ""}
                   </span>
+                  {account?.blocked ? <span className={styles.blocked}>Bloqueada</span> : null}
                   <span className={styles.roles}>
                     {profile.roles.length === 0 ? (
                       <span className={styles.role}>Aluno</span>
@@ -189,16 +257,84 @@ export default async function UsersPage(props: UsersPageProps) {
                     <dd>{last ? dateTimeFormatter.format(last) : "—"}</dd>
                   </div>
                 </dl>
+                <UserActions
+                  profileId={profile.id}
+                  isAdmin={profile.roles.some((item) => item.role === "ADMIN")}
+                  isSelf={profile.id === currentAdmin.profileId}
+                  blocked={account?.blocked ?? false}
+                  hasAccount={Boolean(account)}
+                />
               </li>
             );
           })}
         </ul>
       )}
 
+      <section className={styles.audit}>
+        <h2>Registro de ações</h2>
+        {auditLog.length === 0 ? (
+          <p className={styles.meta}>Nenhuma ação registrada ainda.</p>
+        ) : (
+          <ul>
+            {auditLog.map((entry) => (
+              <li key={entry.id}>
+                <span className={styles.meta}>{dateTimeFormatter.format(entry.createdAt)}</span>{" "}
+                <strong>{entry.actor?.displayName ?? "Administrador"}</strong> {AUDIT_LABELS[entry.action] ?? entry.action}{" "}
+                <strong>{entry.target?.displayName ?? "conta"}</strong>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <nav className={styles.pager} aria-label="Paginação">
         {before ? <Link href={hrefWith({})}>« Mais recentes</Link> : <span />}
         {next ? <Link href={hrefWith({ antes: next.toISOString() })}>Próximas »</Link> : null}
       </nav>
     </main>
+  );
+}
+
+function ActionButton({ profileId, action, label, danger }: Readonly<{ profileId: string; action: string; label: string; danger?: boolean }>) {
+  return (
+    <form action={accountAction}>
+      <input type="hidden" name="profileId" value={profileId} />
+      <input type="hidden" name="action" value={action} />
+      <button type="submit" className={danger ? styles.dangerButton : styles.actionButton}>
+        {label}
+      </button>
+    </form>
+  );
+}
+
+function UserActions({
+  profileId,
+  isAdmin,
+  isSelf,
+  blocked,
+  hasAccount,
+}: Readonly<{ profileId: string; isAdmin: boolean; isSelf: boolean; blocked: boolean; hasAccount: boolean }>) {
+  if (isSelf) {
+    return <p className={styles.selfNote}>Sua conta — ações sobre ela ficam bloqueadas aqui.</p>;
+  }
+
+  return (
+    <div className={styles.actions}>
+      {isAdmin ? (
+        <ActionButton profileId={profileId} action="REVOKE_ADMIN" label="Remover administrador" danger />
+      ) : (
+        <ActionButton profileId={profileId} action="GRANT_ADMIN" label="Tornar administrador" />
+      )}
+      {hasAccount ? (
+        <>
+          <ActionButton profileId={profileId} action="PASSWORD_RESET" label="Enviar redefinição de senha" />
+          {blocked ? (
+            <ActionButton profileId={profileId} action="UNBLOCK" label="Desbloquear" />
+          ) : (
+            <ActionButton profileId={profileId} action="BLOCK" label="Bloquear acesso" danger />
+          )}
+        </>
+      ) : null}
+    </div>
   );
 }

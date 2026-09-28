@@ -100,9 +100,11 @@ model Profile {
   appliedClassifications QuestionClassificationTask[]
   questionRevisions      QuestionRevision[]
   studyQuestionNotes     StudyQuestionNote[]
-  reportedQuestionErrors QuestionErrorReport[]   @relation("QuestionErrorReportReporter")
-  resolvedQuestionErrors QuestionErrorReport[]   @relation("QuestionErrorReportResolver")
+  reportedQuestionErrors QuestionErrorReport[]        @relation("QuestionErrorReportReporter")
+  resolvedQuestionErrors QuestionErrorReport[]        @relation("QuestionErrorReportResolver")
   studySimulations       StudySimulation[]
+  adminActions           AdminAuditLog[]              @relation("AdminAuditActor")
+  adminActionsReceived   AdminAuditLog[]              @relation("AdminAuditTarget")
 
   @@map("profiles")
 }
@@ -944,4 +946,23 @@ model StudySimulationQuestion {
   @@unique([simulationId, questionId])
   @@index([questionId])
   @@map("study_simulation_questions")
+}
+
+/// Sensitive backoffice actions on accounts (invite, role change, block).
+/// Written only server-side after requireAdminUser; RLS on, no policies.
+model AdminAuditLog {
+  id               String   @id @default(uuid()) @db.Uuid
+  actorProfileId   String?  @map("actor_profile_id") @db.Uuid
+  action           String   @db.VarChar(60)
+  targetProfileId  String?  @map("target_profile_id") @db.Uuid
+  targetAuthUserId String?  @map("target_auth_user_id") @db.Uuid
+  details          Json     @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  actor  Profile? @relation("AdminAuditActor", fields: [actorProfileId], references: [id], onDelete: SetNull)
+  target Profile? @relation("AdminAuditTarget", fields: [targetProfileId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([targetProfileId, createdAt])
+  @@map("admin_audit_logs")
 }
