@@ -89,7 +89,11 @@ export function PostForm({
         <span>
           Texto — separe blocos com uma linha em branco. <code>## Título</code>, <code>### Subtítulo</code>, <code>- item</code>,{" "}
           <code>1. item</code>, <code>&gt; citação</code>, <code>**negrito**</code>, <code>_itálico_</code>,{" "}
-          <code>[texto](https://link)</code> e <code>[imagem 1]</code> sozinho numa linha.
+          <code>[texto](https://link)</code> e <code>[imagem 1]</code> sozinho numa linha. Caixas: primeira linha{" "}
+          <code>!!! resumo Título</code> (ou <code>atencao</code>, <code>dica</code>, <code>chamada</code>) e, logo abaixo, as linhas
+          da caixa (<code>- item</code> vira lista; numa <code>chamada</code>, uma linha só com{" "}
+          <code>[Baixar o edital](https://…)</code> vira botão). Tabelas: linhas <code>| Cargo | Vagas |</code>, a primeira é o
+          cabeçalho.
         </span>
         <textarea name="body" defaultValue={values.body} rows={22} maxLength={200000} required />
       </label>

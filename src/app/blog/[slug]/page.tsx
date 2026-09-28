@@ -7,13 +7,17 @@ import { BRAZIL_STATES, parseStateCode, readingMinutes } from "@/modules/blog/do
 import { blogImageUrl, loadLivePost } from "@/modules/blog/infrastructure/blog-queries";
 import { siteUrl } from "@/modules/question-bank/infrastructure/queries/question-sitemap";
 import { formatBRL } from "@/modules/store/domain/store";
+import { DEFAULT_SUBSCRIPTION_PLAN, SUBSCRIPTION_PLANS } from "@/modules/store/domain/subscription";
 
 import { ArticleBody } from "../article-body";
-import { AuthorLine, GridCard, ListItem } from "../_components/post-cards";
-import { BlogSidebar } from "../_components/sidebar";
+import { GridCard, ListItem } from "../_components/post-cards";
+import { ReadingProgress } from "../_components/reading-progress";
+import { ShareButtons } from "../_components/share-buttons";
 import styles from "../portal.module.css";
 
 export const dynamic = "force-dynamic";
+
+const longDate = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
 
 type PostPageProps = Readonly<{ params: Promise<{ slug: string }> }>;
 
@@ -45,29 +49,6 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     },
     twitter: { card: image ? "summary_large_image" : "summary", title: post.title, description: post.excerpt },
   };
-}
-
-function ShareLinks({ url, title }: Readonly<{ url: string; title: string }>) {
-  const text = encodeURIComponent(`${title} ${url}`);
-  const link = encodeURIComponent(url);
-  const targets = [
-    { name: "WhatsApp", href: `https://wa.me/?text=${text}` },
-    { name: "Telegram", href: `https://t.me/share/url?url=${link}&text=${encodeURIComponent(title)}` },
-    { name: "X", href: `https://twitter.com/intent/tweet?url=${link}&text=${encodeURIComponent(title)}` },
-    { name: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${link}` },
-    { name: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${link}` },
-  ];
-
-  return (
-    <div className={styles.share} aria-label="Compartilhar">
-      <span>Compartilhe:</span>
-      {targets.map((target) => (
-        <a key={target.name} href={target.href} target="_blank" rel="noopener noreferrer">
-          {target.name}
-        </a>
-      ))}
-    </div>
-  );
 }
 
 export default async function PostPage({ params }: PostPageProps) {
@@ -112,25 +93,22 @@ export default async function PostPage({ params }: PostPageProps) {
     },
   ]).replace(/</g, "\\u003c");
 
-  const authorCard = {
-    slug: post.slug,
-    title: post.title,
-    excerpt: post.excerpt,
-    body: post.body,
-    format: post.format,
-    stateCode: post.stateCode,
-    isFeatured: false,
-    publishedAt: post.publishedAt,
-    coverAssetId: post.coverAssetId,
-    category: post.category,
-    author: post.author,
-  };
+  const published = post.publishedAt ?? post.updatedAt;
+  const edited = post.updatedAt.getTime() - published.getTime() > 3_600_000;
+  const author = post.author?.displayName ?? "Redação Sou Bizurado";
+  const initials = author
+    .split(/\s+/)
+    .filter((word) => word.length > 2)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
 
   return (
-    <div className={styles.columns}>
-      <article className={styles.main}>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+    <article className={styles.story}>
+      <ReadingProgress />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
 
+      <header className={styles.storyHeader}>
         <nav className={styles.breadcrumb} aria-label="Você está em">
           <Link href="/blog">Blog</Link>
           {post.category ? (
@@ -146,65 +124,94 @@ export default async function PostPage({ params }: PostPageProps) {
             </>
           ) : null}
         </nav>
-
-        <header className={styles.postHeader}>
-          <h1>{post.title}</h1>
-          <p className={styles.lead}>{post.excerpt}</p>
-          <div className={styles.postMeta}>
-            <AuthorLine post={authorCard} now={now} />
-            <span className={styles.muted}>{readingMinutes(post.body)} min de leitura</span>
-          </div>
-          <ShareLinks url={url} title={post.title} />
-        </header>
-
-        {post.coverAssetId ? (
-          // eslint-disable-next-line @next/next/no-img-element -- protected media route
-          <img src={blogImageUrl(post.coverAssetId)} alt="" className={styles.postCover} />
+        {post.category ? (
+          <Link href={`/blog/editoria/${post.category.slug}`} className={styles.kicker}>
+            {post.category.name}
+          </Link>
         ) : null}
+        <h1>{post.title}</h1>
+        <p className={styles.lead}>{post.excerpt}</p>
+        <div className={styles.storyMeta}>
+          <div className={styles.storyByline}>
+            <span className={styles.avatar} aria-hidden="true">
+              {initials || "SB"}
+            </span>
+            <span>
+              <strong>{author}</strong>
+              <small>
+                <time dateTime={published.toISOString()}>{longDate.format(published)}</time>
+                {edited ? <> · atualizado em {longDate.format(post.updatedAt)}</> : null} · {readingMinutes(post.body)} min de leitura
+              </small>
+            </span>
+          </div>
+          <ShareButtons url={url} title={post.title} layout="row" />
+        </div>
+      </header>
 
-        <ArticleBody body={post.body} images={images} />
+      {post.coverAssetId ? (
+        // eslint-disable-next-line @next/next/no-img-element -- protected media route
+        <img src={blogImageUrl(post.coverAssetId)} alt="" className={styles.storyCover} />
+      ) : null}
 
-        <aside className={styles.cta} aria-label="Estude para este concurso">
-          <strong>{offer || post.relatedBoard ? "Estude para este concurso no Sou Bizurado" : "Treine com questões de concursos"}</strong>
-          <div>
-            <Link href={post.relatedBoard ? `/questoes?board=${post.relatedBoard.id}` : "/questoes"} className={styles.ctaSecondary}>
-              {post.relatedBoard ? `Resolver questões da banca ${post.relatedBoard.name} grátis` : "Resolver questões grátis"}
-            </Link>
-            {offer ? (
-              <Link href={`/loja/${offer.slug}`} className={styles.ctaPrimary}>
-                {offer.name} — {formatBRL(offer.priceCents)}
+      <div className={styles.storyBody}>
+        <ShareButtons url={url} title={post.title} layout="rail" />
+
+        <div className={styles.storyText}>
+          <ArticleBody body={post.body} images={images} />
+
+          <aside className={styles.cta} aria-label="Estude para este concurso">
+            <strong>{offer || post.relatedBoard ? "Estude para este concurso no Sou Bizurado" : "Leu a notícia? Agora é treinar."}</strong>
+            <div>
+              <Link href={post.relatedBoard ? `/questoes?board=${post.relatedBoard.id}` : "/questoes"} className={styles.ctaSecondary}>
+                {post.relatedBoard ? `Resolver questões da banca ${post.relatedBoard.name} grátis` : "Resolver questões grátis"}
               </Link>
-            ) : null}
+              {offer ? (
+                <Link href={`/loja/${offer.slug}`} className={styles.ctaPrimary}>
+                  {offer.name} — {formatBRL(offer.priceCents)}
+                </Link>
+              ) : null}
+            </div>
+          </aside>
+
+          <aside className={styles.premiumInvite} aria-label="Assinatura Premium">
+            <div>
+              <span>Sou Bizurado Premium</span>
+              <strong>Questões e simulados ilimitados por {formatBRL(SUBSCRIPTION_PLANS[DEFAULT_SUBSCRIPTION_PLAN].amountCents)}/mês</strong>
+              <p>Revisão dos seus erros, desempenho por matéria e ranking. Cancele quando quiser.</p>
+            </div>
+            <Link href="/assinatura">Quero assinar</Link>
+          </aside>
+
+          <ShareButtons url={url} title={post.title} layout="row" />
+        </div>
+      </div>
+
+      {post.related.length > 0 ? (
+        <section className={styles.storySection}>
+          <div className={styles.sectionHead}>
+            <h2>Leia também</h2>
           </div>
-        </aside>
+          <div className={styles.relatedGrid}>
+            {post.related.map((item) => (
+              <GridCard key={item.slug} post={item} now={now} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-        <ShareLinks url={url} title={post.title} />
-
-        {post.related.length > 0 ? (
-          <section>
-            <div className={styles.sectionHead}>
-              <h2>Leia também</h2>
-            </div>
-            <div className={styles.relatedGrid}>
-              {post.related.map((item) => (
-                <GridCard key={item.slug} post={item} now={now} />
-              ))}
-            </div>
-          </section>
-        ) : null}
-      </article>
-
-      <div className={styles.sideStack}>
-        {post.latest.length > 0 ? (
-          <section className={styles.sideLatest} aria-label="Últimas notícias">
+      {post.latest.length > 0 ? (
+        <section className={styles.storySection} aria-label="Últimas notícias">
+          <div className={styles.sectionHead}>
             <h2>Últimas notícias</h2>
+            <Link href="/blog/noticias">Ver todas →</Link>
+          </div>
+          <div className={styles.list}>
             {post.latest.map((item) => (
               <ListItem key={item.slug} post={item} now={now} />
             ))}
-          </section>
-        ) : null}
-        <BlogSidebar activeSlug={post.category?.slug} />
-      </div>
-    </div>
+          </div>
+        </section>
+      ) : null}
+    </article>
   );
 }

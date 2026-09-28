@@ -6,14 +6,78 @@
  * are handled by RichText.
  */
 
+export const CALLOUT_KINDS = ["resumo", "atencao", "dica", "chamada"] as const;
+export type CalloutKind = (typeof CALLOUT_KINDS)[number];
+
+export type CalloutLine =
+  | Readonly<{ type: "text"; text: string }>
+  | Readonly<{ type: "item"; text: string }>
+  /** A line that is only "[label](https://…)" — shown as a button. */
+  | Readonly<{ type: "button"; label: string; href: string }>;
+
 export type ArticleBlock =
   | Readonly<{ type: "heading"; level: 2 | 3; text: string }>
   | Readonly<{ type: "paragraph"; text: string }>
   | Readonly<{ type: "list"; ordered: boolean; items: readonly string[] }>
   | Readonly<{ type: "quote"; text: string }>
-  | Readonly<{ type: "image"; index: number }>;
+  | Readonly<{ type: "image"; index: number }>
+  /** "!!! resumo Título" followed by lines (text, "- item" or a button link), no blank line inside. */
+  | Readonly<{ type: "callout"; kind: CalloutKind; title: string; lines: readonly CalloutLine[] }>
+  /** Lines "| a | b |"; the first row is the header, "|---|---|" rows are skipped. */
+  | Readonly<{ type: "table"; header: readonly string[]; rows: readonly (readonly string[])[] }>;
 
 const IMAGE_LINE = /^\[imagem\s+(\d{1,2})\]$/i;
+const CALLOUT_LINE = /^!!!\s+(resumo|atencao|atenção|dica|chamada)\b\s*(.*)$/i;
+const BUTTON_LINE = /^\[([^\]]{1,80})\]\((https:\/\/[^\s)]{1,300})\)$/;
+const TABLE_SEPARATOR = /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?$/;
+const MAX_TABLE_COLUMNS = 8;
+const MAX_TABLE_ROWS = 80;
+
+function parseCallout(lines: readonly string[]): ArticleBlock | null {
+  const match = lines[0]!.trim().match(CALLOUT_LINE);
+  if (!match) return null;
+
+  const kindText = match[1]!.toLowerCase().replace("ç", "c").replace("ã", "a");
+  const kind = (CALLOUT_KINDS as readonly string[]).includes(kindText) ? (kindText as CalloutKind) : "resumo";
+
+  return {
+    type: "callout",
+    kind,
+    title: match[2]!.trim(),
+    lines: lines.slice(1).map((raw): CalloutLine => {
+      const line = raw.trim();
+      const button = line.match(BUTTON_LINE);
+      if (button) return { type: "button", label: button[1]!, href: button[2]! };
+      if (/^[-*]\s+/.test(line)) return { type: "item", text: line.replace(/^[-*]\s+/, "") };
+      return { type: "text", text: line };
+    }),
+  };
+}
+
+function splitRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim())
+    .slice(0, MAX_TABLE_COLUMNS);
+}
+
+function parseTable(lines: readonly string[]): ArticleBlock | null {
+  if (lines.length < 2 || !lines.every((line) => /^\s*\|.*\|\s*$/.test(line))) return null;
+
+  const rows = lines.filter((line) => !TABLE_SEPARATOR.test(line.trim())).map(splitRow);
+  const [header, ...body] = rows;
+  if (!header || body.length === 0) return null;
+
+  const width = header.length;
+  return {
+    type: "table",
+    header,
+    rows: body.slice(0, MAX_TABLE_ROWS).map((row) => Array.from({ length: width }, (_, index) => row[index] ?? "")),
+  };
+}
 
 export function parseArticleBlocks(body: string): ArticleBlock[] {
   const blocks: ArticleBlock[] = [];
@@ -25,8 +89,11 @@ export function parseArticleBlocks(body: string): ArticleBlock[] {
 
     const first = lines[0]!.trim();
     const image = first.match(IMAGE_LINE);
+    const special = parseCallout(lines) ?? parseTable(lines);
 
-    if (lines.length === 1 && image) {
+    if (special) {
+      blocks.push(special);
+    } else if (lines.length === 1 && image) {
       blocks.push({ type: "image", index: Number(image[1]) });
     } else if (lines.length === 1 && /^###\s+/.test(first)) {
       blocks.push({ type: "heading", level: 3, text: first.replace(/^###\s+/, "") });
@@ -50,6 +117,9 @@ export function parseArticleBlocks(body: string): ArticleBlock[] {
 export function articlePlainText(body: string): string {
   return body
     .replace(/\[imagem\s+\d{1,2}\]/gi, " ")
+    .replace(/^!!!\s+\S+\s*/gm, "")
+    .replace(/^\s*\|?\s*:?-{3,}[\s:|-]*$/gm, "")
+    .replace(/\|/g, " ")
     .replace(/^#{2,3}\s+/gm, "")
     .replace(/^\s*(?:[-*>]|\d{1,3}[.)])\s+/gm, "")
     .replace(/\*\*([^*]+)\*\*/g, "$1")

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  articlePlainText,
   excerptOf,
   isPostVisible,
   parseArticleBlocks,
@@ -33,6 +34,47 @@ describe("parseArticleBlocks", () => {
       { type: "image", index: 1 },
       { type: "paragraph", text: "### Salários\nlinha 2 do parágrafo" },
     ]);
+  });
+
+  it("reads callouts and tables", () => {
+    const body = [
+      "!!! resumo Concurso PMPE em resumo\n- **Vagas:** 1.320\nSituação: autorizado",
+      "!!! chamada Consulte o edital\nO último edital é a melhor referência.\n[Baixar o edital](https://www.pe.gov.br/edital.pdf)\n[Link inseguro](http://x.y)",
+      "!!! atenção Previsão não é cronograma\nAs datas são estimativas.",
+      "| Cargo | Vagas |\n|---|---|\n| Soldado | 1.250 |\n| Oficial | 70 | extra |",
+    ].join("\n\n");
+
+    expect(parseArticleBlocks(body)).toEqual([
+      {
+        type: "callout",
+        kind: "resumo",
+        title: "Concurso PMPE em resumo",
+        lines: [
+          { type: "item", text: "**Vagas:** 1.320" },
+          { type: "text", text: "Situação: autorizado" },
+        ],
+      },
+      {
+        type: "callout",
+        kind: "chamada",
+        title: "Consulte o edital",
+        lines: [
+          { type: "text", text: "O último edital é a melhor referência." },
+          { type: "button", label: "Baixar o edital", href: "https://www.pe.gov.br/edital.pdf" },
+          { type: "text", text: "[Link inseguro](http://x.y)" },
+        ],
+      },
+      { type: "callout", kind: "atencao", title: "Previsão não é cronograma", lines: [{ type: "text", text: "As datas são estimativas." }] },
+      {
+        type: "table",
+        header: ["Cargo", "Vagas"],
+        rows: [
+          ["Soldado", "1.250"],
+          ["Oficial", "70"],
+        ],
+      },
+    ]);
+    expect(articlePlainText(body)).not.toMatch(/!!!|\||---/);
   });
 
   it("never produces HTML: tags stay as paragraph text", () => {

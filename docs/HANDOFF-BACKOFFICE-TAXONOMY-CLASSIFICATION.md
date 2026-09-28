@@ -828,3 +828,14 @@ Vale sobre §1/§12 onde divergir.
   fechável por 7 dias) em página inicial, blog (com barra própria de Notícias e regiões), concursos, loja e
   assinatura. Login aceita `?next=` (só caminhos internos, `safeNextPath`).
 - Não testado ponta a ponta: cobrança real/teste no Mercado Pago (faltam credenciais e URL pública).
+
+### 13.27 Página de notícia no estilo portal (29/09/2026)
+
+- `/blog/[slug]`: coluna central (780px), breadcrumb, editoria, título grande, lead, autor com data completa,
+  "atualizado em", tempo de leitura, compartilhar em linha e trilho fixo ao lado (copiar link, WhatsApp,
+  Telegram, Facebook, X, LinkedIn, e-mail), capa larga, barra de progresso de leitura, chamada para questões
+  da banca/combo, convite ao Premium (R$ 9,90/mês), "Leia também" e "Últimas notícias" embaixo.
+- Formato do texto ganhou (sem HTML): caixas `!!! resumo|atencao|dica|chamada Título` + linhas (`- item`;
+  botão = linha só com `[rótulo](https://…)`, só https) e tabelas `| a | b |` (1ª linha = cabeçalho, até
+  8 colunas / 80 linhas). Ajuda atualizada no editor.
+- Não conferido com post real (banco sem posts publicados).
