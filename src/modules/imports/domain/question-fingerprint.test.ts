@@ -20,6 +20,15 @@ describe("questionHtmlToDisplayText", () => {
     ).toBe("**Título**\n\nPrimeiro parágrafo\nlinha 2\n\n& fim");
   });
 
+  it("keeps a table as one line per row with the cells joined", () => {
+    expect(
+      questionHtmlToDisplayText(
+        "<p>Analise:</p><table><tbody><tr><td><p><br></p></td><td><p><strong>B</strong></p></td><td><p>C</p></td><td></td></tr>" +
+          "<tr><td>3</td><td><p>A</p></td><td><p>6,5</p></td><td><p><br></p></td></tr><tr><td></td><td></td></tr></tbody></table><p>Fim</p>",
+      ),
+    ).toBe("Analise:\n\n| B | C\n3 | A | 6,5\n\nFim");
+  });
+
   it("normalizes to the same fingerprint text as the plain version", () => {
     const html = "<p>A</p><p>B  c</p>";
 

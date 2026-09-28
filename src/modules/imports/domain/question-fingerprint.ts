@@ -81,6 +81,30 @@ export function questionHtmlToPlainText(
 }
 
 /**
+ * A table (e.g. spreadsheet cells) as one line per row, cells joined by
+ * " | ". Trailing empty cells and empty rows are dropped.
+ */
+function htmlTableToLines(body: string): string {
+  return body
+    .split(/<tr[^>]*>/i)
+    .slice(1)
+    .map((row) => {
+      const cells = row
+        .split(/<t[dh][^>]*>/i)
+        .slice(1)
+        .map((cell) => decodeHtmlEntities(cell.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim());
+
+      while (cells.length > 0 && !cells[cells.length - 1]) {
+        cells.pop();
+      }
+
+      return cells.join(" | ").trim();
+    })
+    .filter(Boolean)
+    .join("<br>");
+}
+
+/**
  * Like questionHtmlToPlainText, but keeps paragraph breaks (<p>, <br>,
  * blank lines) for display. Fingerprints keep using the collapsed form,
  * so deduplication is unaffected.
@@ -90,6 +114,7 @@ export function questionHtmlToDisplayText(
 ): string {
   const withBreaks = value
     .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_table, body: string) => `\n\n${htmlTableToLines(body)}\n\n`)
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|li|h[1-6])>/gi, "\n\n")
     .replace(/<[^>]+>/g, " ");

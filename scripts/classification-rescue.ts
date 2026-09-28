@@ -29,6 +29,12 @@ import { getPrismaClient } from "../src/shared/infrastructure/database/prisma";
  * legacy question (no canonical discipline) to its correct area.
  *
  *   npm run classification:rescue -- --enem --apply
+ *
+ * --quest: Quest API imports still without a discipline. The Quest subject
+ * is often too specific to map, so the importer guessed an area (or used
+ * the default one): candidates are the disciplines of every active area.
+ *
+ *   npm run classification:rescue -- --quest --apply
  */
 
 /** Knowledge areas that belong to public-service exams, not to ENEM. */
@@ -41,6 +47,7 @@ async function main(): Promise<void> {
 
   const apply = process.argv.includes("--apply");
   const enem = process.argv.includes("--enem");
+  const quest = process.argv.includes("--quest");
   const prisma = getPrismaClient();
 
   try {
@@ -49,17 +56,17 @@ async function main(): Promise<void> {
       provider: base.provider,
       model: base.model,
       // Distinct version: tasks of the normal run already exist.
-      version: `${base.version}${enem ? "+enem" : "+ka"}`.slice(0, 40),
+      version: `${base.version}${enem ? "+enem" : quest ? "+all" : "+ka"}`.slice(0, 40),
       classify: (input, taxonomy, options) => base.classify(input, taxonomy, options),
     };
 
     const repository = new PrismaClassificationTaskRepository(prisma);
     const taxonomy = await repository.loadTaxonomyIndex();
 
-    const enemAreaIds = enem
+    const widenAreaIds = enem || quest
       ? (
           await prisma.knowledgeArea.findMany({
-            where: { isActive: true, slug: { notIn: NON_ENEM_AREAS } },
+            where: { isActive: true, ...(enem ? { slug: { notIn: NON_ENEM_AREAS } } : {}) },
             select: { id: true },
           })
         ).map((area) => area.id)
@@ -71,6 +78,8 @@ async function main(): Promise<void> {
         topicId: null,
         ...(enem
           ? { examination: { board: { slug: "inep" } } }
+          : quest
+          ? { disciplineId: null, examination: { slug: { startsWith: "quest-api-" } } }
           : { OR: [{ knowledgeAreaId: { not: null } }, { discipline: { knowledgeAreaId: { not: null } } }] }),
         classificationTasks: { none: { classifierVersion: classifier.version, taxonomyVersion: taxonomy.version } },
       },
@@ -106,7 +115,7 @@ async function main(): Promise<void> {
         minimumConfidence: readMinimumConfidence(),
         requestsPerMinute: readRequestsPerMinute(),
         autoApply: true,
-        ...(enem ? { widenToKnowledgeAreas: enemAreaIds } : { widenToKnowledgeArea: true }),
+        ...(enem || quest ? { widenToKnowledgeAreas: widenAreaIds } : { widenToKnowledgeArea: true }),
       });
 
       totals.completed += output.completed;

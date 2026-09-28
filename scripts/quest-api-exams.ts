@@ -163,14 +163,21 @@ async function plan(): Promise<void> {
   console.log(`Créditos disponíveis: ${before}. Listagem até ${listBudget} créditos; reserva ${reserve}.`);
 
   const exams: Exam[] = [];
+  // --orgaos="Polícia Militar,Bombeiro" lists only matching exams (partial
+  // match, all years unless --anos is given) — listing is paid per exam.
+  const organizations = argument("orgaos")?.split(",").map((term) => term.trim()).filter(Boolean);
+  const searches: { year?: string; organization?: string }[] = organizations
+    ? organizations.flatMap((organization) => (argument("anos") ? years.map((year) => ({ year, organization })) : [{ organization }]))
+    : years.map((year) => ({ year }));
 
-  for (const year of years) {
+  for (const search of searches) {
     for (let page = 1; spent.credits < listBudget; page += 1) {
       const perPage = Math.min(100, listBudget - spent.credits);
       if (perPage < 1) break;
-      const result = await provider.listExaminations({ limit: perPage, page, board, year });
+      const result = await provider.listExaminations({ limit: perPage, page, board, ...search });
 
       for (const item of result.items) {
+        if (exams.some((exam) => exam.id === item.externalId)) continue;
         const total = item.totalQuestions;
         exams.push({
           id: item.externalId,
@@ -195,8 +202,19 @@ async function plan(): Promise<void> {
     select: { slug: true, title: true, year: true, board: { select: { name: true } }, organization: { select: { name: true } }, careerPosition: { select: { name: true } } },
   });
 
+  // --excluir=id,id: exams a reviewer identified as already in the bank
+  // (same contest recorded with another year or organization spelling).
+  const excluded = new Set(argument("excluir")?.split(",").map((id) => id.trim()) ?? []);
+
   for (const exam of exams) {
     const imported = ours.find((item) => item.slug === `quest-api-${exam.id}`);
+
+    if (excluded.has(exam.id)) {
+      exam.status = "already-in-bank";
+      exam.match = "excluída na revisão do plano";
+      continue;
+    }
+
     const sameExam = ours.find(
       (item) =>
         item.year === exam.year &&
@@ -218,13 +236,31 @@ async function plan(): Promise<void> {
     }
   }
 
-  // Newest first, then smaller exams, until the budget is used.
+  // One exam per contest (organization + year) first — exams of the same
+  // contest repeat the common part, paid again and then dropped as
+  // duplicates — newest first; extra exams of a contest only if credits remain.
   let budget = before - spent.credits - reserve;
+  const contest = (exam: Exam) => `${simplify(exam.organization)}|${exam.year}`;
+  const firstOfContest = new Set<string>();
   const candidates = exams
     .filter((exam) => exam.status === "planned")
-    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.cost - b.cost);
+    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || b.totalQuestions - a.totalQuestions)
+    .map((exam) => {
+      const first = !firstOfContest.has(contest(exam));
+      firstOfContest.add(contest(exam));
+      return { exam, first };
+    })
+    .sort((a, b) => Number(b.first) - Number(a.first));
 
-  for (const exam of candidates) {
+  // --somente=id,id: a reviewed selection replaces the automatic order.
+  const only = argument("somente")?.split(",").map((id) => id.trim());
+
+  for (const { exam } of candidates) {
+    if (only && !only.includes(exam.id)) {
+      exam.status = "over-budget";
+      continue;
+    }
+
     // + 1 credit: the importer looks the exam metadata up once.
     if (exam.cost + 1 <= budget) budget -= exam.cost + 1;
     else exam.status = "over-budget";
@@ -249,15 +285,40 @@ async function plan(): Promise<void> {
 
 // ---------------------------------------------------------------- import
 
+/**
+ * Quest "matéria" is often a fine-grained subject ("Crime omissivo",
+ * "Lei de Drogas"). When it is not a canonical discipline, only the
+ * knowledge area is guessed from keywords; our classifier picks the
+ * discipline and topic inside it.
+ */
+const AREA_KEYWORDS: readonly [RegExp, string][] = [
+  [/\b(lei|leis|decreto|direito|direitos|penal|crime|crimes|criminal|criminologia|inqu[eé]rito|habeas|pris[aã]o|cautelar|execu[cç][aã]o penal|estatuto|legisla[cç][aã]o|constitu|tratado|medidas provis|administra[cç][aã]o p[uú]blica|procedimento administrativo|processo|confiss[aã]o|viol[eê]ncia|disciplina|permiss[aã]o de sa[ií]da|preso|intercepta|seguran[cç]a vi[aá]ria|tr[aâ]nsito|reorganiza[cç][aã]o territorial|corte interamericana)/i, "ciencias-juridicas"],
+  [/\b(palavra|palavras|verbal|verbais|conjun[cç][aã]o|locu[cç]|express[oõ]es|morfossint|sintax|sem[aâ]ntic|pontua[cç][aã]o|crase|concord[aâ]ncia|reg[eê]ncia|texto|interpreta[cç][aã]o)/i, "linguagens-codigos-e-suas-tecnologias"],
+  [/\b(num[eé]ric|n[uú]meros|dist[aâ]ncia|cilindro|geometri|propos[ií][cç]|l[oó]gic[ao]|porcentagem|probabilidade|equa[cç]|fun[cç][aã]o|raz[aã]o|propor[cç]|matem[aá]tica)/i, "matematica-e-suas-tecnologias"],
+  [/\b(office|libreoffice|broffice|navegador|browsers?|bombas l[oó]gicas|v[ií]rus|malware|planilha|windows|linux|internet|e-?mail|inform[aá]tica)/i, "tecnologia-da-informacao"],
+];
+
+function guessArea(subject: string | null): string | null {
+  return AREA_KEYWORDS.find(([pattern]) => pattern.test(subject ?? ""))?.[1] ?? null;
+}
+
 /** Maps the Quest subject to our taxonomy (canonical discipline or area only). */
-function withOurTaxonomy(provider: QuestionProvider, entries: Awaited<ReturnType<typeof loadSectionTaxonomyEntries>>): QuestionProvider {
+function withOurTaxonomy(
+  provider: QuestionProvider,
+  entries: Awaited<ReturnType<typeof loadSectionTaxonomyEntries>>,
+  fallbackArea: string | null,
+): QuestionProvider {
   const adapt = (candidate: ProviderQuestionCandidate): ProviderQuestionCandidate => {
     const resolution = resolveExamSection(candidate.discipline, entries);
+    const area =
+      resolution.kind === "UNRESOLVED"
+        ? guessArea(candidate.discipline) ?? guessArea(candidate.topic) ?? fallbackArea
+        : resolution.knowledgeAreaSlug;
 
     return {
       ...candidate,
       discipline: resolution.kind === "DISCIPLINE" ? resolution.disciplineName : null,
-      knowledgeAreaSlug: resolution.kind === "UNRESOLVED" ? null : resolution.knowledgeAreaSlug,
+      knowledgeAreaSlug: area,
       topic: null, // subjects are ours: the classifier picks the topic
     };
   };
@@ -288,7 +349,13 @@ async function importPlan(): Promise<void> {
   }
 
   const keys = readKeys();
-  const provider = withOurTaxonomy(new QuestApiProvider({ apiKey: keys[0]!, fetcher: createFetcher(keys) }), await loadSectionTaxonomyEntries());
+  // Security exams are mostly law: an unrecognizable subject lands there and the classifier widens if needed.
+  const fallbackArea = argument("area-padrao") ?? "ciencias-juridicas";
+  const provider = withOurTaxonomy(
+    new QuestApiProvider({ apiKey: keys[0]!, fetcher: createFetcher(keys) }),
+    await loadSectionTaxonomyEntries(),
+    fallbackArea === "nenhuma" ? null : fallbackArea,
+  );
   const useCase = new ImportProviderQuestionsUseCase(provider, new PrismaQuestionImportRepository());
   const log = [];
 

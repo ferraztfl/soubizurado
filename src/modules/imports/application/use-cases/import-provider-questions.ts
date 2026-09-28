@@ -164,8 +164,10 @@ function buildPersistenceInput(
     return null;
   }
 
+  // Paragraphs and table rows are kept for display; fingerprints still
+  // use the collapsed text.
   const statement =
-    questionHtmlToPlainText(
+    questionHtmlToDisplayText(
       candidate.statementHtml,
     );
 

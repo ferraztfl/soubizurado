@@ -557,3 +557,21 @@ Vale sobre §1/§12 onde divergir.
 - A tela aceita `media:<id>` em textos (só imagens ligadas à própria questão); figuras abrem ampliadas.
 - `questions:publish`: trava de "enunciado incompleto" só para ENEM (39 questões de concurso liberadas);
   `--list` mostra o que seria publicado.
+
+### 13.10 Importação pela Quest API (27/09/2026, noite)
+
+- Uso: só para importar (nada de consulta em tempo real para alunos). `scripts/quest-api-exams.ts`:
+  `quest:plan` (lista provas da banca, descarta as já importadas/no banco, orçamento de créditos,
+  `--orgaos`, `--somente`, `--excluir`) e `quest:import -- --apply`. Respostas pagas ficam em cache em
+  `data-private/imports/quest-api/cache/` — reimportar do cache não gasta crédito. Chaves no `.env`
+  (`QUEST_API_KEY` / `QUEST_API_KEYS`, troca de chave em 402). API V2 (`/v2/provas`).
+- Taxonomia sempre nossa: a "matéria" da Quest só serve de pista — matéria canônica ou área (por palavras-
+  chave; senão `--area-padrao`, padrão `ciencias-juridicas`). Tópico/matéria final: classificador.
+  `classification:rescue -- --quest --apply` reclassifica as da Quest sem matéria entre todas as áreas.
+- Enunciados guardam parágrafos e tabelas ("célula | célula" por linha); `quest:refresh-statements`
+  reformatou 53 já importadas a partir do cache (só formatação, com revisão e log de reversão).
+- Importadas (Instituto AOCP, segurança pública): Polícia Penal PR 2024, Polícia Científica PR 2023,
+  PM PR Cadete 2025, PMDF 2º Tenente 2023, PC GO Escrivão 2023 — 388 questões, 360 publicadas.
+  Em revisão: 22 sem matéria no nosso catálogo (Direito Civil, Medicina Legal, Criminologia, Direito
+  Financeiro, legislação estadual/PMDF) e 7 sem tópico. Duplicadas excluídas do plano: 24581447,
+  26298314, 24344269. Créditos: ~217 restantes na chave (janela até 27/10/2026).
