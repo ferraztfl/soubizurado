@@ -6,6 +6,14 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
+const DEFAULT_POOL_MAX = 4;
+
+function readPoolMax(): number {
+  const value = Number(process.env.DATABASE_POOL_MAX ?? DEFAULT_POOL_MAX);
+
+  return Number.isSafeInteger(value) && value >= 1 && value <= 20 ? value : DEFAULT_POOL_MAX;
+}
+
 export function getPrismaClient(): PrismaClient {
   if (globalForPrisma.prisma) {
     return globalForPrisma.prisma;
@@ -19,8 +27,13 @@ export function getPrismaClient(): PrismaClient {
     );
   }
 
+  // The Supabase session pooler caps clients per database (EMAXCONNSESSION):
+  // keep each process small (dev server + scripts share the limit) and
+  // release idle connections.
   const adapter = new PrismaPg({
     connectionString,
+    max: readPoolMax(),
+    idleTimeoutMillis: 10_000,
   });
 
   const prisma = new PrismaClient({
