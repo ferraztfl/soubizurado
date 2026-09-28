@@ -18,7 +18,7 @@ import type {
 
 type SubtopicInput = string | CatalogSubtopic;
 
-function topic(
+export function topic(
   name: string,
   subtopics: readonly SubtopicInput[] = [],
   aliases: readonly string[] = [],
@@ -32,7 +32,7 @@ function topic(
   };
 }
 
-function area(
+export function area(
   name: string,
   topics: readonly CatalogTopic[],
   aliases: readonly string[] = [],

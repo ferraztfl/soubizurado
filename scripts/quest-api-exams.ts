@@ -296,6 +296,9 @@ const AREA_KEYWORDS: readonly [RegExp, string][] = [
   [/\b(palavra|palavras|verbal|verbais|conjun[cç][aã]o|locu[cç]|express[oõ]es|morfossint|sintax|sem[aâ]ntic|pontua[cç][aã]o|crase|concord[aâ]ncia|reg[eê]ncia|texto|interpreta[cç][aã]o)/i, "linguagens-codigos-e-suas-tecnologias"],
   [/\b(num[eé]ric|n[uú]meros|dist[aâ]ncia|cilindro|geometri|propos[ií][cç]|l[oó]gic[ao]|porcentagem|probabilidade|equa[cç]|fun[cç][aã]o|raz[aã]o|propor[cç]|matem[aá]tica)/i, "matematica-e-suas-tecnologias"],
   [/\b(office|libreoffice|broffice|navegador|browsers?|bombas l[oó]gicas|v[ií]rus|malware|planilha|windows|linux|internet|e-?mail|inform[aá]tica)/i, "tecnologia-da-informacao"],
+  [/\b(contab|auditoria|economia|microecon|macroecon|infla[cç][aã]o)/i, "contabilidade-e-economia"],
+  [/\b(sus\b|sa[uú]de|enfermagem|epidemiolog|vacina|primeiros socorros)/i, "saude"],
+  [/\b(pedag|did[aá]tica|aprendizagem|ldb\b|bncc|educa[cç][aã]o)/i, "educacao"],
 ];
 
 function guessArea(subject: string | null): string | null {

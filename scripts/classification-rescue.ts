@@ -1,5 +1,8 @@
 import "dotenv/config";
 
+import { mkdir, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+
 import { processClassificationQueue } from "../src/modules/classification/application/process-classification-queue";
 import type { QuestionClassifier } from "../src/modules/classification/domain/question-classifier";
 import {
@@ -35,10 +38,22 @@ import { getPrismaClient } from "../src/shared/infrastructure/database/prisma";
  * the default one): candidates are the disciplines of every active area.
  *
  *   npm run classification:rescue -- --quest --apply
+ *
+ * --quest --reset: also Quest questions in review whose discipline was
+ * picked automatically in another area (e.g. before the catalog had the
+ * right discipline). The discipline is cleared first (reversal log in
+ * data-private/revisions) so the answer may move it to any area.
  */
 
 /** Knowledge areas that belong to public-service exams, not to ENEM. */
-const NON_ENEM_AREAS = ["ciencias-juridicas", "tecnologia-da-informacao"];
+const NON_ENEM_AREAS = [
+  "ciencias-juridicas",
+  "tecnologia-da-informacao",
+  "administracao-e-gestao",
+  "contabilidade-e-economia",
+  "saude",
+  "educacao",
+];
 
 async function main(): Promise<void> {
   if (!process.env.DATABASE_URL) {
@@ -48,6 +63,7 @@ async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
   const enem = process.argv.includes("--enem");
   const quest = process.argv.includes("--quest");
+  const reset = quest && process.argv.includes("--reset");
   const prisma = getPrismaClient();
 
   try {
@@ -56,7 +72,7 @@ async function main(): Promise<void> {
       provider: base.provider,
       model: base.model,
       // Distinct version: tasks of the normal run already exist.
-      version: `${base.version}${enem ? "+enem" : quest ? "+all" : "+ka"}`.slice(0, 40),
+      version: `${base.version}${enem ? "+enem" : quest ? (reset ? "+allr" : "+all") : "+ka"}`.slice(0, 40),
       classify: (input, taxonomy, options) => base.classify(input, taxonomy, options),
     };
 
@@ -79,11 +95,11 @@ async function main(): Promise<void> {
         ...(enem
           ? { examination: { board: { slug: "inep" } } }
           : quest
-          ? { disciplineId: null, examination: { slug: { startsWith: "quest-api-" } } }
+          ? { ...(reset ? {} : { disciplineId: null }), examination: { slug: { startsWith: "quest-api-" } } }
           : { OR: [{ knowledgeAreaId: { not: null } }, { discipline: { knowledgeAreaId: { not: null } } }] }),
         classificationTasks: { none: { classifierVersion: classifier.version, taxonomyVersion: taxonomy.version } },
       },
-      select: { id: true },
+      select: { id: true, knowledgeAreaId: true, disciplineId: true, areaId: true, subtopicId: true },
     });
 
     console.log(JSON.stringify({ mode: apply ? "apply" : "dry-run", classifierVersion: classifier.version, questions: candidates.length }, null, 2));
@@ -91,6 +107,19 @@ async function main(): Promise<void> {
     if (!apply || candidates.length === 0) {
       if (!apply) console.log("Dry-run only. Re-run with --apply.");
       return;
+    }
+
+    if (reset) {
+      const withDiscipline = candidates.filter((candidate) => candidate.disciplineId !== null);
+      const directory = resolve("data-private", "revisions");
+      await mkdir(directory, { recursive: true });
+      const logPath = resolve(directory, `rescue-quest-reset-${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
+      await writeFile(logPath, JSON.stringify({ undo: "Restore the previous taxonomy fields.", entries: withDiscipline }, null, 2), "utf8");
+      await prisma.question.updateMany({
+        where: { id: { in: withDiscipline.map((candidate) => candidate.id) }, status: "IN_REVIEW", topicId: null },
+        data: { disciplineId: null, areaId: null, subtopicId: null },
+      });
+      console.log(`Cleared ${withDiscipline.length} automatic disciplines. Reversal log: ${logPath}`);
     }
 
     await repository.enqueue({

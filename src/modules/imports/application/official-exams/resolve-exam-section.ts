@@ -32,6 +32,9 @@ const KNOWLEDGE_AREA_RULES: readonly Readonly<{
 }>[] = [
   { pattern: /\b(direito|direitos|legislacao|juridic\w*|penal|constitucional)\b/, knowledgeAreaSlug: "ciencias-juridicas" },
   { pattern: /\b(informatica|computacao|tecnologia da informacao)\b/, knowledgeAreaSlug: "tecnologia-da-informacao" },
+  { pattern: /\b(contabil\w*|contabilidade|economia|auditoria)\b/, knowledgeAreaSlug: "contabilidade-e-economia" },
+  { pattern: /\b(saude|enfermagem|sus)\b/, knowledgeAreaSlug: "saude" },
+  { pattern: /\b(pedagogic\w*|pedagogia|educacao|didatica|educacional)\b/, knowledgeAreaSlug: "educacao" },
 ];
 
 /** "Extravagante", "Legislação Extravagante", "Legislação Especial e Extravagante". */

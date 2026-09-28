@@ -575,3 +575,21 @@ Vale sobre §1/§12 onde divergir.
   Em revisão: 22 sem matéria no nosso catálogo (Direito Civil, Medicina Legal, Criminologia, Direito
   Financeiro, legislação estadual/PMDF) e 7 sem tópico. Duplicadas excluídas do plano: 24581447,
   26298314, 24344269. Créditos: ~217 restantes na chave (janela até 27/10/2026).
+
+### 13.11 Taxonomia v7 para importação em larga escala (28/09/2026)
+
+- `concursos-taxonomy-v7.ts`: +3 áreas do conhecimento (Contabilidade e Economia, Saúde, Educação) e
+  35 matérias — Direito Civil, Processual Civil, Tributário, Financeiro, do Trabalho, Processual do
+  Trabalho, Previdenciário, Empresarial, Ambiental, Eleitoral, do Consumidor, Internacional, Ética no
+  Serviço Público, Medicina Legal, Criminologia, Criminalística, AFO, Arquivologia, Gestão Pública,
+  Contabilidade Geral/Pública, Auditoria, Economia, Matemática Financeira, Banco de Dados,
+  Desenvolvimento/Engenharia de Software, Redes, Governança de TI, Saúde Pública (SUS), Enfermagem,
+  Primeiros Socorros, Conhecimentos Pedagógicos, Legislação Educacional, Atualidades — e Geografia/
+  História regionais (GO, PR, PE, MG, DF, RS). Aplicada com `taxonomy:seed -- --apply` (sem conflitos).
+- "Gestão Pública" não usa o alias "Administração Pública" (essa seção continua jurídica, §13.8).
+- `classification:rescue -- --quest --reset --apply`: limpa a matéria automática das questões da Quest
+  em revisão sem subtópico (log em `data-private/revisions/rescue-quest-reset-*`) e reclassifica entre
+  todas as áreas. `questions:publish -- --excluir=Q…` mantém questões duvidosas em revisão.
+- Resultado: +21 publicadas. Em revisão: Q103595 (LC 94/1998 – RIDE-DF, caiu em História) e Q103459
+  (congresso de 1947, caiu em Processo Penal) excluídas por dúvida; 5 sem matéria; 1 sem tópico.
+  Q103446 (Tanatologia) está publicada em Direito Processual Penal — corrigir pelo editor para Medicina Legal.

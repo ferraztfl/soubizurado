@@ -18,6 +18,7 @@ import { getPrismaClient } from "../src/shared/infrastructure/database/prisma";
  *   npm run questions:publish            # dry-run, prints the reasons
  *   npm run questions:publish -- --list  # dry-run listing the publishable questions
  *   npm run questions:publish -- --apply # writes, after a reversal log
+ *   npm run questions:publish -- --apply --excluir=Q103595,Q103459
  */
 
 const MIN_STANDALONE_STATEMENT = 120;
@@ -60,7 +61,20 @@ async function main(): Promise<void> {
     const reasons = new Map<string, number>();
     const count = (reason: string) => reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
 
+    // --excluir=Q103595,Q103459: kept in review (e.g. doubtful classification).
+    const excluded = new Set(
+      (process.argv.find((argument) => argument.startsWith("--excluir="))?.slice("--excluir=".length) ?? "")
+        .split(",")
+        .map((code) => Number(code.trim().replace(/^Q/i, "")))
+        .filter(Number.isSafeInteger),
+    );
+
     for (const question of questions) {
+      if (excluded.has(question.publicNumber)) {
+        count("excluída manualmente (--excluir)");
+        continue;
+      }
+
       if (question.answerKeyStatus !== "DEFINED" && question.answerKeyStatus !== "VERIFIED") {
         count("gabarito não definido");
         continue;
