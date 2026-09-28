@@ -53,7 +53,8 @@
     "questions:attach-context": "npx --yes tsx scripts/questions-attach-context.ts",
     "questions:context-to-text": "npx --yes tsx scripts/questions-context-to-text.ts",
     "quest:refresh-statements": "npx --yes tsx scripts/quest-api-refresh-statements.ts",
-    "questions:reclassify": "npx --yes tsx scripts/questions-reclassify.ts"
+    "questions:reclassify": "npx --yes tsx scripts/questions-reclassify.ts",
+    "editorial:seed": "npx --yes tsx scripts/seed-editorial.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
