@@ -82,7 +82,7 @@ const navigationGroups: readonly NavigationGroup[] = [
     items: [
       {
         label: "Usuários",
-        href: null,
+        href: "/admin/usuarios",
       },
     ],
   },
