@@ -31,7 +31,7 @@ export async function subscribeNewsletterAction(_previous: NewsletterState, form
   await getPrismaClient().newsletterSubscriber.upsert({
     where: { email: parsed.data.email },
     update: { unsubscribedAt: null, consentAt: new Date() },
-    create: { email: parsed.data.email, source: "blog" },
+    create: { email: parsed.data.email, source: formData.get("source") === "home" ? "home" : "blog" },
   });
 
   return { status: "ok", message: "Pronto! Você vai receber as novidades de concursos no seu e-mail." };

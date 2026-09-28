@@ -9,18 +9,21 @@ import styles from "../portal.module.css";
 
 const initial: NewsletterState = { status: "idle", message: null };
 
-export function NewsletterBox() {
+/** Newsletter sign-up: a sidebar card (blog) or a wide band (home page). */
+export function NewsletterBox({ variant = "card" }: Readonly<{ variant?: "card" | "band" }>) {
   const [state, action, pending] = useActionState(subscribeNewsletterAction, initial);
 
   return (
-    <section className={styles.newsletter} aria-label="Newsletter">
+    <section className={variant === "band" ? styles.newsletterBand : styles.newsletter} aria-label="Newsletter">
       <svg viewBox="0 0 64 48" width="64" height="48" aria-hidden="true" className={styles.newsletterIcon}>
         <rect x="4" y="10" width="56" height="34" rx="6" fill="currentColor" opacity="0.15" />
         <path d="M4 16l28 18 28-18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="52" cy="10" r="8" fill="var(--sb-brand)" />
       </svg>
-      <strong>Quer receber novidades sobre concursos?</strong>
-      <p>Editais, datas de prova e dicas de estudo direto no seu e-mail.</p>
+      <div>
+        <strong>Quer receber novidades sobre concursos?</strong>
+        <p>Editais, datas de prova e dicas de estudo direto no seu e-mail.</p>
+      </div>
 
       {state.status === "ok" ? (
         <p className={styles.newsletterOk} role="status">
@@ -28,6 +31,7 @@ export function NewsletterBox() {
         </p>
       ) : (
         <form action={action} className={styles.newsletterForm}>
+          <input type="hidden" name="source" value={variant === "band" ? "home" : "blog"} />
           <label className={styles.srOnly} htmlFor="newsletter-email">
             Seu e-mail
           </label>

@@ -780,3 +780,15 @@ Vale sobre §1/§12 onde divergir.
   LinkedIn), chamada para questões/oferta, "Leia também" e últimas notícias ao lado.
 - Admin: formato, UF e destaque no formulário do post. Conferido 375px/1366px **sem posts** (banco
   vazio); manchete/cards com capa ainda não vistos com dados reais.
+
+### 13.24 Nova página inicial (29/09/2026)
+
+- `src/app/page.tsx` + `home.module.css`: faixa de promoção (só se houver oferta em destaque com preço
+  "de/por"), topo público (`_components/site-header.tsx`: busca de questões, Entrar/Criar conta ou Minha
+  área), destaque com busca e os planos reais da Loja (sem ofertas ativas: cartões Grátis/Premium),
+  números reais, "Qual é o seu próximo objetivo?", questões por matéria e por banca, benefícios em
+  sanfona, notícias do blog (some sem posts), newsletter (faixa; `source = home`) e rodapé compartilhado
+  (`_components/site-footer.tsx`, usado também no blog).
+- Números/matérias/bancas: `home-highlights.ts` (SQL de contagem, cache de 1 h via `unstable_cache`).
+- Sem cronômetro falso, percentuais de aprovação ou depoimentos (não temos esses dados).
+- Próximo: cadastro próprio de concursos (não usar a concursosPublicosAPI: raspa site de terceiro).

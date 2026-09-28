@@ -3,16 +3,17 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { BRAZIL_STATES } from "@/modules/blog/domain/blog";
-import { loadEditorials, loadFooterBoards } from "@/modules/blog/infrastructure/blog-queries";
+import { loadEditorials } from "@/modules/blog/infrastructure/blog-queries";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
+import { SiteFooter } from "../_components/site-footer";
 import { BlogIcon } from "./_components/blog-icon";
 import styles from "./portal.module.css";
 
 /** News portal shell: header with search, editorial menu, region bar and a full footer. */
 export default async function BlogLayout({ children }: Readonly<{ children: ReactNode }>) {
   const supabase = await createSupabaseServerClient();
-  const [{ data }, editorials, boards] = await Promise.all([supabase.auth.getUser(), loadEditorials(), loadFooterBoards()]);
+  const [{ data }, editorials] = await Promise.all([supabase.auth.getUser(), loadEditorials()]);
   const user = data.user;
 
   const editorialMenu = (
@@ -115,46 +116,7 @@ export default async function BlogLayout({ children }: Readonly<{ children: Reac
 
       <main className={styles.content}>{children}</main>
 
-      <footer className={styles.footer}>
-        <div className={styles.footerGrid}>
-          <div>
-            <h2>Sou Bizurado</h2>
-            <Link href="/">Página inicial</Link>
-            <Link href="/questoes">Questões grátis</Link>
-            <Link href="/loja">Planos e combos</Link>
-            <Link href="/cadastro">Criar conta grátis</Link>
-          </div>
-          <div>
-            <h2>Blog</h2>
-            <Link href="/blog/noticias">Últimas notícias</Link>
-            <Link href="/blog/artigos">Artigos e dicas</Link>
-            <Link href="/blog/editoria/editais">Editais</Link>
-            <Link href="/blog/rss.xml">Feed RSS</Link>
-          </div>
-          <div>
-            <h2>Carreiras</h2>
-            {editorials.careers.slice(0, 8).map((category) => (
-              <Link key={category.slug} href={`/blog/editoria/${category.slug}`}>
-                {category.name}
-              </Link>
-            ))}
-          </div>
-          <div>
-            <h2>Questões por banca</h2>
-            {boards.map((board) => (
-              <Link key={board.id} href={`/questoes?board=${board.id}`}>
-                {board.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className={styles.footerBottom}>
-          <span>© {new Date().getFullYear()} Sou Bizurado — preparação para concursos públicos</span>
-          <span>
-            <Link href="/termos">Termos de uso</Link> · <Link href="/privacidade">Privacidade</Link>
-          </span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
