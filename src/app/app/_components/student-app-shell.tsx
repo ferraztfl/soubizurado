@@ -17,6 +17,7 @@ import {
   type FontScale,
   type StudentTheme,
 } from "./reading-preferences";
+import type { StudentPlan } from "./student-plan";
 import { StudentSidebar } from "./student-sidebar";
 import { StudentTopbar } from "./student-topbar";
 
@@ -29,6 +30,7 @@ type StudentAppShellProps = Readonly<{
   firstName: string;
   initialTheme: StudentTheme;
   initialFontScale: FontScale;
+  plan: StudentPlan;
 }>;
 
 export function StudentAppShell({
@@ -38,6 +40,7 @@ export function StudentAppShell({
   firstName,
   initialTheme,
   initialFontScale,
+  plan,
 }: StudentAppShellProps) {
   const [navigationOpen, setNavigationOpen] =
     useState(false);
@@ -79,12 +82,14 @@ export function StudentAppShell({
           displayName={displayName}
           email={email}
           firstName={firstName}
+          plan={plan}
         />
       </div>
 
       <div className={styles.workspace}>
         <StudentTopbar
           firstName={firstName}
+          plan={plan}
           onMenuClick={openNavigation}
           theme={theme}
           fontScale={fontScale}
@@ -108,6 +113,7 @@ export function StudentAppShell({
           displayName={displayName}
           email={email}
           firstName={firstName}
+          plan={plan}
           onNavigate={closeNavigation}
         />
       </MobileNavigationDrawer>

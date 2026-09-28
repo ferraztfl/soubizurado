@@ -1,11 +1,13 @@
 "use client";
 
 import { ReadingControls } from "./reading-controls";
+import { planChipLabel, type StudentPlan } from "./student-plan";
 import type { FontScale, StudentTheme } from "./reading-preferences";
 import styles from "./student-topbar.module.css";
 
 type StudentTopbarProps = Readonly<{
   firstName: string;
+  plan: StudentPlan;
   onMenuClick: () => void;
   theme: StudentTheme;
   fontScale: FontScale;
@@ -15,6 +17,7 @@ type StudentTopbarProps = Readonly<{
 
 export function StudentTopbar({
   firstName,
+  plan,
   onMenuClick,
   theme,
   fontScale,
@@ -48,7 +51,7 @@ export function StudentTopbar({
             {readingControls}
 
             <span className={styles.planStatus}>
-              Plano gratuito
+              {planChipLabel(plan)}
             </span>
 
             <div className={styles.accountStatus}>

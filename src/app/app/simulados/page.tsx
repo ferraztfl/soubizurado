@@ -20,6 +20,8 @@ type SimulationsPageProps = Readonly<{
 const ERRORS: Record<string, string> = {
   "sem-questoes": "Nenhuma questão publicada atende a esses filtros. Afrouxe algum filtro e tente de novo.",
   dados: "Confira a quantidade de questões e o tempo escolhidos.",
+  limite:
+    "No plano gratuito, o simulado usa suas respostas grátis do dia (10 por dia). Escolha menos questões, volte amanhã ou assine o Premium para simulados ilimitados.",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {

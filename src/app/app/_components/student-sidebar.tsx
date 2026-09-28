@@ -6,12 +6,14 @@ import { usePathname } from "next/navigation";
 
 import { signOutAction } from "@/modules/identity/presentation/actions/auth-actions";
 
+import type { StudentPlan } from "./student-plan";
 import styles from "./student-sidebar.module.css";
 
 type StudentSidebarProps = Readonly<{
   displayName: string;
   email?: string;
   firstName: string;
+  plan: StudentPlan;
   onNavigate?: () => void;
 }>;
 
@@ -58,6 +60,7 @@ export function StudentSidebar({
   displayName,
   email,
   firstName,
+  plan,
   onNavigate,
 }: StudentSidebarProps) {
   const pathname = usePathname();
@@ -161,18 +164,20 @@ export function StudentSidebar({
               Plano atual
             </span>
             <span className={styles.planBadge}>
-              Grátis
+              {plan.premium ? "Premium" : "Grátis"}
             </span>
           </div>
 
-          <strong>Plano gratuito</strong>
+          <strong>{plan.premium ? "Plano Premium" : "Plano gratuito"}</strong>
 
           <p>
-            Recursos essenciais para começar sua preparação.
+            {plan.premium
+              ? "Questões e simulados ilimitados."
+              : `${plan.remaining} de ${plan.limit} respostas grátis restantes hoje.`}
           </p>
 
           <span className={styles.planFooter}>
-            Premium em breve
+            {plan.premium ? "Obrigado por apoiar o SouBizurado" : "Premium em breve na Loja"}
           </span>
         </section>
 

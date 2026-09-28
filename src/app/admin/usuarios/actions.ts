@@ -183,3 +183,65 @@ export async function accountAction(formData: FormData): Promise<void> {
   revalidatePath("/admin/usuarios");
   back(`ok=${action}`);
 }
+
+const premiumSchema = z.object({
+  profileId: z.uuid(),
+  operation: z.enum(["grant", "revoke"]),
+  /** 0 = no end date. */
+  days: z.coerce.number().refine((value) => [0, 30, 90, 180, 365].includes(value)),
+});
+
+/** Grants (courtesy, support) or revokes premium question-bank access. */
+export async function premiumAction(formData: FormData): Promise<void> {
+  const admin = await requireAdminUser();
+
+  const parsed = premiumSchema.safeParse({
+    profileId: formData.get("profileId") ?? "",
+    operation: formData.get("operation") ?? "",
+    days: formData.get("days") ?? "0",
+  });
+
+  if (!parsed.success) {
+    back(`error=${encodeURIComponent("Ação inválida.")}`);
+  }
+
+  const prisma = getPrismaClient();
+  const target = await prisma.profile.findUnique({ where: { id: parsed.data.profileId }, select: { id: true, authUserId: true } });
+
+  if (!target) {
+    back(`error=${encodeURIComponent("Conta não encontrada.")}`);
+  }
+
+  const now = new Date();
+
+  if (parsed.data.operation === "grant") {
+    await prisma.entitlement.create({
+      data: {
+        profileId: target.id,
+        kind: "QUESTION_BANK",
+        startsAt: now,
+        endsAt: parsed.data.days === 0 ? null : new Date(now.getTime() + parsed.data.days * 86_400_000),
+        source: "ADMIN",
+        grantedByProfileId: admin.profileId,
+        note: "Concedido pelo painel",
+      },
+    });
+  } else {
+    // Only admin grants are revoked here; paid access is handled by its order/subscription.
+    await prisma.entitlement.updateMany({
+      where: { profileId: target.id, kind: "QUESTION_BANK", source: "ADMIN", revokedAt: null },
+      data: { revokedAt: now },
+    });
+  }
+
+  await audit({
+    actorProfileId: admin.profileId,
+    action: parsed.data.operation === "grant" ? "GRANT_PREMIUM" : "REVOKE_PREMIUM",
+    targetProfileId: target.id,
+    targetAuthUserId: target.authUserId,
+    details: { days: parsed.data.days },
+  });
+
+  revalidatePath("/admin/usuarios");
+  back(`ok=${parsed.data.operation === "grant" ? "GRANT_PREMIUM" : "REVOKE_PREMIUM"}`);
+}

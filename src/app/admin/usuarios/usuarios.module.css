@@ -395,3 +395,30 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.premium {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--sb-success-soft);
+  color: var(--sb-success);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inlineForm select {
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 9px;
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font: inherit;
+  font-size: 0.82rem;
+}

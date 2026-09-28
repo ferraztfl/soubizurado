@@ -7,6 +7,8 @@ import type {
 import {
   createSubmitStudyQuestionAnswerUseCase,
 } from "@/modules/study/infrastructure/composition/study-application";
+import { limitReachedMessage } from "@/modules/study/domain/access";
+import { loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
 import {
   loadQuestionAnswerStatistics,
   type QuestionAnswerStatistics,
@@ -117,6 +119,17 @@ export async function submitStudyAnswerAction(
         authUserId: user.id,
         displayName,
       });
+
+    // Freemium: checked before grading, so the answer key is never revealed past the limit.
+    const allowance = await loadAnswerAllowance(profile.id);
+
+    if (!allowance.canAnswer) {
+      return {
+        ok: false,
+        code: ERROR_CODES.LIMIT_REACHED,
+        message: limitReachedMessage(allowance),
+      };
+    }
 
     const useCase =
       createSubmitStudyQuestionAnswerUseCase();

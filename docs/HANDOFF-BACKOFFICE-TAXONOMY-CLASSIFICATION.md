@@ -686,3 +686,17 @@ Vale sobre §1/§12 onde divergir.
   estiver fora. Só quem não desativou `show_in_ranking`; só o nome de exibição sai do banco.
 - Índice `study_answer_attempts(answered_at)` (migration aditiva `20260928160000_…`) para agregar o período
   sem varrer todas as respostas.
+
+### 13.18 Ecossistema — decisões e Fase 1a: acesso freemium (28/09/2026)
+
+- Decisões do usuário: Mercado Pago; limites **por dia** (visitante 1, logado 10, assinante ilimitado);
+  vídeo decidir depois; ordem 1) questões públicas + limites + direitos de acesso 2) Loja + checkout
+  (logado compra direto; visitante cria conta no checkout; acesso só no webhook) 3) área de membros
+  4) blog. "Revisar" foi unificado dentro de "Estudar".
+- `entitlements` (migration aditiva `20260928180000_entitlements`, RLS on, CHECKs): direitos
+  QUESTION_BANK/COURSE com período, origem ADMIN/ORDER/SUBSCRIPTION e revogação — base das ofertas.
+- Limite aplicado no servidor antes de corrigir (`submitStudyAnswerAction` → `LIMIT_REACHED`; gabarito não
+  é revelado). Simulados no gratuito exigem respostas restantes ≥ tamanho (respostas gravadas ao final).
+  Administradores = ilimitado. Topo e barra lateral mostram "Grátis · X/10 hoje" ou "Premium".
+- `/admin/usuarios`: conceder Premium (30/90/180/365 dias ou sem prazo) e retirar o concedido pelo painel;
+  auditado. Próximo: Fase 1b — questões públicas (SEO) + limite de visitante (1/dia).

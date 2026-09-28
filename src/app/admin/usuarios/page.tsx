@@ -4,7 +4,7 @@ import { requireAdminUser } from "@/modules/identity/application/require-admin-u
 import { loadAuthUsers } from "@/modules/identity/infrastructure/auth-user-directory";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
-import { accountAction, inviteUserAction } from "./actions";
+import { accountAction, inviteUserAction, premiumAction } from "./actions";
 import styles from "./usuarios.module.css";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +31,8 @@ const SUCCESS_MESSAGES: Readonly<Record<string, string>> = {
   BLOCK: "Conta bloqueada: não consegue mais entrar.",
   UNBLOCK: "Conta desbloqueada.",
   PASSWORD_RESET: "Link de redefinição de senha enviado por e-mail.",
+  GRANT_PREMIUM: "Premium concedido.",
+  REVOKE_PREMIUM: "Premium concedido pelo painel foi retirado.",
 };
 
 const AUDIT_LABELS: Readonly<Record<string, string>> = {
@@ -40,6 +42,8 @@ const AUDIT_LABELS: Readonly<Record<string, string>> = {
   BLOCK: "bloqueou",
   UNBLOCK: "desbloqueou",
   PASSWORD_RESET: "enviou redefinição de senha para",
+  GRANT_PREMIUM: "concedeu Premium a",
+  REVOKE_PREMIUM: "retirou o Premium de",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
@@ -98,7 +102,8 @@ export default async function UsersPage(props: UsersPageProps) {
   const next = profiles.length > PAGE_SIZE ? page[page.length - 1]?.createdAt : undefined;
   const profileIds = page.map((profile) => profile.id);
 
-  const [accounts, answers, correct, lastAnswers] = await Promise.all([
+  const now = new Date();
+  const [accounts, answers, correct, lastAnswers, premiumRows] = await Promise.all([
     loadAuthUsers(page.map((profile) => profile.authUserId)),
     prisma.studyAnswerAttempt.groupBy({ by: ["profileId"], where: { profileId: { in: profileIds } }, _count: { _all: true } }),
     prisma.studyAnswerAttempt.groupBy({
@@ -107,7 +112,26 @@ export default async function UsersPage(props: UsersPageProps) {
       _count: { _all: true },
     }),
     prisma.studyAnswerAttempt.groupBy({ by: ["profileId"], where: { profileId: { in: profileIds } }, _max: { answeredAt: true } }),
+    prisma.entitlement.findMany({
+      where: {
+        profileId: { in: profileIds },
+        kind: "QUESTION_BANK",
+        revokedAt: null,
+        startsAt: { lte: now },
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
+      select: { profileId: true, endsAt: true, source: true },
+    }),
   ]);
+
+  /** Latest end of active premium per profile (null end = no expiry). */
+  const premiumUntil = new Map<string, Date | null>();
+  for (const row of premiumRows) {
+    const current = premiumUntil.get(row.profileId);
+    if (current === undefined || (current !== null && (row.endsAt === null || row.endsAt > current))) {
+      premiumUntil.set(row.profileId, row.endsAt);
+    }
+  }
 
   const countFor = (rows: readonly { profileId: string; _count: { _all: number } }[], id: string) =>
     rows.find((row) => row.profileId === id)?._count._all ?? 0;
@@ -224,6 +248,12 @@ export default async function UsersPage(props: UsersPageProps) {
                     {account && !account.emailConfirmed ? " · convite pendente" : ""}
                   </span>
                   {account?.blocked ? <span className={styles.blocked}>Bloqueada</span> : null}
+                  {premiumUntil.has(profile.id) ? (
+                    <span className={styles.premium}>
+                      Premium
+                      {premiumUntil.get(profile.id) ? ` até ${dateFormatter.format(premiumUntil.get(profile.id)!)}` : " sem prazo"}
+                    </span>
+                  ) : null}
                   <span className={styles.roles}>
                     {profile.roles.length === 0 ? (
                       <span className={styles.role}>Aluno</span>
@@ -257,6 +287,7 @@ export default async function UsersPage(props: UsersPageProps) {
                     <dd>{last ? dateTimeFormatter.format(last) : "—"}</dd>
                   </div>
                 </dl>
+                <PremiumActions profileId={profile.id} isPremium={premiumUntil.has(profile.id)} />
                 <UserActions
                   profileId={profile.id}
                   isAdmin={profile.roles.some((item) => item.role === "ADMIN")}
@@ -334,6 +365,37 @@ function UserActions({
             <ActionButton profileId={profileId} action="BLOCK" label="Bloquear acesso" danger />
           )}
         </>
+      ) : null}
+    </div>
+  );
+}
+
+function PremiumActions({ profileId, isPremium }: Readonly<{ profileId: string; isPremium: boolean }>) {
+  return (
+    <div className={styles.actions}>
+      <form action={premiumAction} className={styles.inlineForm}>
+        <input type="hidden" name="profileId" value={profileId} />
+        <input type="hidden" name="operation" value="grant" />
+        <select name="days" defaultValue="30" aria-label="Duração do Premium">
+          <option value="30">30 dias</option>
+          <option value="90">90 dias</option>
+          <option value="180">6 meses</option>
+          <option value="365">1 ano</option>
+          <option value="0">Sem prazo</option>
+        </select>
+        <button type="submit" className={styles.actionButton}>
+          {isPremium ? "Estender Premium" : "Conceder Premium"}
+        </button>
+      </form>
+      {isPremium ? (
+        <form action={premiumAction}>
+          <input type="hidden" name="profileId" value={profileId} />
+          <input type="hidden" name="operation" value="revoke" />
+          <input type="hidden" name="days" value="0" />
+          <button type="submit" className={styles.dangerButton}>
+            Retirar Premium do painel
+          </button>
+        </form>
       ) : null}
     </div>
   );

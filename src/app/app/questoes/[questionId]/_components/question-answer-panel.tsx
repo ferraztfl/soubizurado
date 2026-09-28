@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   useRef,
   useState,
@@ -101,6 +102,7 @@ export function QuestionAnswerPanel({
   compact = false,
 }: QuestionAnswerPanelProps) {
   // Alternatives the student ruled out ("riscar"); purely visual.
+  const router = useRouter();
   const [eliminated, setEliminated] =
     useState<ReadonlySet<string>>(() => new Set());
   const [selection, setSelection] =
@@ -148,6 +150,11 @@ export function QuestionAnswerPanel({
         });
 
       setResult(outcome);
+
+      // Server-rendered counters (free answers left, session progress) move on.
+      if (outcome.ok) {
+        router.refresh();
+      }
     });
   }
 

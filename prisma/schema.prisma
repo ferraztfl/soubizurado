@@ -108,6 +108,8 @@ model Profile {
   studyPreference        StudyPreference?
   studyReviewItems       StudyReviewItem[]
   studySessions          StudySession[]
+  entitlements           Entitlement[]                @relation("EntitlementOwner")
+  grantedEntitlements    Entitlement[]                @relation("EntitlementGrantor")
 
   @@map("profiles")
 }
@@ -1043,4 +1045,28 @@ model StudySessionQuestion {
   @@id([sessionId, position])
   @@unique([sessionId, questionId])
   @@map("study_session_questions")
+}
+
+/// What a student may use (premium question bank, a course). Granted by an admin
+/// now; by paid orders and subscriptions (Mercado Pago webhooks) later.
+/// Active = starts_at <= now < ends_at (or no end) and not revoked.
+model Entitlement {
+  id                 String    @id @default(uuid()) @db.Uuid
+  profileId          String    @map("profile_id") @db.Uuid
+  kind               String    @db.VarChar(30)
+  courseId           String?   @map("course_id") @db.Uuid
+  startsAt           DateTime  @default(now()) @map("starts_at") @db.Timestamptz(6)
+  endsAt             DateTime? @map("ends_at") @db.Timestamptz(6)
+  source             String    @db.VarChar(30)
+  sourceId           String?   @map("source_id") @db.Uuid
+  grantedByProfileId String?   @map("granted_by_profile_id") @db.Uuid
+  note               String?   @db.VarChar(300)
+  revokedAt          DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile   Profile  @relation("EntitlementOwner", fields: [profileId], references: [id], onDelete: Cascade)
+  grantedBy Profile? @relation("EntitlementGrantor", fields: [grantedByProfileId], references: [id], onDelete: SetNull)
+
+  @@index([profileId, kind])
+  @@map("entitlements")
 }

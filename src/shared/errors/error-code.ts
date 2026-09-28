@@ -5,6 +5,8 @@ export const ERROR_CODES = {
   NOT_FOUND: "NOT_FOUND",
   CONFLICT: "CONFLICT",
   RATE_LIMITED: "RATE_LIMITED",
+  /** Daily free answers used up (freemium). */
+  LIMIT_REACHED: "LIMIT_REACHED",
   INTERNAL_ERROR: "INTERNAL_ERROR",
 } as const;
 

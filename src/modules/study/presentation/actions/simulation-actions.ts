@@ -15,6 +15,7 @@ import {
   finishSimulation,
   saveSimulationAnswer,
 } from "@/modules/study/infrastructure/simulations/simulation-store";
+import { loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
 /*
@@ -88,6 +89,13 @@ export async function createSimulationAction(formData: FormData): Promise<void> 
         ? { answered: { profileId, status: mine } }
         : {}),
   };
+
+  // Answers are recorded when the exam is finished: free students need today's
+  // remaining free answers for the whole exam up front.
+  const allowance = await loadAnswerAllowance(profileId);
+  if (allowance.remaining !== null && allowance.remaining < parsed.data.count) {
+    redirect("/app/simulados?erro=limite");
+  }
 
   const created = await createSimulation({
     profileId,

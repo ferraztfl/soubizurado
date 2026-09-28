@@ -2,6 +2,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { answerAllowance } from "@/modules/study/domain/access";
+import { findStudentProfileId } from "@/modules/study/infrastructure/queries/answered-question-status";
+import { loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
 import {
@@ -44,6 +47,8 @@ export default async function StudentAppLayout({
     displayName.trim().split(/\s+/)[0] || "Aluno";
 
   const cookieStore = await cookies();
+  const profileId = await findStudentProfileId(user.id);
+  const allowance = profileId ? await loadAnswerAllowance(profileId) : answerAllowance("free", 0);
 
   return (
     <StudentAppShell
@@ -52,6 +57,7 @@ export default async function StudentAppLayout({
       firstName={firstName}
       initialTheme={parseTheme(cookieStore.get(THEME_COOKIE)?.value)}
       initialFontScale={parseFontScale(cookieStore.get(FONT_SCALE_COOKIE)?.value)}
+      plan={{ premium: allowance.plan === "premium", remaining: allowance.remaining, limit: allowance.limit }}
     >
       {children}
     </StudentAppShell>
