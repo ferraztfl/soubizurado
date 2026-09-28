@@ -792,3 +792,19 @@ Vale sobre §1/§12 onde divergir.
 - Números/matérias/bancas: `home-highlights.ts` (SQL de contagem, cache de 1 h via `unstable_cache`).
 - Sem cronômetro falso, percentuais de aprovação ou depoimentos (não temos esses dados).
 - Próximo: cadastro próprio de concursos (não usar a concursosPublicosAPI: raspa site de terceiro).
+
+### 13.25 Cadastro de concursos (29/09/2026)
+
+- Migration aditiva `20260929060000_contests` (RLS on, CHECKs de situação, UF, slug, vagas, salários, datas,
+  escolaridade e link https): tabela `contests` + `blog_posts.contest_id` (opcional).
+- Regras em `src/modules/contests/domain/contest.ts` (validação, rótulos de vagas/salário, abas); consultas em
+  `infrastructure/contest-queries.ts`.
+- Admin `/admin/concursos` (+ `/novo`, `/[id]`), menu Operação → Concursos. O órgão digitado é ligado ao
+  órgão do banco de questões quando o nome bate. No editor do blog, campo "Concurso da notícia".
+- Público: `/concursos` (abas Mais procurados / Edital publicado / Em breve / Previstos / Encerrados, filtros
+  UF e carreira; filtros = noindex), `/concursos/[slug]` (dados, questões da banca e do órgão, edital oficial,
+  combo, resumo, notícias do concurso, relacionados). Seção "Principais concursos" na página inicial (some
+  sem concursos publicados). Sitemap e robots atualizados; link "Concursos" nos menus.
+- Correção: `parseBRL("1.299")` agora é R$ 1.299,00 (antes virava R$ 1,29).
+- Fonte: dados do edital oficial, digitados pela equipe. Não usar a concursosPublicosAPI (raspa site de terceiro).
+- Não conferido com dados: cartões e página do concurso (banco sem concursos) e telas do admin (sessão expirada).

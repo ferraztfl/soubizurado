@@ -15,7 +15,10 @@ export function parseBRL(value: string): number | null {
   const cleaned = value.replace(/R\$|\s/g, "");
   if (!/^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+([,.]\d{1,2})?$/.test(cleaned)) return null;
 
-  const normalized = cleaned.includes(",") ? cleaned.replace(/\./g, "").replace(",", ".") : cleaned;
+  // "1.299" (no comma, groups of three) is one thousand two hundred and ninety-nine reais.
+  const thousandsOnly = /^\d{1,3}(\.\d{3})+$/.test(cleaned);
+  const normalized =
+    cleaned.includes(",") || thousandsOnly ? cleaned.replace(/\./g, "").replace(",", ".") : cleaned;
   const cents = Math.round(Number(normalized) * 100);
 
   return Number.isSafeInteger(cents) && cents >= 0 ? cents : null;

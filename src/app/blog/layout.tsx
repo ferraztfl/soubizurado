@@ -80,6 +80,7 @@ export default async function BlogLayout({ children }: Readonly<{ children: Reac
             <nav className={styles.mobilePanel} aria-label="Menu do blog">
               <Link href="/blog/noticias">Últimas notícias</Link>
               <Link href="/blog/artigos">Artigos</Link>
+              <Link href="/concursos">Concursos</Link>
               <Link href="/questoes">Questões grátis</Link>
               <Link href="/loja">Loja</Link>
               {editorialMenu}
@@ -94,6 +95,7 @@ export default async function BlogLayout({ children }: Readonly<{ children: Reac
             {editorialMenu}
           </details>
           <Link href="/blog/artigos">Artigos</Link>
+          <Link href="/concursos">Concursos</Link>
           <Link href="/blog/editoria/editais">Editais</Link>
           <Link href="/questoes">Questões</Link>
           <Link href="/loja">Loja</Link>

@@ -8,6 +8,8 @@ describe("money", () => {
     expect(parseBRL("R$ 1.299,00")).toBe(129900);
     expect(parseBRL("39.90")).toBe(3990);
     expect(parseBRL("39")).toBe(3900);
+    expect(parseBRL("1.299")).toBe(129900);
+    expect(parseBRL("16.769,79")).toBe(1676979);
     expect(parseBRL("abc")).toBeNull();
     expect(parseBRL("1,2,3")).toBeNull();
   });

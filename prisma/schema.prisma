@@ -360,6 +360,7 @@ model ExaminingBoard {
   examinations Examination[]
   targetedBy   StudyPreference[]
   blogPosts    BlogPost[]
+  contests     Contest[]
 
   @@index([isActive, name])
   @@map("examining_boards")
@@ -375,6 +376,7 @@ model PublicOrganization {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   examinations Examination[]
+  contests     Contest[]
 
   @@index([isActive, name])
   @@map("public_organizations")
@@ -1112,6 +1114,7 @@ model Offer {
   grants    OfferGrant[]
   orders    Order[]
   blogPosts BlogPost[]
+  contests  Contest[]
 
   @@index([isActive, sortOrder])
   @@map("offers")
@@ -1252,7 +1255,8 @@ model BlogCategory {
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  posts BlogPost[]
+  posts    BlogPost[]
+  contests Contest[]
 
   @@map("blog_categories")
 }
@@ -1276,9 +1280,12 @@ model BlogPost {
   /// Brazilian state of the news (null = nacional).
   stateCode       String?   @map("state_code") @db.Char(2)
   isFeatured      Boolean   @default(false) @map("is_featured")
+  /// The contest the news is about (optional).
+  contestId       String?   @map("contest_id") @db.Uuid
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  contest      Contest?        @relation(fields: [contestId], references: [id], onDelete: SetNull)
   category     BlogCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   cover        MediaAsset?     @relation(fields: [coverAssetId], references: [id], onDelete: SetNull)
   author       Profile?        @relation(fields: [authorProfileId], references: [id], onDelete: SetNull)
@@ -1290,6 +1297,7 @@ model BlogPost {
   @@index([categoryId, publishedAt])
   @@index([stateCode, publishedAt])
   @@index([isFeatured, publishedAt])
+  @@index([contestId, publishedAt])
   @@map("blog_posts")
 }
 
@@ -1316,4 +1324,51 @@ model NewsletterSubscriber {
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("newsletter_subscribers")
+}
+
+/// A public exam ("concurso") followed by the editorial team. Facts (vacancies, salaries, dates)
+/// come from the official notice; the summary is written by us. Public only when is_published.
+model Contest {
+  id                String    @id @default(uuid()) @db.Uuid
+  slug              String    @unique @db.VarChar(160)
+  /// Display name, e.g. "Concurso PMPE 2027".
+  name              String    @db.VarChar(200)
+  organizationName  String    @map("organization_name") @db.VarChar(200)
+  organizationId    String?   @map("organization_id") @db.Uuid
+  boardId           String?   @map("board_id") @db.Uuid
+  /// Career editorial (blog category of group CARREIRA / EXAME).
+  careerCategoryId  String?   @map("career_category_id") @db.Uuid
+  /// null = nacional.
+  stateCode         String?   @map("state_code") @db.Char(2)
+  /// EXPECTED, AUTHORIZED, NOTICE_PUBLISHED, REGISTRATION_OPEN, REGISTRATION_CLOSED, EXAM_DONE, FINISHED.
+  status            String    @default("EXPECTED") @db.VarChar(30)
+  vacancies         Int?
+  hasReserveList    Boolean   @default(false) @map("has_reserve_list")
+  salaryMinCents    Int?      @map("salary_min_cents")
+  salaryMaxCents    Int?      @map("salary_max_cents")
+  /// FUNDAMENTAL, MEDIO, SUPERIOR.
+  educationLevels   String[]  @default([]) @map("education_levels") @db.VarChar(20)
+  positions         String    @default("") @db.VarChar(1000)
+  summary           String    @default("") @db.Text
+  registrationStart DateTime? @map("registration_start") @db.Date
+  registrationEnd   DateTime? @map("registration_end") @db.Date
+  examDate          DateTime? @map("exam_date") @db.Date
+  /// Official notice (https).
+  noticeUrl         String?   @map("notice_url") @db.VarChar(500)
+  relatedOfferId    String?   @map("related_offer_id") @db.Uuid
+  isFeatured        Boolean   @default(false) @map("is_featured")
+  isPublished       Boolean   @default(false) @map("is_published")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization   PublicOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  board          ExaminingBoard?     @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  careerCategory BlogCategory?       @relation(fields: [careerCategoryId], references: [id], onDelete: SetNull)
+  relatedOffer   Offer?              @relation(fields: [relatedOfferId], references: [id], onDelete: SetNull)
+  posts          BlogPost[]
+
+  @@index([isPublished, status])
+  @@index([isPublished, isFeatured])
+  @@index([stateCode])
+  @@map("contests")
 }

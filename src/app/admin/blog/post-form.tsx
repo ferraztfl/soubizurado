@@ -14,6 +14,7 @@ export type PostFormValues = Readonly<{
   category: string;
   relatedOfferId: string | null;
   relatedBoardId: string | null;
+  contestId: string | null;
   hasCover: boolean;
   imageCount: number;
   format: "NEWS" | "ARTICLE";
@@ -28,7 +29,14 @@ export function PostForm({
   categories,
   offers,
   boards,
-}: Readonly<{ values: PostFormValues; categories: readonly string[]; offers: readonly Option[]; boards: readonly Option[] }>) {
+  contests,
+}: Readonly<{
+  values: PostFormValues;
+  categories: readonly string[];
+  offers: readonly Option[];
+  boards: readonly Option[];
+  contests: readonly Option[];
+}>) {
   return (
     <form action={savePostAction} className={styles.form}>
       {values.id ? <input type="hidden" name="postId" value={values.id} /> : null}
@@ -137,6 +145,18 @@ export function PostForm({
           {boards.map((board) => (
             <option key={board.id} value={board.id}>
               {board.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className={styles.field}>
+        <span>Concurso da notícia (aparece na página do concurso)</span>
+        <select name="contestId" defaultValue={values.contestId ?? ""}>
+          <option value="">Nenhum</option>
+          {contests.map((contest) => (
+            <option key={contest.id} value={contest.id}>
+              {contest.name}
             </option>
           ))}
         </select>

@@ -5,8 +5,9 @@ import styles from "./site-header.module.css";
 
 const NAV = [
   { href: "/questoes", label: "Questões grátis" },
-  { href: "#materias", label: "Por matéria" },
-  { href: "#bancas", label: "Por banca" },
+  { href: "/concursos", label: "Concursos" },
+  { href: "/#materias", label: "Por matéria" },
+  { href: "/#bancas", label: "Por banca" },
   { href: "/blog", label: "Notícias" },
   { href: "/blog/editoria/editais", label: "Editais" },
   { href: "/loja", label: "Planos e combos" },

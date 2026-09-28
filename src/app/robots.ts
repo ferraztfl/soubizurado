@@ -11,7 +11,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     rules: {
       userAgent: "*",
       // Blog images feed article rich results / social cards (more specific than /api/).
-      allow: ["/", "/questoes", "/blog", "/loja", "/api/blog/imagens/"],
+      allow: ["/", "/questoes", "/concursos", "/blog", "/loja", "/api/blog/imagens/"],
       disallow: ["/admin", "/api/", "/auth/", "/definir-senha", "/app/perfil", "/app/configuracoes", "/app/estudar"],
     },
     sitemap: [

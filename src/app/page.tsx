@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { listPosts } from "@/modules/blog/infrastructure/blog-queries";
+import { CONTEST_TABS } from "@/modules/contests/domain/contest";
+import { loadContestShowcase } from "@/modules/contests/infrastructure/contest-queries";
 import { loadHomeHighlights } from "@/modules/question-bank/infrastructure/queries/home-highlights";
 import { FREE_DAILY_ANSWERS } from "@/modules/study/domain/access";
 import { formatBRL } from "@/modules/store/domain/store";
@@ -11,6 +13,9 @@ import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/ser
 import { SiteFooter } from "./_components/site-footer";
 import { SiteHeader } from "./_components/site-header";
 import { BlogIcon } from "./blog/_components/blog-icon";
+import { ContestCard } from "./concursos/_components/contest-card";
+import { ContestTabs } from "./concursos/_components/contest-tabs";
+import contestStyles from "./concursos/concursos.module.css";
 import { NewsletterBox } from "./blog/_components/newsletter-box";
 import { GridCard } from "./blog/_components/post-cards";
 import styles from "./home.module.css";
@@ -59,7 +64,7 @@ const BENEFITS = [
 export default async function Home() {
   const now = new Date();
   const supabase = await createSupabaseServerClient();
-  const [{ data }, highlights, offers, news] = await Promise.all([
+  const [{ data }, highlights, offers, news, showcase] = await Promise.all([
     supabase.auth.getUser(),
     loadHomeHighlights(),
     getPrismaClient().offer.findMany({
@@ -77,6 +82,7 @@ export default async function Home() {
       },
     }),
     listPosts({}, 1, now),
+    loadContestShowcase(),
   ]);
   const signedIn = Boolean(data.user);
 
@@ -102,10 +108,10 @@ export default async function Home() {
     },
     {
       icon: "megaphone",
-      title: "Acompanhar editais",
+      title: "Acompanhar concursos",
       text: "Editais publicados, previstos e datas de prova.",
-      href: "/blog/editoria/editais",
-      action: "Ver editais",
+      href: "/concursos",
+      action: "Ver concursos",
     },
     {
       icon: "briefcase",
@@ -235,6 +241,28 @@ export default async function Home() {
               ))}
             </div>
           </section>
+
+          {showcase.length > 0 ? (
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <h2 className={styles.sectionTitle}>Principais concursos</h2>
+                <Link href="/concursos">Ver todos os concursos →</Link>
+              </div>
+              <ContestTabs
+                panels={showcase.map((entry) => ({
+                  key: entry.tab,
+                  label: CONTEST_TABS[entry.tab].label,
+                  content: (
+                    <div className={contestStyles.grid}>
+                      {entry.contests.map((contest) => (
+                        <ContestCard key={contest.slug} contest={contest} />
+                      ))}
+                    </div>
+                  ),
+                }))}
+              />
+            </section>
+          ) : null}
 
           {highlights.disciplines.length > 0 ? (
             <section id="materias" className={styles.section}>

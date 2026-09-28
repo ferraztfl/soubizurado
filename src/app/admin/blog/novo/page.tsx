@@ -36,6 +36,7 @@ export default async function NewPostPage(props: NewPostPageProps) {
             category: "",
             relatedOfferId: null,
             relatedBoardId: null,
+            contestId: null,
             hasCover: false,
             imageCount: 0,
             format: "NEWS",

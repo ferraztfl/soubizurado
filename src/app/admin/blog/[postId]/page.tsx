@@ -69,6 +69,7 @@ export default async function EditPostPage(props: EditPostPageProps) {
             category: post.category?.name ?? "",
             relatedOfferId: post.relatedOfferId,
             relatedBoardId: post.relatedBoardId,
+            contestId: post.contestId,
             hasCover: post.coverAssetId !== null,
             imageCount: post._count.images,
             format: post.format === "ARTICLE" ? "ARTICLE" : "NEWS",

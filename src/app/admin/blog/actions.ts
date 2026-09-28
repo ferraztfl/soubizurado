@@ -96,6 +96,8 @@ export async function savePostAction(formData: FormData): Promise<void> {
 
   const offerId = readId(formData, "relatedOfferId");
   const boardId = readId(formData, "relatedBoardId");
+  const contestId = readId(formData, "contestId");
+  const contest = contestId ? await prisma.contest.findUnique({ where: { id: contestId }, select: { id: true } }) : null;
   const cover = formData.get("cover");
   const images = formData.getAll("images").filter(isFilledFile).slice(0, MAX_IMAGES_PER_SAVE);
 
@@ -123,6 +125,7 @@ export async function savePostAction(formData: FormData): Promise<void> {
           categoryId: category?.id ?? null,
           relatedOfferId: offerId,
           relatedBoardId: boardId,
+          contestId: contest?.id ?? null,
           format: post.format,
           stateCode: post.stateCode,
           isFeatured: post.isFeatured,

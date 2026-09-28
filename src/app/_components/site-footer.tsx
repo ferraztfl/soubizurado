@@ -15,6 +15,7 @@ export async function SiteFooter() {
           <h2>Sou Bizurado</h2>
           <Link href="/">Página inicial</Link>
           <Link href="/questoes">Questões grátis</Link>
+          <Link href="/concursos">Concursos abertos e previstos</Link>
           <Link href="/loja">Planos e combos</Link>
           <Link href="/cadastro">Criar conta grátis</Link>
           <Link href="/login">Entrar</Link>
