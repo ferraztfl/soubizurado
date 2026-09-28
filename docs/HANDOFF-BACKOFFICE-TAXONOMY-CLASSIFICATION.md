@@ -899,3 +899,13 @@ Vale sobre §1/§12 onde divergir.
   no Blog (editoria Editais, ligada ao concurso quando for atualização). Banca só casa com nome exato do catálogo.
 - `contest-form-values.ts` centraliza os valores do formulário (edição e importação).
 - Não testado ponta a ponta com um edital real (precisa de um PDF; custo de IA de centavos por edital).
+- IA local (sem saldo na chave online — Gemini respondeu HTTP 402): importação escolhe "Local (Ollama)" ou "Online".
+  Local = `qwen2.5:3b` em `http://localhost:11434` (`NOTICE_AI_LOCAL_URL` / `NOTICE_AI_LOCAL_MODEL` opcionais), só CPU
+  nesta máquina: recebe ~18 mil caracteres escolhidos por `selectNoticeExcerpts`, resposta travada por JSON schema do
+  Ollama; resumo e rascunho da notícia saem do template (`buildContestSummary`/`buildNewsDraft`), sem texto livre do modelo.
+- Conferências determinísticas contra o texto do edital (`toNoticeSuggestion(..., { noticeText })`): situação pelas datas
+  de inscrição, CR só se o edital menciona, data da prova por regex perto de "prova objetiva", nomes em MAIÚSCULAS
+  normalizados, requisitos vazios descartados.
+- Teste real com o edital TJRS Juiz (FGV, `data-private/editorial/editais/`): 3 min 49 s, 5.862 tokens; após as
+  conferências, todos os campos conferidos batem (30 vagas, R$ 30.505,36, FGV, 15/09–14/10, taxa R$ 305,00, prova
+  13/12/2026, etapas). Locais de prova não vieram.

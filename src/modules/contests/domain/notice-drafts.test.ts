@@ -35,7 +35,7 @@ describe("notice drafts", () => {
 
   it("writes the summary only from facts", () => {
     const summary = buildContestSummary(facts);
-    expect(summary).toContain("organizado pela banca FGV");
+    expect(summary).toContain("Saiu o edital do Concurso TJRS Juiz 2026 (Tribunal de Justiça do Rio Grande do Sul), organizado pela banca FGV, no Rio Grande do Sul.");
     expect(summary).toContain("30 vagas");
     expect(summary).toContain("15/09/2026 a 14/10/2026");
     expect(buildContestSummary({ ...facts, salaryMax: "", vacancies: "", examDate: "" })).not.toMatch(/remuneração|prova/i);

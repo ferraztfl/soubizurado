@@ -112,21 +112,30 @@ function clip(value: string | null | undefined, max: number): string {
   return (value ?? "").trim().slice(0, max);
 }
 
+/** What the notice text itself says, used to check the AI (small local models slip on these). */
+export type NoticeContext = Readonly<{ noticeText?: string; now?: Date }>;
+
 /** Turns the AI answer into form suggestions (invalid pieces are dropped with a warning). */
-export function toNoticeSuggestion(extraction: NoticeExtraction): NoticeSuggestion {
+export function toNoticeSuggestion(extraction: NoticeExtraction, context: NoticeContext = {}): NoticeSuggestion {
   const warnings: string[] = [];
 
-  const status = extraction.status && isContestStatus(extraction.status) ? extraction.status : "NOTICE_PUBLISHED";
+  const aiStatus = extraction.status && isContestStatus(extraction.status) ? extraction.status : "NOTICE_PUBLISHED";
+  const registrationStart = day(extraction.registrationStart);
+  const registrationEnd = day(extraction.registrationEnd);
+  // Registration dates decide the status better than the model does.
+  const status = statusFromRegistration(registrationStart, registrationEnd, context.now ?? new Date()) ?? aiStatus;
+  const mentionsReserve = context.noticeText ? /cadastro\s+de\s+reserva|cadastro\s+reserva/i.test(context.noticeText) : true;
+  const examDate = day(extraction.examDate) || (context.noticeText ? findExamDate(context.noticeText) : "");
   const stateCode = extraction.stateCode ? parseStateCode(extraction.stateCode) : null;
   if (extraction.stateCode && !stateCode) warnings.push(`UF "${extraction.stateCode}" ignorada.`);
 
   const positions: ContestPositionPlan[] = (extraction.positions ?? []).map((position) => ({
-    name: clip(position.name, 200),
+    name: tidyName(clip(position.name, 200)),
     vacancies: position.vacancies ?? null,
-    hasReserveList: Boolean(position.reserve),
+    hasReserveList: Boolean(position.reserve) && mentionsReserve,
     salaryCents: null,
     educationLevel: education(position.education),
-    requirements: clip(position.requirements, 500),
+    requirements: meaningful(clip(position.requirements, 500)),
   }));
   // Salaries go through the same parser as the form (Brazilian format).
   let positionLines = formatPositionLines(positions);
@@ -161,19 +170,19 @@ export function toNoticeSuggestion(extraction: NoticeExtraction): NoticeSuggesti
 
   return {
     name: clip(extraction.name, 200),
-    organizationName: clip(extraction.organizationName, 200),
+    organizationName: tidyName(clip(extraction.organizationName, 200)),
     stateCode,
     boardName: extraction.boardName ? clip(extraction.boardName, 120) : null,
     status,
     vacancies: vacancies === null ? "" : String(vacancies),
-    hasReserveList: Boolean(extraction.hasReserveList) || positions.some((position) => position.hasReserveList),
+    hasReserveList: (Boolean(extraction.hasReserveList) && mentionsReserve) || positions.some((position) => position.hasReserveList),
     salaryMin: money(extraction.salaryMin),
     salaryMax: money(extraction.salaryMax),
     educationLevels: levels,
     positionLines,
-    registrationStart: day(extraction.registrationStart),
-    registrationEnd: day(extraction.registrationEnd),
-    examDate: day(extraction.examDate),
+    registrationStart,
+    registrationEnd,
+    examDate,
     feeText: clip(extraction.feeText, 120),
     stages: (extraction.stages ?? []).map((stage) => stage.trim()).filter(Boolean).join("\n").slice(0, 2000),
     examLocations: clip(extraction.examLocations, 300),
@@ -188,4 +197,67 @@ export function matchBoard<T extends Readonly<{ id: string; name: string }>>(boa
   if (!name) return null;
   const wanted = name.trim().toLowerCase();
   return boards.find((board) => board.name.trim().toLowerCase() === wanted) ?? null;
+}
+
+/** "não informado", "N/A", "-" and similar fillers are not requirements. */
+function meaningful(value: string): string {
+  return /^(n[ãa]o\s+(informad[oa]|especificad[oa]|consta|h[áa])|n\/?a|null|nenhum|-+|—)\.?$/i.test(value.trim()) ? "" : value;
+}
+
+const SMALL_WORDS = new Set(["de", "do", "da", "dos", "das", "e", "em", "no", "na", "nos", "nas", "a", "o", "para"]);
+
+/** "TRIBUNAL DE JUSTIÇA DO ESTADO" → "Tribunal de Justiça do Estado" (keeps acronyms like "(TJRS)"). */
+export function tidyName(value: string): string {
+  const letters = value.replace(/[^A-Za-zÀ-ÿ]/g, "");
+  if (letters.length < 4 || letters !== letters.toUpperCase()) return value;
+  return value
+    .toLowerCase()
+    .split(/(\s+)/)
+    .map((word, index) => {
+      if (/^\s+$/.test(word)) return word;
+      if (/^\(.*\)$/.test(word)) return word.toUpperCase();
+      if (index > 0 && SMALL_WORDS.has(word)) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join("");
+}
+
+/** Registration dates → status on a given day (null when there are no dates). */
+export function statusFromRegistration(start: string, end: string, now: Date): "NOTICE_PUBLISHED" | "REGISTRATION_OPEN" | "REGISTRATION_CLOSED" | null {
+  if (!start && !end) return null;
+  const today = now.toISOString().slice(0, 10);
+  if (end && today > end) return "REGISTRATION_CLOSED";
+  if (start && today < start) return "NOTICE_PUBLISHED";
+  return "REGISTRATION_OPEN";
+}
+
+const MONTHS: Readonly<Record<string, string>> = {
+  janeiro: "01",
+  fevereiro: "02",
+  "março": "03",
+  marco: "03",
+  abril: "04",
+  maio: "05",
+  junho: "06",
+  julho: "07",
+  agosto: "08",
+  setembro: "09",
+  outubro: "10",
+  novembro: "11",
+  dezembro: "12",
+};
+
+/** First date next to "prova objetiva" in the notice ("13/12/2026" or "13 de dezembro de 2026"). */
+export function findExamDate(noticeText: string): string {
+  const lines = noticeText.split("\n");
+  for (const [index, line] of lines.entries()) {
+    if (!/prova\s+objetiva/i.test(line)) continue;
+    const near = `${line} ${lines[index + 1] ?? ""}`;
+    const numeric = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(near);
+    if (numeric) return day(`${numeric[3]}-${numeric[2]!.padStart(2, "0")}-${numeric[1]!.padStart(2, "0")}`);
+    const written = /(\d{1,2})\s+de\s+([a-zç]+)\s+de\s+(\d{4})/i.exec(near);
+    const month = written ? MONTHS[written[2]!.toLowerCase()] : undefined;
+    if (written && month) return day(`${written[3]}-${month}-${written[1]!.padStart(2, "0")}`);
+  }
+  return "";
 }

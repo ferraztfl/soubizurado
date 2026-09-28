@@ -58,6 +58,17 @@ export function selectNoticeExcerpts(text: string, maxChars = 20_000): string {
   return [head, ...blocks.filter((item) => chosen.has(item.index)).map((item) => item.block.slice(0, 2_500))].join("\n\n");
 }
 
+/** "no Rio Grande do Sul", "na Bahia", "em Pernambuco". */
+const STATE_PREPOSITION: Readonly<Record<string, "no" | "na" | "em">> = {
+  AC: "no", AP: "no", AM: "no", CE: "no", DF: "no", ES: "no", MA: "no", PA: "no", PR: "no", PI: "no",
+  RJ: "no", RN: "no", RS: "no", TO: "no", BA: "na", PB: "na",
+};
+
+export function inState(code: string | null | undefined): string | null {
+  const state = parseStateCode(code ?? null);
+  return state ? `${STATE_PREPOSITION[state] ?? "em"} ${BRAZIL_STATES[state]}` : null;
+}
+
 function dateBR(day: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
   return match ? `${match[3]}/${match[2]}/${match[1]}` : null;
@@ -97,7 +108,7 @@ function salaryText(facts: DraftFacts): string | null {
 
 /** Short summary of the contest from the extracted facts (only what was found). */
 export function buildContestSummary(facts: DraftFacts): string {
-  const state = parseStateCode(facts.stateCode);
+  const place = inState(facts.stateCode);
   const vacancies = facts.vacancies ? Number(facts.vacancies) : null;
   const salary = salaryText(facts);
   const start = dateBR(facts.registrationStart);
@@ -105,9 +116,10 @@ export function buildContestSummary(facts: DraftFacts): string {
   const exam = dateBR(facts.examDate);
 
   const first = [
-    `${facts.organizationName || "O órgão"} publicou o edital do ${facts.name || "concurso"}`,
+    `Saiu o edital do ${facts.name || "concurso"}`,
+    facts.organizationName ? ` (${facts.organizationName})` : "",
     facts.boardName ? `, organizado pela banca ${facts.boardName}` : "",
-    state ? `, em ${BRAZIL_STATES[state]}` : "",
+    place ? `, ${place}` : "",
     ".",
   ].join("");
 
@@ -188,7 +200,7 @@ export function buildNewsDraft(facts: DraftFacts): { title: string; excerpt: str
     buildContestSummary(facts),
     summaryLines.length > 0 ? `!!! resumo ${name} em resumo\n${summaryLines.join("\n")}` : "",
     ...table,
-    stages.length > 0 ? `## Etapas da seleção\n\n${stages.map((stage, index) => `${index + 1}. ${stage}`).join("\n")}` : "",
+    stages.length > 0 ? `## Etapas da seleção\n\n${stages.map((stage, index) => `${index + 1}. ${stage.charAt(0).toUpperCase()}${stage.slice(1)}`).join("\n")}` : "",
     "!!! atencao Confira sempre o edital\nEste texto resume o edital oficial. Prazos, requisitos e regras valem como estão no documento publicado pelo órgão e pela banca.",
   ]
     .filter(Boolean)

@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { parsePositionLines } from "./contest";
-import { matchBoard, noticeExtractionSchema, toNoticeSuggestion } from "./notice-extraction";
+import {
+  findExamDate,
+  matchBoard,
+  noticeExtractionSchema,
+  statusFromRegistration,
+  tidyName,
+  toNoticeSuggestion,
+} from "./notice-extraction";
 
 describe("toNoticeSuggestion", () => {
   it("turns the AI answer into form values", () => {
@@ -48,6 +55,40 @@ describe("toNoticeSuggestion", () => {
     expect(suggestion.stateCode).toBeNull();
     expect(suggestion.salaryMax).toBe("");
     expect(suggestion.warnings.length).toBeGreaterThan(0);
+  });
+
+  it("checks the AI against the notice text", () => {
+    const extraction = noticeExtractionSchema.parse({
+      organizationName: "TRIBUNAL DE JUSTIÇA DO ESTADO DO RIO GRANDE DO SUL (TJRS)",
+      status: "NOTICE_PUBLISHED",
+      hasReserveList: true,
+      positions: [{ name: "JUIZ DE DIREITO SUBSTITUTO", vacancies: 30, reserve: true, requirements: "não informado" }],
+      registrationStart: "2026-09-15",
+      registrationEnd: "2026-10-14",
+      examDate: null,
+    });
+    const noticeText = "12.4 A Prova Objetiva Seletiva está prevista para o dia 13 de dezembro de 2026 das 13h às\n18h.";
+    const suggestion = toNoticeSuggestion(extraction, { noticeText, now: new Date("2026-09-29T12:00:00Z") });
+
+    expect(suggestion.organizationName).toBe("Tribunal de Justiça do Estado do Rio Grande do Sul (TJRS)");
+    expect(suggestion.status).toBe("REGISTRATION_OPEN");
+    expect(suggestion.hasReserveList).toBe(false);
+    expect(suggestion.examDate).toBe("2026-12-13");
+    expect(suggestion.positionLines).toBe("Juiz de Direito Substituto | 30");
+  });
+
+  it("derives the status from the registration dates", () => {
+    const now = new Date("2026-09-29T12:00:00Z");
+    expect(statusFromRegistration("2026-10-01", "2026-10-30", now)).toBe("NOTICE_PUBLISHED");
+    expect(statusFromRegistration("2026-09-01", "2026-09-20", now)).toBe("REGISTRATION_CLOSED");
+    expect(statusFromRegistration("", "", now)).toBeNull();
+  });
+
+  it("finds the exam date in numeric or written form", () => {
+    expect(findExamDate("Aplicação da Prova Objetiva Seletiva 13/12/2026")).toBe("2026-12-13");
+    expect(findExamDate("A prova objetiva será em\n7 de março de 2027.")).toBe("2027-03-07");
+    expect(findExamDate("Sem data aqui.")).toBe("");
+    expect(tidyName("Instituto AOCP")).toBe("Instituto AOCP");
   });
 
   it("matches boards exactly", () => {

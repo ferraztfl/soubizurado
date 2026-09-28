@@ -78,7 +78,7 @@ export async function importNoticeAction(_previous: NoticeImportState, formData:
     const text = await readNoticePdf(file);
     const { extraction, inputTokens, outputTokens } =
       provider === "remote" ? await extractNoticeFacts(text, officialUrl) : await extractNoticeFactsLocal(text, officialUrl);
-    const extracted = toNoticeSuggestion(extraction);
+    const extracted = toNoticeSuggestion(extraction, { noticeText: text });
     // The local model only extracts facts: summary and news come from our template.
     const suggestion = {
       ...extracted,
