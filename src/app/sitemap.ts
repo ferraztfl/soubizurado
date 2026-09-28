@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { siteUrl } from "@/modules/question-bank/infrastructure/queries/question-sitemap";
 
-/** Public entry pages; each question has its own sitemaps (/questoes/sitemap/[id].xml). */
+/** Public entry pages; questions (/questoes/sitemap/[id].xml) and posts (/blog/sitemap.xml) have their own. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = siteUrl();
 

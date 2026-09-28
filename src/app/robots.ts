@@ -10,11 +10,13 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   return {
     rules: {
       userAgent: "*",
-      allow: ["/", "/questoes"],
+      // Blog images feed article rich results / social cards (more specific than /api/).
+      allow: ["/", "/questoes", "/blog", "/loja", "/api/blog/imagens/"],
       disallow: ["/admin", "/api/", "/auth/", "/definir-senha", "/app/perfil", "/app/configuracoes", "/app/estudar"],
     },
     sitemap: [
       `${base}/sitemap.xml`,
+      `${base}/blog/sitemap.xml`,
       ...Array.from({ length: Math.max(count, 1) }, (_, id) => `${base}/questoes/sitemap/${id}.xml`),
     ],
   };

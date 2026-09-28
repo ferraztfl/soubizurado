@@ -749,3 +749,19 @@ Vale sobre §1/§12 onde divergir.
   resposta, concluir e ir para a próxima). PDF só por `/api/cursos/aulas/[id]/pdf` (confere acesso; 404
   igual para inexistente e sem acesso; `no-store`). Questões de aula com acesso não consomem o limite diário.
 - Pendente: marca d'água com e-mail do comprador nos PDFs; escolher o serviço de vídeo; capa do curso.
+
+### 13.22 Fase 4: blog de notícias (29/09/2026)
+
+- Migration aditiva `20260929020000_blog` (RLS on, CHECKs): `blog_categories`, `blog_posts` (rascunho /
+  publicado; `published_at` futuro = agendado), `blog_post_images`.
+- Formato do texto (`blog.ts`): subconjunto seguro de Markdown, sem HTML — `## `/`### ` títulos (sozinhos no
+  bloco), listas `- `/`1. `, citações `> `, `[imagem N]` sozinho na linha, blocos separados por linha em
+  branco; negrito/itálico/links pelo RichText. Resumo automático e tempo de leitura.
+- Admin `/admin/blog` (+ `/novo`, `/[id]`): título, slug, categoria (criada na hora), resumo, texto, situação,
+  data/hora de publicação (Brasília), capa e imagens (convertidas para WebP no servidor), oferta em destaque
+  e banca (chamada "resolva questões da banca"). Exclusão com confirmação. **Editor não conferido no
+  navegador** (sessão do usuário expirou no painel durante o teste).
+- Público `/blog` (categorias, paginação; listas filtradas com noindex) e `/blog/[slug]` (Open Graph,
+  canônica, JSON-LD NewsArticle com `<` escapado, chamadas para Loja/questões, "Leia também").
+  Imagens só de posts no ar em `/api/blog/imagens/[id]` (liberadas no robots). `/blog/sitemap.xml`,
+  `/blog/rss.xml`; links "Blog" na home e no topo público.

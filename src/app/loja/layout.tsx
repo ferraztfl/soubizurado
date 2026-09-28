@@ -21,6 +21,7 @@ export default async function StoreLayout({ children }: Readonly<{ children: Rea
         </Link>
         <nav className={styles.nav} aria-label="Navegação">
           <Link href="/questoes">Questões grátis</Link>
+          <Link href="/blog">Blog</Link>
           <Link href="/loja">Loja</Link>
           {user ? (
             <Link href="/app" className={styles.navPrimary}>

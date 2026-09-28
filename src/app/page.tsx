@@ -25,6 +25,13 @@ export default function Home() {
           </Link>
 
           <Link
+            href="/blog"
+            className={styles.textLink}
+          >
+            Blog
+          </Link>
+
+          <Link
             href="/login"
             className={styles.secondary}
           >
