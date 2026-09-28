@@ -69,6 +69,17 @@
   color: var(--sb-brand);
 }
 
+.badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #16865c;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .dropdown {
   position: relative;
 }

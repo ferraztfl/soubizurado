@@ -4,7 +4,7 @@ import Link from "next/link";
 import styles from "./site-header.module.css";
 
 type NavLink = Readonly<{ href: string; label: string; hint?: string }>;
-type NavItem = Readonly<{ label: string; href: string; children?: readonly NavLink[]; highlight?: boolean }>;
+type NavItem = Readonly<{ label: string; href: string; children?: readonly NavLink[]; highlight?: boolean; badge?: string }>;
 
 const NAV: readonly NavItem[] = [
   { label: "Início", href: "/" },
@@ -31,6 +31,7 @@ const NAV: readonly NavItem[] = [
     ],
   },
   { label: "Combos", href: "/loja" },
+  { label: "App", href: "/aplicativo", badge: "novo" },
   { label: "Assinatura", href: "/assinatura", highlight: true },
 ];
 
@@ -69,6 +70,7 @@ export function SiteHeader({ signedIn, premium = false }: Readonly<{ signedIn: b
             ) : (
               <Link key={item.label} href={item.href} className={item.highlight ? styles.highlight : undefined}>
                 {item.label}
+                {item.badge ? <span className={styles.badge}>{item.badge}</span> : null}
               </Link>
             ),
           )}
