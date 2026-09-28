@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { signOutAction } from "@/modules/identity/presentation/actions/auth-actions";
 
-import type { StudentPlan } from "./student-plan";
+import { planUsageText, type StudentPlan } from "./student-plan";
 import styles from "./student-sidebar.module.css";
 
 type StudentSidebarProps = Readonly<{
@@ -173,11 +173,7 @@ export function StudentSidebar({
           <strong>{plan.premium ? "Plano Premium" : plan.visitor ? "Sem conta" : "Plano gratuito"}</strong>
 
           <p>
-            {plan.premium
-              ? "Questões e simulados ilimitados."
-              : plan.visitor
-                ? `${plan.remaining} de ${plan.limit} resposta grátis hoje. Crie sua conta para responder 10 por dia.`
-                : `${plan.remaining} de ${plan.limit} respostas grátis restantes hoje.`}
+            {planUsageText(plan)}
           </p>
 
           <span className={styles.planFooter}>

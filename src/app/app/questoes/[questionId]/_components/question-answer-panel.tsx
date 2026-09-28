@@ -151,8 +151,9 @@ export function QuestionAnswerPanel({
 
       setResult(outcome);
 
-      // Server-rendered counters (free answers left, session progress) move on.
-      if (outcome.ok) {
+      // Server-rendered counters (free answers left, session progress) move on;
+      // a refused answer refreshes them too, in case they were stale (another tab).
+      if (outcome.ok || outcome.code === "LIMIT_REACHED") {
         router.refresh();
       }
     });
