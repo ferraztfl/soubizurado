@@ -360,6 +360,42 @@ export class PrismaPublicQuestionReadRepository
     return rows.map((row) => row.id);
   }
 
+  /**
+   * Up to `count` random published ids matching the filters, without
+   * loading every match (millions of questions): a random window of the
+   * ordered matches is fetched and shuffled.
+   */
+  public async drawPublishedIds(
+    filters: PublicQuestionReadFilters,
+    count: number,
+    random: () => number = Math.random,
+  ): Promise<string[]> {
+    const where = buildPublicQuestionWhere(filters);
+    const total = await this.prisma.question.count({ where });
+
+    if (total === 0 || count <= 0) {
+      return [];
+    }
+
+    const window = Math.min(total, Math.max(count * 5, 50), 1_000);
+    const skip = Math.floor(random() * (total - window + 1));
+    const rows = await this.prisma.question.findMany({
+      where,
+      orderBy: { publicNumber: "asc" },
+      skip,
+      take: window,
+      select: { id: true },
+    });
+    const pool = rows.map((row) => row.id);
+
+    for (let index = pool.length - 1; index > 0; index -= 1) {
+      const swap = Math.floor(random() * (index + 1));
+      [pool[index], pool[swap]] = [pool[swap]!, pool[index]!];
+    }
+
+    return pool.slice(0, count);
+  }
+
   /** Accepts the public code (Q100001) or the internal UUID. */
   public async findPublishedById(
     questionId: string,

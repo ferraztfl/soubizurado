@@ -106,6 +106,8 @@ model Profile {
   adminActions           AdminAuditLog[]              @relation("AdminAuditActor")
   adminActionsReceived   AdminAuditLog[]              @relation("AdminAuditTarget")
   studyPreference        StudyPreference?
+  studyReviewItems       StudyReviewItem[]
+  studySessions          StudySession[]
 
   @@map("profiles")
 }
@@ -487,6 +489,9 @@ model Question {
   studyNotes          StudyQuestionNote[]
   errorReports        QuestionErrorReport[]
   simulationQuestions StudySimulationQuestion[]
+
+  studyReviewItems      StudyReviewItem[]
+  studySessionQuestions StudySessionQuestion[]
 
   @@index([status, type])
   @@index([status, disciplineId])
@@ -984,4 +989,56 @@ model StudyPreference {
   targetBoard ExaminingBoard? @relation(fields: [targetBoardId], references: [id], onDelete: SetNull)
 
   @@map("study_preferences")
+}
+
+/// Spaced review of a question the student got wrong (see spaced-review.ts).
+model StudyReviewItem {
+  profileId      String   @map("profile_id") @db.Uuid
+  questionId     String   @map("question_id") @db.Uuid
+  step           Int      @default(0) @db.SmallInt
+  dueOn          DateTime @map("due_on") @db.Date
+  lapses         Int      @default(1)
+  lastAnsweredAt DateTime @map("last_answered_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile  Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, questionId])
+  @@index([profileId, dueOn])
+  @@map("study_review_items")
+}
+
+/// A guided study session ("Estudar"): a fixed list of questions answered with immediate feedback.
+model StudySession {
+  id            String    @id @default(uuid()) @db.Uuid
+  profileId     String    @map("profile_id") @db.Uuid
+  mode          String    @db.VarChar(20)
+  title         String    @db.VarChar(160)
+  filters       Json      @default("{}")
+  questionCount Int       @map("question_count")
+  status        String    @default("IN_PROGRESS") @db.VarChar(20)
+  correctCount  Int?      @map("correct_count")
+  startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  profile   Profile                @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  questions StudySessionQuestion[]
+
+  @@index([profileId, startedAt])
+  @@map("study_sessions")
+}
+
+model StudySessionQuestion {
+  sessionId  String @map("session_id") @db.Uuid
+  questionId String @map("question_id") @db.Uuid
+  position   Int
+
+  session  StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question     @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@id([sessionId, position])
+  @@unique([sessionId, questionId])
+  @@map("study_session_questions")
 }

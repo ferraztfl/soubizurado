@@ -652,3 +652,21 @@ Vale sobre §1/§12 onde divergir.
 - `/app/configuracoes`: tema e tamanho do texto (contexto `ReadingPreferencesContext` do shell — muda na
   hora), itens por página/ordem do explorador (cookies), aparecer no ranking, alterar senha (confere a
   atual), sair de todos os dispositivos.
+
+### 13.15 Estudar: sessões guiadas + revisão espaçada (28/09/2026)
+
+- Migration aditiva `20260928140000_study_review_and_sessions` (RLS on, CHECKs): `study_review_items`
+  (fila de revisão por aluno/questão), `study_sessions` + `study_session_questions`. Preencheu a fila com
+  as questões cuja última resposta foi errada (vencendo hoje).
+- Revisão espaçada (`spaced-review.ts`): erro → volta amanhã; acerto na revisão vencida → 1, 3, 7, 15,
+  30, 60 dias; depois sai da fila (aprendida). Acerto antes do vencimento não pula etapas. Atualizada na
+  mesma transação que grava a resposta (`PrismaStudyRepository.createAnswerAttempt`) — vale para
+  explorador, simulados e sessões.
+- `/app/estudar`: card de revisões vencidas ("Revisar agora"), continuar sessões, nova sessão (matéria,
+  tópico opcional, modo Misto/Só novas/Só revisão, 5–30 questões), sessões recentes.
+  `/app/estudar/[id]?q=N`: questão com o painel de resposta do explorador, progresso por bolinhas,
+  navegação; `/resultado`: placar e lista. Uma questão conta como respondida na sessão se houver
+  resposta após o início da sessão (a primeira conta).
+- Sorteio escalável: `drawPublishedIds` (contagem + janela aleatória, sem carregar todos os ids).
+  Pendente: os simulados ainda usam `listPublishedIds` (carrega todos os ids) — trocar para
+  `drawPublishedIds` antes de milhões de questões.

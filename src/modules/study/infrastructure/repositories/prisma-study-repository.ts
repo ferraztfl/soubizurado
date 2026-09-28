@@ -4,6 +4,8 @@ import type {
 
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
+import { applyReviewAfterAnswer } from "../review/review-schedule";
+
 import type {
   ListStudyFavoritesRepositoryInput,
   ListStudyFavoritesRepositoryResult,
@@ -59,18 +61,30 @@ export class PrismaStudyRepository
   public async createAnswerAttempt(
     input: CreateStudyAnswerAttemptInput,
   ): Promise<StudyAnswerAttemptRecord> {
-    return this.prisma.studyAnswerAttempt.create({
-      data: {
+    // The spaced review queue moves with every answer (same transaction).
+    return this.prisma.$transaction(async (transaction) => {
+      const attempt = await transaction.studyAnswerAttempt.create({
+        data: {
+          profileId: input.profileId,
+          questionId: input.questionId,
+          questionType: input.questionType,
+          selectedAlternativeId:
+            input.selectedAlternativeId,
+          selectedTrueFalse: input.selectedTrueFalse,
+          isCorrect: input.isCorrect,
+          responseTimeMs: input.responseTimeMs,
+        },
+        select: studyAnswerAttemptSelect,
+      });
+
+      await applyReviewAfterAnswer(transaction, {
         profileId: input.profileId,
         questionId: input.questionId,
-        questionType: input.questionType,
-        selectedAlternativeId:
-          input.selectedAlternativeId,
-        selectedTrueFalse: input.selectedTrueFalse,
         isCorrect: input.isCorrect,
-        responseTimeMs: input.responseTimeMs,
-      },
-      select: studyAnswerAttemptSelect,
+        answeredAt: attempt.answeredAt,
+      });
+
+      return attempt;
     });
   }
 

@@ -23,9 +23,19 @@ function createPrismaMock() {
   const favoriteFindMany = vi.fn();
   const favoriteCount = vi.fn();
   const rawQuery = vi.fn();
+  const reviewFindUnique = vi.fn().mockResolvedValue(null);
+  const reviewUpsert = vi.fn();
+  const reviewDelete = vi.fn();
 
   const prisma = {
     $queryRaw: rawQuery,
+    // Interactive transactions run the callback on the same mock.
+    $transaction: vi.fn((callback: (client: unknown) => unknown) => callback(prisma)),
+    studyReviewItem: {
+      findUnique: reviewFindUnique,
+      upsert: reviewUpsert,
+      delete: reviewDelete,
+    },
     studyAnswerAttempt: {
       create,
       findMany,
@@ -37,7 +47,7 @@ function createPrismaMock() {
       findMany: favoriteFindMany,
       count: favoriteCount,
     },
-  } as unknown as PrismaClient;
+  } as unknown as PrismaClient & { $transaction: unknown };
 
   return {
     prisma,
@@ -49,6 +59,7 @@ function createPrismaMock() {
     favoriteFindMany,
     favoriteCount,
     rawQuery,
+    reviewUpsert,
   };
 }
 
@@ -125,7 +136,7 @@ describe("PrismaStudyRepository", () => {
     const answeredAt = new Date(
       "2026-09-08T18:05:00.000Z",
     );
-    const { prisma, create } = createPrismaMock();
+    const { prisma, create, reviewUpsert } = createPrismaMock();
 
     create.mockResolvedValue({
       id: "attempt-2",
@@ -169,6 +180,19 @@ describe("PrismaStudyRepository", () => {
 
     expect(result.selectedTrueFalse).toBe(false);
     expect(result.selectedAlternativeId).toBeNull();
+
+    // A mistake enters the spaced review: back the next day (São Paulo).
+    expect(reviewUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          profileId: "profile-1",
+          questionId: "question-2",
+          step: 0,
+          dueOn: new Date("2026-09-09T00:00:00Z"),
+          lapses: 1,
+        }),
+      }),
+    );
   });
 
   it("lists answer history with correctness filtering", async () => {
