@@ -388,3 +388,9 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.reviewActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

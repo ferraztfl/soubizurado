@@ -87,6 +87,7 @@ export default async function StudyPage(props: StudyPageProps) {
               : "Revisar no dia certo é o que fixa o conteúdo na memória."}
           </p>
         </div>
+        <div className={styles.reviewActions}>
         {dueReviews > 0 ? (
           <form action={createStudySessionAction}>
             <input type="hidden" name="mode" value="REVIEW" />
@@ -96,6 +97,11 @@ export default async function StudyPage(props: StudyPageProps) {
             </button>
           </form>
         ) : null}
+          {/* Every question ever missed (not only today's due reviews), in the explorer. */}
+          <Link href="/app/questoes?situacao=erradas" className={styles.secondary}>
+            Todas as questões que já errei
+          </Link>
+        </div>
       </section>
 
       {inProgress.length > 0 ? (
