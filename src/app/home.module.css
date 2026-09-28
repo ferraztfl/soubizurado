@@ -1,15 +1,3 @@
-.shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  color: #1c1d22;
-}
-
-.shell > main {
-  flex: 1;
-}
-
 .srOnly {
   position: absolute;
   width: 1px;
@@ -19,40 +7,13 @@
   white-space: nowrap;
 }
 
-/* ------------------------------------------------------------ promo */
-
-.promo {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 6px 14px;
-  padding: 10px 16px;
-  background: var(--sb-brand);
-  color: #ffffff;
-  font-size: 14.5px;
-  text-align: center;
-  text-decoration: none;
+.homeMain {
+  flex: 1;
 }
 
-.promo strong {
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.promo s {
-  opacity: 0.75;
-}
-
-.promo b {
-  color: #ffe45c;
-  font-size: 16px;
-}
-
-.promo em {
-  font-style: normal;
-  font-weight: 800;
-  text-decoration: underline;
+.perMonth {
+  color: #6b6d78;
+  font-size: 13px;
 }
 
 /* ------------------------------------------------------------- hero */

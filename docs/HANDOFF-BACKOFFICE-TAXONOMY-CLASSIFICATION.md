@@ -808,3 +808,23 @@ Vale sobre §1/§12 onde divergir.
 - Correção: `parseBRL("1.299")` agora é R$ 1.299,00 (antes virava R$ 1,29).
 - Fonte: dados do edital oficial, digitados pela equipe. Não usar a concursosPublicosAPI (raspa site de terceiro).
 - Não conferido com dados: cartões e página do concurso (banco sem concursos) e telas do admin (sessão expirada).
+
+### 13.26 Assinatura Premium R$ 9,90/mês + menu único (29/09/2026)
+
+- Decisão do usuário: R$ 9,90 por mês com **renovação automática** (Mercado Pago Assinaturas / preapproval).
+- Migration aditiva `20260929080000_subscriptions` (RLS on, CHECKs): `subscriptions` e `subscription_payments`.
+- Preço no servidor: `src/modules/store/domain/subscription.ts` (`SUBSCRIPTION_PLANS.PREMIUM_MONTHLY` = 990).
+  Cada cobrança aprovada cria um `entitlement` QUESTION_BANK (source SUBSCRIPTION, sourceId = cobrança) de
+  1 mês + 3 dias de folga; estorno revoga só aquele período; cancelar não tira o tempo pago.
+- Fluxo: `/assinatura` (Grátis x Premium, cria conta na hora) → `subscribeAction` cria a assinatura PENDING e o
+  preapproval (`back_url` = `/assinatura/retorno`) → o aluno autoriza no Mercado Pago → webhook
+  `subscription_preapproval` (status) e `subscription_authorized_payment` (cobranças) em
+  `/api/webhooks/mercadopago`; a página de retorno também sincroniza pela API. Valor conferido sempre.
+- `/app/assinatura`: status, próxima cobrança, histórico e cancelamento (PUT preapproval cancelled).
+- **Ação do usuário:** no painel do Mercado Pago (Webhooks), marcar também os tópicos "Planos e assinaturas"
+  (subscription_preapproval e subscription_authorized_payment). `NEXT_PUBLIC_SITE_URL` precisa ser https
+  público para o `back_url` e os avisos. Em teste, o comprador precisa ser um usuário de teste do Mercado Pago.
+- Menu único: `_components/site-shell.tsx` (topo + rodapé + faixa fixa do Premium para quem não é Premium,
+  fechável por 7 dias) em página inicial, blog (com barra própria de Notícias e regiões), concursos, loja e
+  assinatura. Login aceita `?next=` (só caminhos internos, `safeNextPath`).
+- Não testado ponta a ponta: cobrança real/teste no Mercado Pago (faltam credenciais e URL pública).

@@ -45,6 +45,9 @@ export default async function StorePage() {
           Questões e simulados ilimitados, revisão espaçada dos seus erros e combos preparados para o seu concurso.
           Pagamento seguro pelo Mercado Pago (Pix, cartão ou boleto).
         </p>
+        <p>
+          Prefere assinar? <Link href="/assinatura">Premium mensal por R$ 9,90/mês</Link>, com renovação automática — cancele quando quiser.
+        </p>
       </header>
 
       {offers.length === 0 ? (

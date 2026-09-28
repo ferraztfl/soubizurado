@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { safeNextPath } from "@/modules/identity/domain/safe-next-path";
 import { loginAction } from "@/modules/identity/presentation/actions/auth-actions";
 
 import styles from "../auth.module.css";
@@ -8,6 +9,7 @@ type LoginPageProps = {
   searchParams: Promise<{
     created?: string;
     error?: string;
+    next?: string;
   }>;
 };
 
@@ -17,6 +19,7 @@ export default async function LoginPage({
   const params = await searchParams;
 
   const hasError = Boolean(params.error);
+  const next = safeNextPath(params.next);
 
   return (
     <>
@@ -41,6 +44,7 @@ export default async function LoginPage({
       ) : null}
 
       <form action={loginAction} className={styles.form}>
+        {next ? <input type="hidden" name="next" value={next} /> : null}
         <div className={styles.field}>
           <label htmlFor="email">E-mail</label>
 

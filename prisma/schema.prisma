@@ -113,6 +113,7 @@ model Profile {
   orders                 Order[]
   lessonProgress         CourseLessonProgress[]
   blogPosts              BlogPost[]
+  subscriptions          Subscription[]
 
   @@map("profiles")
 }
@@ -1371,4 +1372,52 @@ model Contest {
   @@index([isPublished, isFeatured])
   @@index([stateCode])
   @@map("contests")
+}
+
+/// Recurring Premium (Mercado Pago preapproval). Access comes only from approved charges
+/// (subscription_payments → entitlements with source SUBSCRIPTION), never from this row alone.
+model Subscription {
+  id                     String    @id @default(uuid()) @db.Uuid
+  profileId              String    @map("profile_id") @db.Uuid
+  provider               String    @default("MERCADOPAGO") @db.VarChar(20)
+  /// Mercado Pago preapproval id (set right after creation).
+  providerSubscriptionId String?   @unique @map("provider_subscription_id") @db.VarChar(80)
+  planKey                String    @map("plan_key") @db.VarChar(40)
+  amountCents            Int       @map("amount_cents")
+  currency               String    @default("BRL") @db.Char(3)
+  /// PENDING (checkout not finished), AUTHORIZED, PAUSED, CANCELLED.
+  status                 String    @default("PENDING") @db.VarChar(20)
+  providerStatus         String?   @map("provider_status") @db.VarChar(40)
+  nextChargeAt           DateTime? @map("next_charge_at") @db.Timestamptz(6)
+  cancelledAt            DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile  Profile               @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  payments SubscriptionPayment[]
+
+  @@index([profileId, status])
+  @@map("subscriptions")
+}
+
+/// One recurring charge (Mercado Pago authorized payment). Grants one period of Premium once, when approved.
+model SubscriptionPayment {
+  id                String    @id @default(uuid()) @db.Uuid
+  subscriptionId    String    @map("subscription_id") @db.Uuid
+  /// Mercado Pago authorized_payment id.
+  providerPaymentId String    @unique @map("provider_payment_id") @db.VarChar(80)
+  /// Mercado Pago payment id of the charge, when there is one.
+  paymentId         String?   @map("payment_id") @db.VarChar(40)
+  /// PENDING, PAID, FAILED, REFUNDED.
+  status            String    @default("PENDING") @db.VarChar(20)
+  providerStatus    String?   @map("provider_status") @db.VarChar(40)
+  amountCents       Int       @map("amount_cents")
+  paidAt            DateTime? @map("paid_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@map("subscription_payments")
 }

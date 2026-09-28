@@ -65,7 +65,7 @@ export default async function PurchasesPage() {
             ? "10 respostas grátis por dia. Com o Premium, questões e simulados são ilimitados."
             : "Compras novas somam tempo ao seu Premium."}
         </span>
-        <Link href="/loja" className={styles.link}>
+        <Link href={access.length === 0 ? "/assinatura" : "/loja"} className={styles.link}>
           {access.length === 0 ? "Conhecer os planos" : "Ver a Loja"}
         </Link>
       </section>

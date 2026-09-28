@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { processMercadoPagoPayment } from "@/modules/store/infrastructure/process-payment";
+import { processMercadoPagoCharge, syncMercadoPagoSubscription } from "@/modules/store/infrastructure/process-subscription";
 import { verifyMercadoPagoSignature } from "@/modules/store/infrastructure/mercado-pago/webhook-signature";
 
 /*
- * Mercado Pago payment notifications. Only signed notifications are
+ * Mercado Pago notifications: payments (Loja), subscriptions and their
+ * recurring charges (Premium mensal). Only signed notifications are
  * accepted (MERCADOPAGO_WEBHOOK_SECRET, from "Suas integrações > Webhooks");
  * the body is never trusted: the payment is fetched from the API by id.
  * 200 = handled (or not ours); 5xx = Mercado Pago retries later.
@@ -37,13 +39,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid signature" }, { status: 401 });
   }
 
-  if (type !== "payment" || !dataId || !/^\d{1,20}$/.test(dataId)) {
-    return NextResponse.json({ ignored: true });
-  }
-
   try {
-    const result = await processMercadoPagoPayment(dataId);
-    return NextResponse.json({ ok: true, result: result.kind });
+    if (type === "payment" && dataId && /^\d{1,20}$/.test(dataId)) {
+      const result = await processMercadoPagoPayment(dataId);
+      return NextResponse.json({ ok: true, result: result.kind });
+    }
+
+    if (type === "subscription_preapproval" && dataId && /^[0-9a-zA-Z_-]{6,80}$/.test(dataId)) {
+      const result = await syncMercadoPagoSubscription(dataId);
+      return NextResponse.json({ ok: true, result: result.kind });
+    }
+
+    if (type === "subscription_authorized_payment" && dataId && /^\d{1,20}$/.test(dataId)) {
+      const result = await processMercadoPagoCharge(dataId);
+      return NextResponse.json({ ok: true, result: result.kind });
+    }
+
+    return NextResponse.json({ ignored: true });
   } catch {
     return NextResponse.json({ error: "processing failed" }, { status: 500 });
   }

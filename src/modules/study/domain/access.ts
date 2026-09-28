@@ -45,5 +45,5 @@ export function isEntitlementActive(entitlement: EntitlementPeriod, now: Date): 
 export function limitReachedMessage(allowance: AnswerAllowance): string {
   return allowance.plan === "visitor"
     ? "Você já respondeu a questão gratuita de hoje. Crie sua conta grátis para responder 10 questões por dia."
-    : `Você usou suas ${allowance.limit} respostas gratuitas de hoje — elas renovam à meia-noite. Com o Premium, as respostas são ilimitadas.`;
+    : `Você usou suas ${allowance.limit} respostas gratuitas de hoje — elas renovam à meia-noite. Com o Premium (R$ 9,90/mês), as respostas são ilimitadas.`;
 }

@@ -1,9 +1,10 @@
 .header {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
   border-bottom: 1px solid #e8e8ec;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
 }
 
 .srOnly {
@@ -15,13 +16,13 @@
   white-space: nowrap;
 }
 
-.top {
-  width: min(1240px, calc(100% - 32px));
+.bar {
+  width: min(1320px, calc(100% - 32px));
+  min-height: 68px;
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 12px 0;
+  gap: 22px;
 }
 
 .brand {
@@ -30,109 +31,221 @@
 }
 
 .logo {
-  width: 150px;
+  width: 138px;
   height: auto;
 }
 
-.search {
-  flex: 1;
-  max-width: 540px;
+/* ------------------------------------------------------------- nav */
+
+.nav {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 14px;
-  border: 1px solid #d9d9df;
-  border-radius: 10px;
-  background: #fafafb;
+  gap: 2px;
+}
+
+.nav > a,
+.dropdown > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  color: #3a3c45;
+  font-size: 14.5px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nav > a:hover,
+.dropdown > summary:hover,
+.dropdown[open] > summary {
+  background: #f4f4f7;
+  color: #11121a;
+}
+
+.nav > a.highlight {
   color: var(--sb-brand);
 }
 
-.search input {
-  width: 100%;
-  height: 42px;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #1c1d22;
-  font: inherit;
+.dropdown {
+  position: relative;
+}
+
+.dropdown > summary {
+  list-style: none;
+}
+
+.dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.dropdown > summary::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: 4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  opacity: 0.6;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 300px;
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid #e8e8ec;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(15, 15, 30, 0.14);
+}
+
+.panel a {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.panel a:hover {
+  background: #fff4f2;
+}
+
+.panel strong {
+  color: #11121a;
   font-size: 14.5px;
 }
+
+.panel span {
+  color: #6b6d78;
+  font-size: 12.5px;
+}
+
+/* --------------------------------------------------------- actions */
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   margin-left: auto;
 }
 
-.login {
-  color: #1c1d22;
+.searchToggle {
+  position: relative;
+}
+
+.searchToggle > summary {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e3e3e8;
+  border-radius: 50%;
+  color: #3a3c45;
+  list-style: none;
+  cursor: pointer;
+}
+
+.searchToggle > summary::-webkit-details-marker {
+  display: none;
+}
+
+.searchPanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 380px;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e8e8ec;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(15, 15, 30, 0.14);
+}
+
+.searchPanel input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d9d9df;
+  border-radius: 9px;
+  font: inherit;
   font-size: 14.5px;
-  font-weight: 700;
+}
+
+.searchPanel button {
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--sb-brand);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.premium {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd35c, #f5b31b);
+  color: #3b2600;
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(245, 179, 27, 0.35);
+}
+
+.login {
+  padding: 8px 6px;
+  color: #11121a;
+  font-size: 14.5px;
+  font-weight: 750;
   text-decoration: none;
 }
 
 .cta {
   padding: 10px 18px;
-  border-radius: 10px;
+  border-radius: 999px;
   background: var(--sb-brand);
   color: #ffffff;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 850;
   text-decoration: none;
   white-space: nowrap;
-}
-
-.nav {
-  width: min(1240px, calc(100% - 32px));
-  margin: 0 auto;
-  display: flex;
-  gap: 28px;
-  padding: 2px 0 10px;
-}
-
-.nav a {
-  padding: 6px 0;
-  color: #2a2b31;
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.nav a:hover {
-  color: var(--sb-brand);
 }
 
 .mobileMenu {
   display: none;
 }
 
-@media (max-width: 760px) {
-  .top {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+/* ------------------------------------------------------ responsive */
 
-  .logo {
-    width: 120px;
-  }
-
-  .search {
-    order: 3;
-    flex-basis: 100%;
-    max-width: none;
+@media (max-width: 1180px) {
+  .nav > a,
+  .dropdown > summary {
+    padding: 8px 8px;
+    font-size: 14px;
   }
 
   .login {
     display: none;
   }
+}
 
-  .cta {
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-
-  .nav {
+@media (max-width: 1000px) {
+  .nav,
+  .searchToggle {
     display: none;
   }
 
@@ -169,17 +282,68 @@
     right: 0;
     top: 100%;
     display: grid;
-    padding: 8px 16px 16px;
+    gap: 2px;
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    padding: 12px 16px 20px;
     border-bottom: 1px solid #e8e8ec;
     background: #ffffff;
     box-shadow: 0 18px 30px rgba(15, 15, 30, 0.12);
   }
 
-  .mobilePanel a {
-    padding: 12px 4px;
+  .mobileSearch input {
+    width: 100%;
+    height: 44px;
+    margin-bottom: 8px;
+    padding: 0 12px;
+    border: 1px solid #d9d9df;
+    border-radius: 10px;
+    font: inherit;
+  }
+
+  .mobileLink,
+  .mobileGroup a {
+    padding: 11px 4px;
     border-bottom: 1px solid #f0f0f3;
     color: #1c1d22;
     font-weight: 700;
     text-decoration: none;
+  }
+
+  .mobileGroup {
+    display: grid;
+  }
+
+  .mobileGroup strong {
+    padding: 14px 4px 4px;
+    color: var(--sb-brand);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mobileGroup a {
+    padding-left: 12px;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 560px) {
+  .bar {
+    gap: 10px;
+    min-height: 60px;
+  }
+
+  .logo {
+    width: 116px;
+  }
+
+  .cta {
+    display: none;
+  }
+
+  .premium {
+    padding: 8px 12px;
+    font-size: 12.5px;
   }
 }

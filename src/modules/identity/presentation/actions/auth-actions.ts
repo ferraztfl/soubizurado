@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { ensureProfileForAuthUser } from "@/modules/identity/application/ensure-profile";
+import { safeNextPath } from "@/modules/identity/domain/safe-next-path";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
 const loginSchema = z.object({
@@ -65,8 +66,11 @@ export async function loginAction(formData: FormData) {
     password: formData.get("password"),
   });
 
+  const next = safeNextPath(formData.get("next"));
+  const keepNext = next ? `&next=${encodeURIComponent(next)}` : "";
+
   if (!parsed.success) {
-    redirect("/login?error=invalid_input");
+    redirect(`/login?error=invalid_input${keepNext}`);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -77,7 +81,7 @@ export async function loginAction(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=invalid_credentials");
+    redirect(`/login?error=invalid_credentials${keepNext}`);
   }
 
   const {
@@ -94,7 +98,7 @@ export async function loginAction(formData: FormData) {
     });
   }
 
-  redirect("/app");
+  redirect(next ?? "/app");
 }
 
 export async function signOutAction() {

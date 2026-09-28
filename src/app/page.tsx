@@ -7,11 +7,11 @@ import { loadContestShowcase } from "@/modules/contests/infrastructure/contest-q
 import { loadHomeHighlights } from "@/modules/question-bank/infrastructure/queries/home-highlights";
 import { FREE_DAILY_ANSWERS } from "@/modules/study/domain/access";
 import { formatBRL } from "@/modules/store/domain/store";
+import { DEFAULT_SUBSCRIPTION_PLAN, SUBSCRIPTION_PLANS } from "@/modules/store/domain/subscription";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
-import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
-import { SiteFooter } from "./_components/site-footer";
-import { SiteHeader } from "./_components/site-header";
+import { SiteShell } from "./_components/site-shell";
+import { loadSiteViewer } from "./_components/site-viewer";
 import { BlogIcon } from "./blog/_components/blog-icon";
 import { ContestCard } from "./concursos/_components/contest-card";
 import { ContestTabs } from "./concursos/_components/contest-tabs";
@@ -30,13 +30,6 @@ export const metadata: Metadata = {
 };
 
 const numberFormat = new Intl.NumberFormat("pt-BR");
-
-function premiumLabel(days: number | null | undefined): string | null {
-  if (days === undefined) return null;
-  if (days === null) return "Premium sem prazo";
-  if (days % 30 === 0 && days <= 360) return `Premium por ${days / 30} ${days === 30 ? "mês" : "meses"}`;
-  return `Premium por ${days} dias`;
-}
 
 const BENEFITS = [
   {
@@ -63,14 +56,13 @@ const BENEFITS = [
 
 export default async function Home() {
   const now = new Date();
-  const supabase = await createSupabaseServerClient();
-  const [{ data }, highlights, offers, news, showcase] = await Promise.all([
-    supabase.auth.getUser(),
+  const [viewer, highlights, offers, news, showcase] = await Promise.all([
+    loadSiteViewer(),
     loadHomeHighlights(),
     getPrismaClient().offer.findMany({
       where: { isActive: true },
       orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
-      take: 3,
+      take: 1,
       select: {
         slug: true,
         name: true,
@@ -84,11 +76,9 @@ export default async function Home() {
     listPosts({}, 1, now),
     loadContestShowcase(),
   ]);
-  const signedIn = Boolean(data.user);
-
-  // Featured offer in the middle, like a price table.
-  const plans = offers.length === 3 && offers[0].isFeatured ? [offers[1], offers[0], offers[2]] : offers;
-  const promo = offers.find((offer) => offer.isFeatured && offer.compareAtCents) ?? null;
+  const signedIn = viewer.signedIn;
+  const combo = offers[0] ?? null;
+  const monthly = SUBSCRIPTION_PLANS[DEFAULT_SUBSCRIPTION_PLAN];
   const enemBoard = highlights.topBoards.find((board) => board.name === "INEP");
 
   const goals = [
@@ -123,20 +113,8 @@ export default async function Home() {
   ] as const;
 
   return (
-    <div className={styles.shell}>
-      {promo?.compareAtCents ? (
-        <Link href={`/loja/${promo.slug}`} className={styles.promo}>
-          <strong>{promo.name}</strong>
-          <span>
-            de <s>{formatBRL(promo.compareAtCents)}</s> por <b>{formatBRL(promo.priceCents)}</b>
-          </span>
-          <em>Aproveitar →</em>
-        </Link>
-      ) : null}
-
-      <SiteHeader signedIn={signedIn} />
-
-      <main>
+    <SiteShell mainClassName={styles.homeMain}>
+      <>
         <section className={styles.hero}>
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>
@@ -166,40 +144,35 @@ export default async function Home() {
             </div>
 
             <div className={styles.plans}>
-              {plans.length > 0 ? (
-                plans.map((offer) => {
-                  const label = premiumLabel(offer.grants.find((grant) => grant.kind === "QUESTION_BANK")?.durationDays);
-                  return (
-                    <article key={offer.slug} className={offer.isFeatured ? styles.planFeatured : styles.plan}>
-                      {offer.isFeatured ? <span className={styles.planRibbon}>Mais vendido</span> : null}
-                      <h2>{offer.name}</h2>
-                      {offer.headline ? <p>{offer.headline}</p> : label ? <p>{label}</p> : null}
-                      <div className={styles.planPrice}>
-                        {offer.compareAtCents ? <s>{formatBRL(offer.compareAtCents)}</s> : null}
-                        <strong>{formatBRL(offer.priceCents)}</strong>
-                      </div>
-                      <Link href={`/loja/${offer.slug}`}>Escolher plano →</Link>
-                    </article>
-                  );
-                })
-              ) : (
-                <>
-                  <article className={styles.plan}>
-                    <h2>Grátis</h2>
-                    <p>{FREE_DAILY_ANSWERS.free} questões por dia, revisão dos erros e metas.</p>
-                    <div className={styles.planPrice}>
-                      <strong>R$ 0</strong>
-                    </div>
-                    <Link href="/cadastro">Criar conta →</Link>
-                  </article>
-                  <article className={styles.planFeatured}>
-                    <span className={styles.planRibbon}>Sem limites</span>
-                    <h2>Premium</h2>
-                    <p>Questões e simulados ilimitados.</p>
-                    <Link href="/loja">Ver planos →</Link>
-                  </article>
-                </>
-              )}
+              <article className={styles.plan}>
+                <h2>Grátis</h2>
+                <p>{FREE_DAILY_ANSWERS.free} questões por dia, revisão dos erros e metas.</p>
+                <div className={styles.planPrice}>
+                  <strong>R$ 0</strong>
+                </div>
+                <Link href={signedIn ? "/app" : "/cadastro"}>{signedIn ? "Minha área →" : "Criar conta →"}</Link>
+              </article>
+              <article className={styles.planFeatured}>
+                <span className={styles.planRibbon}>Recomendado</span>
+                <h2>Premium</h2>
+                <p>Questões e simulados ilimitados. Cancele quando quiser.</p>
+                <div className={styles.planPrice}>
+                  <strong>{formatBRL(monthly.amountCents)}</strong>
+                  <span className={styles.perMonth}>por mês</span>
+                </div>
+                <Link href="/assinatura">{viewer.premium ? "Minha assinatura →" : "Assinar →"}</Link>
+              </article>
+              {combo ? (
+                <article className={styles.plan}>
+                  <h2>{combo.name}</h2>
+                  {combo.headline ? <p>{combo.headline}</p> : <p>Pagamento único por Pix, cartão ou boleto.</p>}
+                  <div className={styles.planPrice}>
+                    {combo.compareAtCents ? <s>{formatBRL(combo.compareAtCents)}</s> : null}
+                    <strong>{formatBRL(combo.priceCents)}</strong>
+                  </div>
+                  <Link href={`/loja/${combo.slug}`}>Ver combo →</Link>
+                </article>
+              ) : null}
             </div>
           </div>
         </section>
@@ -337,9 +310,7 @@ export default async function Home() {
             <NewsletterBox variant="band" />
           </section>
         </div>
-      </main>
-
-      <SiteFooter />
-    </div>
+      </>
+    </SiteShell>
   );
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { loadBannerOffer, loadPortalHome } from "@/modules/blog/infrastructure/blog-queries";
 import { formatBRL } from "@/modules/store/domain/store";
+import { DEFAULT_SUBSCRIPTION_PLAN, SUBSCRIPTION_PLANS } from "@/modules/store/domain/subscription";
 
 import { FeaturedTicker } from "./_components/featured-ticker";
 import { ArticleCard, GridCard, HeroPost, ListItem } from "./_components/post-cards";
@@ -32,21 +33,14 @@ export default async function BlogHomePage() {
           <p>Banco de questões com gabarito, revisão dos seus erros, simulados e combos por concurso.</p>
         </div>
         <div className={styles.bannerOffer}>
+          <span>Premium mensal</span>
+          <strong>{formatBRL(SUBSCRIPTION_PLANS[DEFAULT_SUBSCRIPTION_PLAN].amountCents)}/mês</strong>
+          <Link href="/assinatura">Assinar agora</Link>
           {offer ? (
-            <>
-              <span>{offer.name}</span>
-              <strong>
-                {offer.compareAtCents ? <s>{formatBRL(offer.compareAtCents)}</s> : null} {formatBRL(offer.priceCents)}
-              </strong>
-              <Link href={`/loja/${offer.slug}`}>Comece agora</Link>
-            </>
-          ) : (
-            <>
-              <span>Comece grátis</span>
-              <strong>10 questões por dia</strong>
-              <Link href="/questoes">Resolver questões</Link>
-            </>
-          )}
+            <Link href={`/loja/${offer.slug}`} className={styles.bannerAlt}>
+              ou {offer.name} por {formatBRL(offer.priceCents)}
+            </Link>
+          ) : null}
         </div>
       </section>
 
