@@ -107,6 +107,10 @@ export default async function QuestionDetailPage({
               {question.classification.discipline.name}
             </span>
 
+            {question.isOriginal ? (
+              <span className={styles.original}>Questão inédita</span>
+            ) : null}
+
             {question.examination?.year ? (
               <span>
                 {question.examination.year}

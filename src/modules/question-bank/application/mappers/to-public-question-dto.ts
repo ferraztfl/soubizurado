@@ -104,6 +104,7 @@ export function toPublicQuestionDto(
     },
 
     examination: question.examination,
+    isOriginal: question.isOriginal ?? false,
 
     textImages: Object.fromEntries(
       Object.entries(assets).map(([source, mediaAssetId]) => [source, mediaUrl(mediaAssetId)]),

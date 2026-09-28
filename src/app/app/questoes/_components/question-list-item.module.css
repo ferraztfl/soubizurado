@@ -138,6 +138,16 @@
   flex: 1 1 280px;
 }
 
+/* Written by the platform, not taken from an exam. */
+.original {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--sb-success-soft);
+  color: var(--sb-success) !important;
+  font-size: 11.5px;
+  font-weight: 750;
+}
+
 .type {
   padding: 3px 9px;
   border-radius: 999px;

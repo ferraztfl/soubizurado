@@ -40,7 +40,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const SOURCES = {
   ORIGINAL: {
     reference: "soubizurado-original",
-    name: "SouBizurado — questões autorais",
+    name: "SouBizurado — questões inéditas",
     sourceType: "ORIGINAL",
     licenseStatus: "AUTHORIZED",
     licenseName: "Conteúdo próprio",
@@ -380,7 +380,7 @@ export async function createQuestionAction(
       data: {
         questionId: question.id,
         editorProfileId: admin.profileId,
-        reason: kind === "EXAM" ? "Questão de prova inserida manualmente no backoffice." : "Questão autoral criada no backoffice.",
+        reason: kind === "EXAM" ? "Questão de prova inserida manualmente no backoffice." : "Questão inédita criada no backoffice.",
         changedFields: ["created"],
         answerKeyChanged: false,
         questionStatus: question.status,

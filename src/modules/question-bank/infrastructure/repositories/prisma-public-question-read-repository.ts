@@ -118,6 +118,7 @@ const publicQuestionSelect = {
       },
     },
   },
+  source: { select: { sourceType: true } },
   // Where each image inside the texts was stored (source URL → asset).
   mediaTasks: {
     where: { mediaAssetId: { not: null } },
@@ -301,6 +302,7 @@ function toPublicQuestionReadRecord(
     topic: question.topic,
     subtopic: question.subtopic,
     examination: question.examination,
+    isOriginal: question.source?.sourceType === "ORIGINAL",
     textImageAssets: Object.fromEntries(
       (question.mediaTasks ?? []).flatMap((task) =>
         task.mediaAssetId ? [[task.sourceUrl, task.mediaAssetId]] : [],

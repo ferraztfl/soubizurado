@@ -249,7 +249,7 @@ describe("PrismaPublicQuestionReadRepository", () => {
     ).not.toHaveProperty("isCorrect");
 
     expect(result).toEqual({
-      items: [{ ...validPublicRow, textImageAssets: {} }],
+      items: [{ ...validPublicRow, isOriginal: false, textImageAssets: {} }],
       total: 1,
     });
   });

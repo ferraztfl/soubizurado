@@ -63,6 +63,12 @@
   letter-spacing: 0.02em;
 }
 
+/* Written by the platform, not taken from an exam. */
+.original {
+  background: var(--sb-success-soft) !important;
+  color: var(--sb-success);
+}
+
 .type {
   background: var(--sb-brand-soft) !important;
   color: var(--sb-brand-strong);

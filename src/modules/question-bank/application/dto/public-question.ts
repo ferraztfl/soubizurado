@@ -66,6 +66,9 @@ export type PublicQuestionDto = Readonly<{
 
   examination: PublicQuestionExaminationDto | null;
 
+  /** Written by the platform ("questão inédita"), not taken from an exam. */
+  isOriginal: boolean;
+
   /**
    * Imported image source URL → local media URL, for images written inside
    * the statement, support texts or alternatives (pass to RichText). Those

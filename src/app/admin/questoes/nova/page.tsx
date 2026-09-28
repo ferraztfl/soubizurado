@@ -67,7 +67,7 @@ export default async function NewQuestionPage() {
           <p className={styles.eyebrow}>Banco de questões</p>
           <h1>Nova questão</h1>
           <p className={styles.subtitle}>
-            Questão de uma prova de concurso (com banca, ano, órgão e cargo) ou questão autoral. Ela entra em revisão
+            Questão de uma prova de concurso (com banca, ano, órgão e cargo) ou questão inédita, elaborada por nós. Ela entra em revisão
             e só vai para os alunos depois de publicada pela política de publicação.
           </p>
         </div>

@@ -82,6 +82,13 @@ export function QuestionListItem({ question, position, status, tools }: Question
       </header>
 
       <dl className={styles.facts}>
+        {question.isOriginal ? (
+          <div>
+            <dt className={styles.srOnly}>Origem:</dt>
+            <dd className={styles.original}>Questão inédita</dd>
+          </div>
+        ) : null}
+
         {question.examination?.year ? (
           <div>
             <dt>Ano:</dt>

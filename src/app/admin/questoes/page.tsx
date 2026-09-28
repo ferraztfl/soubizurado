@@ -139,6 +139,7 @@ export default async function AllQuestionsPage(props: AllQuestionsPageProps) {
         area: { select: { name: true } },
         topic: { select: { name: true } },
         examination: { select: { title: true, year: true, board: { select: { name: true } } } },
+        source: { select: { sourceType: true } },
       },
     }),
     prisma.question.groupBy({ by: ["status"], where: base, _count: { _all: true } }),
@@ -260,6 +261,7 @@ export default async function AllQuestionsPage(props: AllQuestionsPageProps) {
                 <div className={styles.itemHead}>
                   <strong className={styles.code}>{questionCode}</strong>
                   <span className={styles[`status${question.status}`]}>{STATUS_LABEL[question.status]}</span>
+                  {question.source?.sourceType === "ORIGINAL" ? <span className={styles.original}>Inédita</span> : null}
                   <span className={styles.meta}>
                     {taxonomy.length > 0 ? taxonomy.join(" › ") : "Sem classificação"}
                   </span>

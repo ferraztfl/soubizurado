@@ -112,7 +112,7 @@ export function NewQuestionForm({ taxonomy, boards, organizations, careerPositio
         <div className={styles.trueFalse}>
           {[
             { value: "EXAM", label: "Questão de prova de concurso" },
-            { value: "ORIGINAL", label: "Questão autoral" },
+            { value: "ORIGINAL", label: "Questão inédita (elaborada por nós)" },
           ].map((option) => (
             <label key={option.value} className={styles.trueFalseOption}>
               <input
@@ -262,7 +262,10 @@ export function NewQuestionForm({ taxonomy, boards, organizations, careerPositio
         />
 
         <label className={local.fileLabel}>
-          <span>Imagens do enunciado (até {MAX_STATEMENT_IMAGES}; PNG, JPG, WebP ou GIF até 8 MB)</span>
+          <span>
+            Imagens do enunciado (até {MAX_STATEMENT_IMAGES}; PNG, JPG, WebP ou GIF até 8 MB). Convertidas
+            automaticamente para WebP leve e legível (até 1600px de largura), guardadas no armazenamento de arquivos.
+          </span>
           <input
             key={`statement-${fileRound}`}
             type="file"

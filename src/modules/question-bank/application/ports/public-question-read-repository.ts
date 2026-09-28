@@ -70,6 +70,9 @@ export type PublicQuestionReadRecord = Readonly<{
     | PublicQuestionExaminationReference
     | null;
 
+  /** Written by the platform ("questão inédita"), not taken from an exam. */
+  isOriginal?: boolean;
+
   /** Imported image source URL → stored media asset id (images inside texts). */
   textImageAssets?: Readonly<Record<string, string>>;
 }>;
