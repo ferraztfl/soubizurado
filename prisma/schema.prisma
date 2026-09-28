@@ -112,6 +112,7 @@ model Profile {
   grantedEntitlements    Entitlement[]                @relation("EntitlementGrantor")
   orders                 Order[]
   lessonProgress         CourseLessonProgress[]
+  blogPosts              BlogPost[]
 
   @@map("profiles")
 }
@@ -358,6 +359,7 @@ model ExaminingBoard {
 
   examinations Examination[]
   targetedBy   StudyPreference[]
+  blogPosts    BlogPost[]
 
   @@index([isActive, name])
   @@map("examining_boards")
@@ -766,6 +768,8 @@ model MediaAsset {
   ingestionTasks ImportMediaTask[]
   courseCovers   Course[]
   lessonPdfs     CourseLesson[]
+  blogCovers     BlogPost[]
+  blogImages     BlogPostImage[]
 
   @@index([storageProvider, bucket])
   @@index([mimeType])
@@ -1105,8 +1109,9 @@ model Offer {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  grants OfferGrant[]
-  orders Order[]
+  grants    OfferGrant[]
+  orders    Order[]
+  blogPosts BlogPost[]
 
   @@index([isActive, sortOrder])
   @@map("offers")
@@ -1234,4 +1239,57 @@ model CourseLessonProgress {
 
   @@id([profileId, lessonId])
   @@map("course_lesson_progress")
+}
+
+model BlogCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique @db.VarChar(120)
+  name      String   @db.VarChar(120)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  posts BlogPost[]
+
+  @@map("blog_categories")
+}
+
+/// News / articles about public exams (SEO). Visible when PUBLISHED and published_at <= now (scheduling).
+model BlogPost {
+  id              String    @id @default(uuid()) @db.Uuid
+  slug            String    @unique @db.VarChar(160)
+  title           String    @db.VarChar(200)
+  excerpt         String    @db.VarChar(320)
+  body            String    @db.Text
+  status          String    @default("DRAFT") @db.VarChar(20)
+  publishedAt     DateTime? @map("published_at") @db.Timestamptz(6)
+  categoryId      String?   @map("category_id") @db.Uuid
+  coverAssetId    String?   @map("cover_asset_id") @db.Uuid
+  authorProfileId String?   @map("author_profile_id") @db.Uuid
+  relatedOfferId  String?   @map("related_offer_id") @db.Uuid
+  relatedBoardId  String?   @map("related_board_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category     BlogCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  cover        MediaAsset?     @relation(fields: [coverAssetId], references: [id], onDelete: SetNull)
+  author       Profile?        @relation(fields: [authorProfileId], references: [id], onDelete: SetNull)
+  relatedOffer Offer?          @relation(fields: [relatedOfferId], references: [id], onDelete: SetNull)
+  relatedBoard ExaminingBoard? @relation(fields: [relatedBoardId], references: [id], onDelete: SetNull)
+  images       BlogPostImage[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId, publishedAt])
+  @@map("blog_posts")
+}
+
+/// Images used inside a post body ("[imagem N]" = position N).
+model BlogPostImage {
+  postId       String @map("post_id") @db.Uuid
+  mediaAssetId String @map("media_asset_id") @db.Uuid
+  position     Int
+
+  post       BlogPost   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@id([postId, position])
+  @@map("blog_post_images")
 }
