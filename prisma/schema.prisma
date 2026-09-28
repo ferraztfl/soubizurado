@@ -110,6 +110,7 @@ model Profile {
   studySessions          StudySession[]
   entitlements           Entitlement[]                @relation("EntitlementOwner")
   grantedEntitlements    Entitlement[]                @relation("EntitlementGrantor")
+  orders                 Order[]
 
   @@map("profiles")
 }
@@ -1082,4 +1083,66 @@ model VisitorAnswerUsage {
   @@id([keyHash, day])
   @@index([day])
   @@map("visitor_answer_usage")
+}
+
+/// Something sold in the store (a plan, an exam combo). Grants entitlements when paid.
+model Offer {
+  id             String   @id @default(uuid()) @db.Uuid
+  slug           String   @unique @db.VarChar(120)
+  name           String   @db.VarChar(160)
+  headline       String?  @db.VarChar(240)
+  description    String   @default("") @db.Text
+  priceCents     Int      @map("price_cents")
+  compareAtCents Int?     @map("compare_at_cents")
+  isActive       Boolean  @default(false) @map("is_active")
+  isFeatured     Boolean  @default(false) @map("is_featured")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  grants OfferGrant[]
+  orders Order[]
+
+  @@index([isActive, sortOrder])
+  @@map("offers")
+}
+
+/// What an offer grants: premium question bank for N days, a course (later).
+model OfferGrant {
+  id           String  @id @default(uuid()) @db.Uuid
+  offerId      String  @map("offer_id") @db.Uuid
+  kind         String  @db.VarChar(30)
+  courseId     String? @map("course_id") @db.Uuid
+  /// null = no end date.
+  durationDays Int?    @map("duration_days")
+
+  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId])
+  @@map("offer_grants")
+}
+
+/// A purchase. Paid only when the payment provider confirms it (never the checkout redirect).
+model Order {
+  id                   String    @id @default(uuid()) @db.Uuid
+  profileId            String    @map("profile_id") @db.Uuid
+  offerId              String    @map("offer_id") @db.Uuid
+  status               String    @default("PENDING") @db.VarChar(20)
+  amountCents          Int       @map("amount_cents")
+  currency             String    @default("BRL") @db.Char(3)
+  offerSnapshot        Json      @map("offer_snapshot")
+  provider             String    @default("MERCADO_PAGO") @db.VarChar(30)
+  providerPreferenceId String?   @map("provider_preference_id") @db.VarChar(120)
+  providerPaymentId    String?   @unique @map("provider_payment_id") @db.VarChar(60)
+  providerStatus       String?   @map("provider_status") @db.VarChar(40)
+  paidAt               DateTime? @map("paid_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  offer   Offer   @relation(fields: [offerId], references: [id], onDelete: Restrict)
+
+  @@index([profileId, createdAt])
+  @@index([status, createdAt])
+  @@map("orders")
 }
