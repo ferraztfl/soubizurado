@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { parseArticleBlocks } from "@/modules/blog/domain/blog";
 
-import { buildContestSummary, buildNewsDraft, selectNoticeExcerpts } from "./notice-drafts";
+import { buildContestSummary, buildNewsDraft } from "./notice-drafts";
 
 const facts = {
   name: "Concurso TJRS Juiz 2026",
@@ -24,18 +24,9 @@ const facts = {
 };
 
 describe("notice drafts", () => {
-  it("keeps the opening and the informative paragraphs of a long notice", () => {
-    const filler = Array.from({ length: 400 }, (_, index) => `Parágrafo genérico número ${index} sobre disposições gerais.`).join("\n\n");
-    const text = `EDITAL Nº 1 — TRIBUNAL\n\n${"x".repeat(4_000)}\n\n${filler}\n\nCRONOGRAMA: inscrições de 15/09/2026 a 14/10/2026, taxa R$ 305,00.\n\n${filler}`;
-    const excerpt = selectNoticeExcerpts(text, 8_000);
-    expect(excerpt.length).toBeLessThanOrEqual(8_000);
-    expect(excerpt.startsWith("EDITAL Nº 1")).toBe(true);
-    expect(excerpt).toContain("CRONOGRAMA: inscrições de 15/09/2026");
-  });
-
   it("writes the summary only from facts", () => {
     const summary = buildContestSummary(facts);
-    expect(summary).toContain("Saiu o edital do Concurso TJRS Juiz 2026 (Tribunal de Justiça do Rio Grande do Sul), organizado pela banca FGV, no Rio Grande do Sul.");
+    expect(summary).toContain("Saiu o edital do Concurso TJRS Juiz 2026 – Tribunal de Justiça do Rio Grande do Sul, organizado pela banca FGV, no Rio Grande do Sul.");
     expect(summary).toContain("30 vagas");
     expect(summary).toContain("15/09/2026 a 14/10/2026");
     expect(buildContestSummary({ ...facts, salaryMax: "", vacancies: "", examDate: "" })).not.toMatch(/remuneração|prova/i);

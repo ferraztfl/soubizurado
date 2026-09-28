@@ -39,7 +39,8 @@ function httpsUrl(value: string): string | null {
 export async function startNoticeImportAction(formData: FormData): Promise<StartNoticeImportResult> {
   const admin = await requireAdminUser();
 
-  const provider = readString(formData, "ai") === "remote" ? "remote" : "local";
+  const choice = readString(formData, "ai");
+  const provider = choice === "remote" ? "remote" : choice === "local" ? "local" : "none";
   if (provider === "remote" && !isNoticeAiConfigured()) {
     return { ok: false, message: "A IA online não está configurada no .env (CLASSIFIER_API_BASE_URL e CLASSIFIER_MODEL)." };
   }
@@ -58,7 +59,7 @@ export async function startNoticeImportAction(formData: FormData): Promise<Start
 
   // The uploaded file belongs to this request: keep a copy for the background work.
   const copy = new File([new Uint8Array(await file.arrayBuffer())], "edital.pdf", { type: "application/pdf" });
-  job.expectedReadingMs = provider === "remote" ? 25_000 : initialReadingEstimateMs(copy.size);
+  job.expectedReadingMs = provider === "remote" ? 25_000 : provider === "local" ? initialReadingEstimateMs(copy.size) : 0;
 
   after(() =>
     runNoticeImport(job, {

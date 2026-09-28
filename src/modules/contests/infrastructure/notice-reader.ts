@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import { z } from "zod";
 
 import { estimatePromptTokens } from "../domain/import-progress";
-import { selectNoticeExcerpts } from "../domain/notice-drafts";
+import { anchoredExcerpt } from "../domain/notice-text-facts";
 import { noticeExtractionSchema, type NoticeExtraction } from "../domain/notice-extraction";
 
 /*
@@ -171,7 +171,8 @@ export async function extractNoticeFacts(noticeText: string, sourceUrl: string |
  */
 
 const LOCAL_TIMEOUT_MS = 15 * 60_000;
-const LOCAL_EXCERPT_CHARS = 18_000;
+/** Anchor lines only: small models read ~12k characters well (and faster). */
+const LOCAL_EXCERPT_CHARS = 12_000;
 
 const nullableString = { type: ["string", "null"] } as const;
 const nullableNumber = { type: ["integer", "null"] } as const;
@@ -232,20 +233,21 @@ const LOCAL_SCHEMA = {
   ],
 } as const;
 
+// No concrete example values here: small models copy them into the answer.
 const LOCAL_PROMPT = `Extraia fatos de um edital de concurso público brasileiro. Responda só com JSON.
-Use somente o que está escrito no texto; se não encontrar, use null ou lista vazia. Não invente.
-- name: nome curto do concurso, ex.: "Concurso TJRS Juiz 2026".
-- organizationName: órgão que abre o concurso.
-- stateCode: sigla da UF (ex.: "RS"); null se for federal/nacional.
-- boardName: banca organizadora (ex.: "FGV", "Cebraspe", "Instituto AOCP").
-- status: "REGISTRATION_OPEN" se houver período de inscrição; senão "NOTICE_PUBLISHED".
-- vacancies: total de vagas imediatas (número). hasReserveList: true se houver cadastro de reserva.
-- salaryMin / salaryMax: menor e maior remuneração inicial, no formato "5.617,92" (sem R$).
-- positions: cada cargo com vagas, reserve, salary ("5.617,92"), education ("fundamental", "médio" ou "superior") e requirements (frase curta).
+Leia APENAS o texto do edital enviado. Se um dado não estiver no texto, use null ou lista vazia. Não invente e não copie estas instruções.
+- name: "Concurso" + sigla do órgão + ano do edital, montado a partir do texto.
+- organizationName: órgão cujos cargos estão sendo preenchidos, com a sigla entre parênteses se houver.
+- stateCode: sigla de 2 letras da UF do órgão; null se for órgão federal.
+- boardName: instituição que executa/organiza o concurso (banca), exatamente como escrita no edital.
+- status: "REGISTRATION_OPEN" se o texto trouxer período de inscrição; senão "NOTICE_PUBLISHED".
+- vacancies: total de vagas imediatas (número). hasReserveList: true só se o texto falar em cadastro de reserva.
+- salaryMin / salaryMax: menor e maior remuneração inicial citadas, só números no formato brasileiro, sem R$.
+- positions: um item por cargo citado no edital, com vagas, reserve, salary, education ("fundamental", "médio" ou "superior") e requirements (frase curta).
 - registrationStart, registrationEnd, examDate: datas no formato AAAA-MM-DD (examDate = prova objetiva).
-- feeText: taxa de inscrição, ex.: "R$ 150,00".
+- feeText: valor da taxa de inscrição como escrito no texto.
 - stages: etapas da seleção em ordem, curtas.
-- examLocations: cidades de prova.`;
+- examLocations: cidades onde as provas serão aplicadas.`;
 
 const ollamaChunkSchema = z.object({
   message: z.object({ content: z.string() }).optional(),
@@ -301,7 +303,7 @@ export async function extractNoticeFactsLocal(
   sourceUrl: string | null,
   onProgress?: (progress: LocalAiProgress) => void,
 ): Promise<NoticeAiResult> {
-  const excerpt = selectNoticeExcerpts(noticeText, LOCAL_EXCERPT_CHARS);
+  const excerpt = anchoredExcerpt(noticeText, LOCAL_EXCERPT_CHARS);
   onProgress?.({ phase: "reading", promptTokens: estimatePromptTokens(excerpt.length) });
 
   let response: Response;

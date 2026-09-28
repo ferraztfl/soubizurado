@@ -119,19 +119,20 @@ export function NoticeImporter({ localAvailable, localModel, remoteAvailable, co
             </select>
           </label>
           <label className={styles.field}>
-            <span>Qual IA usar</span>
-            <select name="ai" defaultValue={localAvailable || !remoteAvailable ? "local" : "remote"} disabled={busy}>
-              <option value="local">
-                Local — {localModel} (grátis, neste computador){localAvailable ? "" : " — indisponível"}
+            <span>Como ler o edital</span>
+            <select name="ai" defaultValue="none" disabled={busy}>
+              <option value="none">Somente regras — segundos (recomendado)</option>
+              <option value="local" disabled={!localAvailable}>
+                Regras + IA local — {localModel}, alguns minutos{localAvailable ? "" : " (indisponível)"}
               </option>
               <option value="remote" disabled={!remoteAvailable}>
-                Online (chave do .env){remoteAvailable ? "" : " — não configurada"}
+                Regras + IA online (chave do .env){remoteAvailable ? "" : " — não configurada"}
               </option>
             </select>
           </label>
           <div className={styles.full}>
             <button type="submit" className={styles.primary} disabled={busy}>
-              {busy ? "Lendo o edital…" : "Ler o edital com IA"}
+              {busy ? "Lendo o edital…" : "Ler o edital"}
             </button>
           </div>
         </form>
@@ -196,9 +197,11 @@ export function NoticeImporter({ localAvailable, localModel, remoteAvailable, co
           <section className={styles.card} ref={resultRef}>
             <h2>2. Revise e salve o concurso</h2>
             <p className={styles.hint}>
-              Tudo abaixo foi sugerido pela IA a partir do edital. Confira cada campo com o PDF antes de salvar — ao salvar, as regras
+              Tudo abaixo foi lido do edital. Confira cada campo com o PDF antes de salvar — ao salvar, as regras
               normais do cadastro valem. Marque “Publicado no site” só depois de revisar.
-              {` (IA ${result.usage.provider === "local" ? "local" : "online"}: ${formatDuration(result.usage.seconds)}, ${result.usage.inputTokens.toLocaleString("pt-BR")} tokens lidos.)`}
+              {result.usage.provider === "none"
+                ? ` (leitura por regras em ${formatDuration(result.usage.seconds)}.)`
+                : ` (regras + IA ${result.usage.provider === "local" ? "local" : "online"}: ${formatDuration(result.usage.seconds)}, ${result.usage.inputTokens.toLocaleString("pt-BR")} tokens lidos.)`}
             </p>
             {result.warnings.length > 0 ? (
               <ul className={styles.error}>

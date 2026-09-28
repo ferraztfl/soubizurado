@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto";
 
 import type { ImportPhase } from "../domain/import-progress";
 
+/** "none" = rules only (seconds); "local" = + Ollama; "remote" = + online AI. */
+export type NoticeAiProvider = "none" | "local" | "remote";
+
 /*
  * In-memory registry of notice imports in progress (one server process —
  * the local AI runs on this same machine). Each job belongs to the admin
@@ -17,7 +20,7 @@ export type NoticeImportJob<Result> = {
   expectedReadingMs: number;
   generatedTokens: number;
   writingTokensPerSecond: number;
-  provider: "local" | "remote";
+  provider: NoticeAiProvider;
   result: Result | null;
   error: string | null;
   finishedAt: number | null;
@@ -38,7 +41,7 @@ function prune(now: number): void {
 
 export function createNoticeImportJob<Result>(
   ownerProfileId: string,
-  provider: "local" | "remote",
+  provider: NoticeAiProvider,
   writingTokensPerSecond: number,
 ): NoticeImportJob<Result> | null {
   const now = Date.now();

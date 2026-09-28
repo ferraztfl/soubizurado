@@ -917,3 +917,20 @@ Vale sobre §1/§12 onde divergir.
   Velocidade medida nesta máquina (Ryzen 3 4350G, só CPU): leitura ~42 tok/s, escrita ~5,4 tok/s; valores iniciais
   calibrados e reaprendidos a cada leitura. Teste real (TJRS): 3 min 19 s, resultado igual ao conferido.
   Limitação: tarefas vivem na memória do processo (reiniciar o `npm run dev` perde as em andamento).
+
+### 13.33 Edital lido por regras primeiro (29/09/2026)
+
+- Teste do usuário com o edital PMAL (Cebraspe, impresso pelo navegador) saiu "TUDO ERRADO": o modelo local copiava o
+  exemplo do prompt ("Concurso TJRS Juiz 2026"), o trecho enviado não tinha as linhas com R$ e o cabeçalho de
+  impressão ("28/09/2026, 17:43 …") virava data de prova.
+- Novo `src/modules/contests/domain/notice-text-facts.ts`: `cleanNoticeText` (tira cabeçalho/rodapé de impressão;
+  aceita CRLF e `\f` do pdftotext no Windows), `readNoticeTextFacts` (órgão + sigla, UF, ano, banca pelo catálogo com
+  "Instituto AOCP" ≠ "AOCP", taxa, locais, etapas, cargos/vagas/salário/escolaridade, período de inscrição),
+  `groundExtraction` (descarta o que a IA disse e não está no texto; nome sempre refeito), `mergeNoticeFacts` (regras
+  vencem; nome = `Concurso {SIGLA} {ano}`), `anchoredExcerpt` (trecho para a IA ancorado em R$, vagas, taxa, datas).
+- Tela: "Como ler o edital" com padrão **Somente regras** (~1 s); "Regras + IA local" e "Regras + IA online" são opcionais.
+  Avisos na tela: campos descartados e datas não encontradas.
+- Resultado PMAL (regras): Concurso PMAL 2026; PMAL; AL; Cebraspe; 530 + CR; Oficial de Estado-Maior 30 + CR
+  R$ 11.563,77 e Soldado 500 + CR R$ 6.067,51 (médio); taxa R$ 150,00; Arapiraca/AL e Maceió/AL; 7 etapas. O PDF
+  impresso não traz o cronograma (datas ficam para preencher, com aviso). TJRS também confere por regras.
+- Barra "travada em 20%": não reproduzida; no reteste pela tela com IA local ela avançou 23% → 56% → 80% → 95% → fim.

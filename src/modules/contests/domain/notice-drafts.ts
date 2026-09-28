@@ -5,58 +5,9 @@ import { EDUCATION_LEVELS, parsePositionLines, vacanciesLabel, type EducationLev
 import type { NoticeSuggestion } from "./notice-extraction";
 
 /*
- * Helpers for the local (small, CPU) AI: pick the parts of a notice that
- * carry the facts, and write the summary and the news draft from the
- * extracted facts with a fixed template (no free text from the model).
+ * Summary and news draft written from the extracted facts with a fixed
+ * template (no free text from the small local model).
  */
-
-const KEYWORDS: readonly (readonly [RegExp, number])[] = [
-  [/cronograma/i, 6],
-  [/\bvagas?\b/i, 4],
-  [/remunera[çc][ãa]o|vencimento|subs[íi]dio|sal[áa]rio/i, 4],
-  [/inscri[çc][õo]es|inscri[çc][ãa]o/i, 4],
-  [/taxa\b/i, 3],
-  [/prova objetiva|provas? discursiva|teste de aptid[ãa]o|avalia[çc][ãa]o (psicol|m[ée]dica)|investiga[çc][ãa]o social|curso de forma[çc][ãa]o|t[íi]tulos/i, 3],
-  [/escolaridade|requisitos?|n[íi]vel (m[ée]dio|superior|fundamental)/i, 3],
-  [/cadastro de reserva/i, 2],
-  [/\bcargos?\b/i, 2],
-  [/\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2} de [a-zç]+ de \d{4}/i, 2],
-  [/R\$\s*\d/i, 3],
-];
-
-/**
- * The most informative parts of a long notice, in their original order: the
- * opening (organization, board, title) plus the paragraphs that mention
- * vacancies, pay, registration, fee, schedule and stages.
- */
-export function selectNoticeExcerpts(text: string, maxChars = 20_000): string {
-  if (text.length <= maxChars) return text;
-
-  const head = text.slice(0, 4_000);
-  const blocks = text
-    .slice(4_000)
-    .split(/\n\s*\n/)
-    .map((block, index) => ({ block: block.trim(), index }))
-    .filter((item) => item.block.length > 20);
-
-  const scored = blocks
-    .map((item) => ({
-      ...item,
-      score: KEYWORDS.reduce((sum, [pattern, weight]) => sum + (pattern.test(item.block) ? weight : 0), 0),
-    }))
-    .filter((item) => item.score >= 4);
-
-  const chosen = new Set<number>();
-  let used = head.length;
-  for (const item of [...scored].sort((a, b) => b.score - a.score || a.index - b.index)) {
-    const piece = item.block.slice(0, 2_500);
-    if (used + piece.length + 2 > maxChars) continue;
-    chosen.add(item.index);
-    used += piece.length + 2;
-  }
-
-  return [head, ...blocks.filter((item) => chosen.has(item.index)).map((item) => item.block.slice(0, 2_500))].join("\n\n");
-}
 
 /** "no Rio Grande do Sul", "na Bahia", "em Pernambuco". */
 const STATE_PREPOSITION: Readonly<Record<string, "no" | "na" | "em">> = {
@@ -117,7 +68,7 @@ export function buildContestSummary(facts: DraftFacts): string {
 
   const first = [
     `Saiu o edital do ${facts.name || "concurso"}`,
-    facts.organizationName ? ` (${facts.organizationName})` : "",
+    facts.organizationName ? ` – ${facts.organizationName}` : "",
     facts.boardName ? `, organizado pela banca ${facts.boardName}` : "",
     place ? `, ${place}` : "",
     ".",

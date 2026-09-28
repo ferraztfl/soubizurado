@@ -1,5 +1,6 @@
 import { buildContestSummary, buildNewsDraft } from "@/modules/contests/domain/notice-drafts";
 import { matchBoard, toNoticeSuggestion } from "@/modules/contests/domain/notice-extraction";
+import { cleanNoticeText, groundExtraction, mergeNoticeFacts, readNoticeTextFacts } from "@/modules/contests/domain/notice-text-facts";
 import { estimatePromptTokens } from "@/modules/contests/domain/import-progress";
 import { setJobPhase, type NoticeImportJob } from "@/modules/contests/infrastructure/notice-import-jobs";
 import {
@@ -38,11 +39,20 @@ export async function runNoticeImport(job: NoticeImportJob<NoticeImportResult>, 
       : null;
 
     setJobPhase(job, "pdf");
-    const text = await readNoticePdf(input.file);
+    // Browser-printed PDFs repeat a date/time header on every page: remove it before any date search.
+    const text = cleanNoticeText(await readNoticePdf(input.file));
+    const boards = await prisma.examiningBoard.findMany({ where: { isActive: true }, select: { id: true, name: true } });
+    // Rules first: header data read straight from the text (no AI).
+    const textFacts = readNoticeTextFacts(
+      text,
+      boards.map((board) => board.name),
+    );
 
     setJobPhase(job, "excerpts");
     const { extraction, inputTokens, outputTokens } =
-      job.provider === "remote"
+      job.provider === "none"
+        ? { extraction: {}, inputTokens: 0, outputTokens: 0 }
+        : job.provider === "remote"
         ? await (async () => {
             setJobPhase(job, "reading", { expectedReadingMs: REMOTE_READING_MS });
             return extractNoticeFacts(text, input.officialUrl);
@@ -57,7 +67,9 @@ export async function runNoticeImport(job: NoticeImportJob<NoticeImportResult>, 
           });
 
     setJobPhase(job, "checking");
-    const extracted = toNoticeSuggestion(extraction, { noticeText: text });
+    // Keep only what the notice says, then complete with the rule facts.
+    const grounded = groundExtraction(extraction, text);
+    const extracted = toNoticeSuggestion(mergeNoticeFacts(grounded.extraction, textFacts), { noticeText: text });
     // The local model only extracts facts: summary and news come from our template.
     const suggestion = {
       ...extracted,
@@ -66,9 +78,14 @@ export async function runNoticeImport(job: NoticeImportJob<NoticeImportResult>, 
       warnings: extracted.warnings.filter((warning) => !warning.includes("rascunho da notícia")),
     };
 
-    const boards = await prisma.examiningBoard.findMany({ where: { isActive: true }, select: { id: true, name: true } });
     const board = matchBoard(boards, suggestion.boardName);
     const warnings = [...suggestion.warnings];
+    if (grounded.dropped.length > 0) {
+      warnings.push(`Descartado por não aparecer no edital: ${grounded.dropped.join(", ")}.`);
+    }
+    if (!suggestion.registrationEnd) warnings.push("Datas de inscrição não encontradas no PDF — preencha pelo cronograma oficial.");
+    if (!suggestion.examDate) warnings.push("Data da prova não encontrada no PDF — preencha pelo cronograma oficial.");
+    if (!suggestion.positionLines) warnings.push("Cargos não identificados — preencha a lista de cargos.");
     if (suggestion.boardName && !board) {
       warnings.push(`Banca "${suggestion.boardName}" não está no catálogo; escolha a banca manualmente (ou cadastre-a em Bancas).`);
     }

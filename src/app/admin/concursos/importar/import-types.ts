@@ -1,4 +1,5 @@
 import type { ImportPhase } from "@/modules/contests/domain/import-progress";
+import type { NoticeAiProvider } from "@/modules/contests/infrastructure/notice-import-jobs";
 
 import type { ContestFormValues } from "../contest-form";
 
@@ -9,7 +10,7 @@ export type NoticeImportResult = Readonly<{
   values: ContestFormValues;
   news: Readonly<{ title: string; excerpt: string; body: string }> | null;
   warnings: readonly string[];
-  usage: Readonly<{ inputTokens: number; outputTokens: number; provider: "local" | "remote"; seconds: number }>;
+  usage: Readonly<{ inputTokens: number; outputTokens: number; provider: NoticeAiProvider; seconds: number }>;
 }>;
 
 /** Answer of GET /api/admin/notice-import/[jobId]. */
@@ -19,7 +20,7 @@ export type NoticeImportStatus = Readonly<{
   percent: number;
   elapsedSeconds: number;
   remainingSeconds: number | null;
-  provider: "local" | "remote";
+  provider: NoticeAiProvider;
   result: NoticeImportResult | null;
   error: string | null;
 }>;

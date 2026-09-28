@@ -75,6 +75,8 @@ export function remainingSeconds(snapshot: ProgressSnapshot, now: number): numbe
     return Math.round(left + 3);
   }
   if (snapshot.phase === "received" || snapshot.phase === "pdf" || snapshot.phase === "excerpts") {
+    // Rules only (no AI phase): done in a couple of seconds.
+    if (snapshot.expectedReadingMs === 0) return 2;
     return Math.round(snapshot.expectedReadingMs / 1000 + writingSeconds + 5);
   }
   return snapshot.phase === "checking" ? 2 : null;

@@ -31,7 +31,7 @@ export default async function ImportNoticePage(props: ImportNoticePageProps) {
       <header>
         <h1 className={styles.title}>Importar do edital (PDF)</h1>
         <p className={styles.description}>
-          A IA lê o edital oficial e preenche o cadastro do concurso (órgão, banca, cargos, vagas, salários, datas, taxa, etapas) e um
+          O sistema lê o edital oficial por regras (e, se você quiser, com ajuda de IA) e preenche o cadastro do concurso (órgão, banca, cargos, vagas, salários, datas, taxa, etapas) e um
           rascunho de notícia. Nada é salvo nem publicado sem a sua revisão.
         </p>
       </header>
