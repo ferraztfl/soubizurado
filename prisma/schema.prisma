@@ -111,6 +111,7 @@ model Profile {
   entitlements           Entitlement[]                @relation("EntitlementOwner")
   grantedEntitlements    Entitlement[]                @relation("EntitlementGrantor")
   orders                 Order[]
+  lessonProgress         CourseLessonProgress[]
 
   @@map("profiles")
 }
@@ -495,6 +496,7 @@ model Question {
 
   studyReviewItems      StudyReviewItem[]
   studySessionQuestions StudySessionQuestion[]
+  courseLessonQuestions CourseLessonQuestion[]
 
   @@index([status, type])
   @@index([status, disciplineId])
@@ -762,6 +764,8 @@ model MediaAsset {
   questionAlternativeLinks QuestionAlternativeMediaLink[]
 
   ingestionTasks ImportMediaTask[]
+  courseCovers   Course[]
+  lessonPdfs     CourseLesson[]
 
   @@index([storageProvider, bucket])
   @@index([mimeType])
@@ -1067,6 +1071,7 @@ model Entitlement {
 
   profile   Profile  @relation("EntitlementOwner", fields: [profileId], references: [id], onDelete: Cascade)
   grantedBy Profile? @relation("EntitlementGrantor", fields: [grantedByProfileId], references: [id], onDelete: SetNull)
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Restrict)
 
   @@index([profileId, kind])
   @@map("entitlements")
@@ -1116,7 +1121,8 @@ model OfferGrant {
   /// null = no end date.
   durationDays Int?    @map("duration_days")
 
-  offer Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  offer  Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: Restrict)
 
   @@index([offerId])
   @@map("offer_grants")
@@ -1145,4 +1151,87 @@ model Order {
   @@index([profileId, createdAt])
   @@index([status, createdAt])
   @@map("orders")
+}
+
+/// A course of the member area (videos, PDFs, texts, question lists), sold through offers.
+model Course {
+  id           String   @id @default(uuid()) @db.Uuid
+  slug         String   @unique @db.VarChar(120)
+  title        String   @db.VarChar(160)
+  subtitle     String?  @db.VarChar(240)
+  description  String   @default("") @db.Text
+  coverAssetId String?  @map("cover_asset_id") @db.Uuid
+  isPublished  Boolean  @default(false) @map("is_published")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  cover        MediaAsset?    @relation(fields: [coverAssetId], references: [id], onDelete: SetNull)
+  modules      CourseModule[]
+  offerGrants  OfferGrant[]
+  entitlements Entitlement[]
+
+  @@map("courses")
+}
+
+model CourseModule {
+  id       String @id @default(uuid()) @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  title    String @db.VarChar(160)
+  position Int
+
+  course  Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons CourseLesson[]
+
+  @@index([courseId, position])
+  @@map("course_modules")
+}
+
+/// A lesson: TEXT (markdown body), PDF (private file), VIDEO (allow-listed embed URL), QUESTIONS (curated list).
+model CourseLesson {
+  id              String   @id @default(uuid()) @db.Uuid
+  moduleId        String   @map("module_id") @db.Uuid
+  title           String   @db.VarChar(160)
+  kind            String   @db.VarChar(20)
+  position        Int
+  body            String   @default("") @db.Text
+  videoEmbedUrl   String?  @map("video_embed_url") @db.VarChar(500)
+  pdfAssetId      String?  @map("pdf_asset_id") @db.Uuid
+  durationMinutes Int?     @map("duration_minutes")
+  isFreePreview   Boolean  @default(false) @map("is_free_preview")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  module    CourseModule           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  pdf       MediaAsset?            @relation(fields: [pdfAssetId], references: [id], onDelete: SetNull)
+  questions CourseLessonQuestion[]
+  progress  CourseLessonProgress[]
+
+  @@index([moduleId, position])
+  @@map("course_lessons")
+}
+
+model CourseLessonQuestion {
+  lessonId   String @map("lesson_id") @db.Uuid
+  questionId String @map("question_id") @db.Uuid
+  position   Int
+
+  lesson   CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  question Question     @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@id([lessonId, questionId])
+  @@index([lessonId, position])
+  @@map("course_lesson_questions")
+}
+
+model CourseLessonProgress {
+  profileId   String   @map("profile_id") @db.Uuid
+  lessonId    String   @map("lesson_id") @db.Uuid
+  completedAt DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+
+  profile Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  lesson  CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, lessonId])
+  @@map("course_lesson_progress")
 }
