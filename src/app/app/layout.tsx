@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 
+import { formatBRL } from "@/modules/store/domain/store";
+import { DEFAULT_SUBSCRIPTION_PLAN, SUBSCRIPTION_PLANS, pricePerDayCents } from "@/modules/store/domain/subscription";
 import { answerAllowance } from "@/modules/study/domain/access";
 import { findStudentProfileId } from "@/modules/study/infrastructure/queries/answered-question-status";
 import { loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
@@ -14,6 +16,10 @@ import {
   THEME_COOKIE,
 } from "./_components/reading-preferences";
 import { StudentAppShell } from "./_components/student-app-shell";
+import { VisitorAppShell } from "./_components/visitor-app-shell";
+import { PremiumBar } from "../_components/premium-bar";
+import { SiteFooter } from "../_components/site-footer";
+import { SiteHeader } from "../_components/site-header";
 
 type StudentAppLayoutProps = Readonly<{
   children: ReactNode;
@@ -38,16 +44,23 @@ export default async function StudentAppLayout({
   if (error || !user) {
     const visitor = await loadVisitorAllowance();
 
+    // Same header, footer and Premium bar as the rest of the public site.
     return (
-      <StudentAppShell
-        displayName="Visitante"
-        firstName="visitante"
+      <VisitorAppShell
+        header={<SiteHeader signedIn={false} />}
+        footer={<SiteFooter />}
+        bottomBar={
+          <PremiumBar
+            price={formatBRL(SUBSCRIPTION_PLANS[DEFAULT_SUBSCRIPTION_PLAN].amountCents)}
+            perDay={formatBRL(pricePerDayCents(DEFAULT_SUBSCRIPTION_PLAN))}
+          />
+        }
         initialTheme={theme}
         initialFontScale={fontScale}
         plan={{ premium: false, visitor: true, remaining: visitor.remaining, limit: visitor.limit }}
       >
         {children}
-      </StudentAppShell>
+      </VisitorAppShell>
     );
   }
 

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Dev only: open the site at 127.0.0.1 to test as a signed-out visitor
+  // (cookies are per host) without leaving the localhost session.
+  allowedDevOrigins: ["127.0.0.1"],
   // Public, search-friendly addresses of the question bank (same pages as /app/questoes).
   async rewrites() {
     return [
