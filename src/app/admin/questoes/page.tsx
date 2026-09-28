@@ -60,6 +60,19 @@ function readFilters(params: SearchParams) {
 
 type Filters = ReturnType<typeof readFilters>;
 
+/** Most statements a text search narrows to; broader terms ask to refine. */
+const MAX_TEXT_MATCHES = 5_000;
+
+async function findStatementMatches(text: string): Promise<{ ids: string[]; truncated: boolean }> {
+  const pattern = `%${text.toLocaleLowerCase("pt-BR").replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
+  const rows = await getPrismaClient().$queryRaw<{ id: string }[]>`
+    SELECT id FROM questions
+    WHERE lower(statement) LIKE ${pattern}
+    LIMIT ${MAX_TEXT_MATCHES + 1}`;
+
+  return { ids: rows.slice(0, MAX_TEXT_MATCHES).map((row) => row.id), truncated: rows.length > MAX_TEXT_MATCHES };
+}
+
 function buildHref(filters: Filters, changes: Partial<Record<keyof SearchParams, string | null>>): string {
   const values: Record<keyof SearchParams, string | null> = {
     busca: filters.search || null,
@@ -88,10 +101,14 @@ export default async function AllQuestionsPage(props: AllQuestionsPageProps) {
   const code = parseQuestionCode(filters.search);
   const textSearch = code === null && filters.search.length >= MIN_TEXT_SEARCH ? filters.search : null;
 
+  // Text search goes through the trigram index on lower(statement) (Prisma's
+  // case-insensitive "contains" becomes ILIKE, which cannot use it).
+  const textMatches = textSearch ? await findStatementMatches(textSearch) : null;
+
   // Everything except the status: the tabs show how the other filters split.
   const base: Prisma.QuestionWhereInput = {
     ...(code !== null ? { publicNumber: code } : {}),
-    ...(textSearch ? { statement: { contains: textSearch, mode: "insensitive" } } : {}),
+    ...(textMatches ? { id: { in: textMatches.ids } } : {}),
     ...(filters.disciplineId ? { disciplineId: filters.disciplineId } : {}),
     ...(filters.boardId || filters.year
       ? {
@@ -202,6 +219,12 @@ export default async function AllQuestionsPage(props: AllQuestionsPageProps) {
 
       {code === null && filters.search.length > 0 && filters.search.length < MIN_TEXT_SEARCH ? (
         <p className={styles.hint}>Digite pelo menos {MIN_TEXT_SEARCH} caracteres para buscar no enunciado.</p>
+      ) : null}
+
+      {textMatches?.truncated ? (
+        <p className={styles.hint}>
+          Termo muito amplo: mostrando só parte dos resultados. Use um trecho mais específico ou combine com filtros.
+        </p>
       ) : null}
 
       <nav className={styles.tabs} aria-label="Situação">

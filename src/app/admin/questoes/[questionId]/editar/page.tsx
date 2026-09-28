@@ -25,6 +25,7 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   alternatives: "Alternativas",
   answerKey: "Gabarito",
   created: "Criação",
+  taxonomy: "Classificação",
   supportContent: "Texto de apoio",
   media: "Imagens",
 };

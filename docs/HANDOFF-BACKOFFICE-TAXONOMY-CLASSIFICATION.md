@@ -614,3 +614,11 @@ Vale sobre §1/§12 onde divergir.
   - `/admin/usuarios`: contas, papéis (somente leitura), atividade; e-mails pela API admin do Supabase
     (servidor) — o papel do banco não lê o schema `auth` (correto).
 - Pool do Postgres limitado (`DATABASE_POOL_MAX`, padrão 4) — erro EMAXCONNSESSION no pooler de sessão.
+- (28/09) `questions:reclassify -- "Q…=Matéria/Tópico/Subtópico" [--apply]`: reclassificação manual (também
+  de publicadas), só com itens do catálogo, com `question_revisions` ("Classificação") e log de reversão.
+  Aplicado: Q103446 → Medicina Legal; Q103460 e Q103459 → Criminalística; Q103593–5 → Geografia do DF
+  (RIDE); Q103856 → Legislação Institucional; Q103921 → Direito Civil; Q103930 → Legislação Educacional.
+  7 publicadas.
+- Busca por trecho em Todas as questões usa o índice trigram existente (`questions_statement_trgm_idx`,
+  sobre `lower(statement)`) via SQL parametrizado — sem migration nova. Até 5.000 resultados exatos;
+  termos mais amplos pedem refinamento.
