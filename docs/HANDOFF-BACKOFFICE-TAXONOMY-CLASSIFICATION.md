@@ -593,3 +593,24 @@ Vale sobre §1/§12 onde divergir.
 - Resultado: +21 publicadas. Em revisão: Q103595 (LC 94/1998 – RIDE-DF, caiu em História) e Q103459
   (congresso de 1947, caiu em Processo Penal) excluídas por dúvida; 5 sem matéria; 1 sem tópico.
   Q103446 (Tanatologia) está publicada em Direito Processual Penal — corrigir pelo editor para Medicina Legal.
+
+### 13.12 Nova rodada Quest e backoffice completo (28/09/2026)
+
+- Quest: nova chave (3000 créditos). A Quest guarda uma cópia por prova (`provas` nunca lista duas), então
+  cargos do mesmo concurso repetem o bloco comum e só viram "duplicata" depois de pagos. O planejador agora
+  pega **um cargo por concurso** (inclusive contra concursos que já temos); outros cargos só com `--extras`.
+  Rodada AOCP 2025: CODERN, IDEMA, MPE MA (Promotor), MPE RS (Analista Direito), Paraná Previdência (TI),
+  SANESUL — 429 importadas, 406 publicadas; 2646 + 148 (listagem) créditos. 231 cargos repetidos evitados.
+- Mantidas em revisão por classificação duvidosa: Q103595, Q103459, Q103856, Q103921, Q103930. Publicadas
+  com matéria errada (corrigir pelo editor → Medicina Legal): Q103446, Q103460.
+- Backoffice: todas as páginas do menu ativas.
+  - `/admin/questoes` Todas as questões: busca por código ou trecho (≥4 caracteres), filtros de situação,
+    matéria, banca e ano, contagem por situação, paginação por cursor (publicNumber).
+    Escala: busca por trecho usa ILIKE; com milhões, criar índice trigram (migration aditiva `pg_trgm`).
+  - `/admin/questoes/nova`: questão autoral (fonte `soubizurado-original`, ORIGINAL), catálogo em cascata,
+    bloqueio de duplicata por fingerprint, nasce em revisão com `question_revisions` ("Criação").
+  - `/admin/taxonomia`: catálogo somente leitura com contagens por Matéria/Tópico/Subtópico.
+  - `/admin/midias`: fila, armazenamento, falhas com "tentar de novo" (o download segue no `media:process`).
+  - `/admin/usuarios`: contas, papéis (somente leitura), atividade; e-mails pela API admin do Supabase
+    (servidor) — o papel do banco não lê o schema `auth` (correto).
+- Pool do Postgres limitado (`DATABASE_POOL_MAX`, padrão 4) — erro EMAXCONNSESSION no pooler de sessão.

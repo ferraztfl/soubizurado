@@ -52,7 +52,7 @@ const navigationGroups: readonly NavigationGroup[] = [
       },
       {
         label: "Nova questão",
-        href: null,
+        href: "/admin/questoes/nova",
       },
     ],
   },

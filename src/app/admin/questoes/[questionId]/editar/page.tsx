@@ -24,6 +24,9 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   statement: "Enunciado",
   alternatives: "Alternativas",
   answerKey: "Gabarito",
+  created: "Criação",
+  supportContent: "Texto de apoio",
+  media: "Imagens",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
