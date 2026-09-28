@@ -1242,10 +1242,15 @@ model CourseLessonProgress {
 }
 
 model BlogCategory {
-  id        String   @id @default(uuid()) @db.Uuid
-  slug      String   @unique @db.VarChar(120)
-  name      String   @db.VarChar(120)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique @db.VarChar(120)
+  name        String   @db.VarChar(120)
+  /// CARREIRA (Policial, Fiscal…), EXAME (OAB, ENEM…) or GERAL.
+  groupKey    String   @default("GERAL") @map("group_key") @db.VarChar(20)
+  icon        String?  @db.VarChar(30)
+  description String?  @db.VarChar(300)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   posts BlogPost[]
 
@@ -1266,6 +1271,11 @@ model BlogPost {
   authorProfileId String?   @map("author_profile_id") @db.Uuid
   relatedOfferId  String?   @map("related_offer_id") @db.Uuid
   relatedBoardId  String?   @map("related_board_id") @db.Uuid
+  /// NEWS (notícia) or ARTICLE (guia / dica de estudo).
+  format          String    @default("NEWS") @db.VarChar(20)
+  /// Brazilian state of the news (null = nacional).
+  stateCode       String?   @map("state_code") @db.Char(2)
+  isFeatured      Boolean   @default(false) @map("is_featured")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -1278,6 +1288,8 @@ model BlogPost {
 
   @@index([status, publishedAt])
   @@index([categoryId, publishedAt])
+  @@index([stateCode, publishedAt])
+  @@index([isFeatured, publishedAt])
   @@map("blog_posts")
 }
 
@@ -1292,4 +1304,16 @@ model BlogPostImage {
 
   @@id([postId, position])
   @@map("blog_post_images")
+}
+
+/// Blog newsletter sign-ups (LGPD: explicit consent time; unsubscribe keeps the row).
+model NewsletterSubscriber {
+  id             String    @id @default(uuid()) @db.Uuid
+  email          String    @unique @db.VarChar(254)
+  source         String    @default("blog") @db.VarChar(60)
+  consentAt      DateTime  @default(now()) @map("consent_at") @db.Timestamptz(6)
+  unsubscribedAt DateTime? @map("unsubscribed_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("newsletter_subscribers")
 }

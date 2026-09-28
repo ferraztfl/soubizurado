@@ -38,6 +38,9 @@ export default async function NewPostPage(props: NewPostPageProps) {
             relatedBoardId: null,
             hasCover: false,
             imageCount: 0,
+            format: "NEWS",
+            stateCode: null,
+            isFeatured: false,
           }}
           {...options}
         />

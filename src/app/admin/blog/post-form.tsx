@@ -1,3 +1,5 @@
+import { BRAZIL_STATES } from "@/modules/blog/domain/blog";
+
 import styles from "../loja/loja.module.css";
 import { savePostAction } from "./actions";
 
@@ -14,6 +16,9 @@ export type PostFormValues = Readonly<{
   relatedBoardId: string | null;
   hasCover: boolean;
   imageCount: number;
+  format: "NEWS" | "ARTICLE";
+  stateCode: string | null;
+  isFeatured: boolean;
 }>;
 
 type Option = Readonly<{ id: string; name: string }>;
@@ -45,6 +50,29 @@ export function PostForm({
           ))}
         </datalist>
       </label>
+      <label className={styles.field}>
+        <span>Formato</span>
+        <select name="format" defaultValue={values.format}>
+          <option value="NEWS">Notícia</option>
+          <option value="ARTICLE">Artigo (guia, dica de estudo)</option>
+        </select>
+      </label>
+      <label className={styles.field}>
+        <span>Região</span>
+        <select name="stateCode" defaultValue={values.stateCode ?? ""}>
+          <option value="">Nacional</option>
+          {Object.entries(BRAZIL_STATES).map(([code, name]) => (
+            <option key={code} value={code}>
+              {code} — {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className={`${styles.checks} ${styles.full}`}>
+        <label>
+          <input type="checkbox" name="isFeatured" defaultChecked={values.isFeatured} /> Destaque (manchete e faixa &quot;Em destaque&quot;)
+        </label>
+      </div>
       <label className={`${styles.field} ${styles.full}`}>
         <span>Resumo (aparece no Google e na lista; vazio = gerado do texto)</span>
         <textarea name="excerpt" defaultValue={values.excerpt} rows={2} maxLength={320} />

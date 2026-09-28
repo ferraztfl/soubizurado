@@ -71,6 +71,9 @@ export default async function EditPostPage(props: EditPostPageProps) {
             relatedBoardId: post.relatedBoardId,
             hasCover: post.coverAssetId !== null,
             imageCount: post._count.images,
+            format: post.format === "ARTICLE" ? "ARTICLE" : "NEWS",
+            stateCode: post.stateCode,
+            isFeatured: post.isFeatured,
           }}
           {...options}
         />

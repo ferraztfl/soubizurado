@@ -1,7 +1,7 @@
 import { parseArticleBlocks } from "@/modules/blog/domain/blog";
 import { RichText } from "@/shared/ui/rich-text";
 
-import styles from "./blog.module.css";
+import styles from "./portal.module.css";
 
 /**
  * Renders an article from its safe Markdown subset. Text always goes

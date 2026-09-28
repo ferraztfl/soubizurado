@@ -93,6 +93,9 @@ export type PostInput = Readonly<{
   /** "YYYY-MM-DDTHH:mm" in São Paulo time (datetime-local); blank = now when publishing. */
   publishAt: string;
   categoryName: string;
+  format?: string;
+  stateCode?: string;
+  isFeatured?: boolean;
 }>;
 
 export type PostError = "TITLE_REQUIRED" | "SLUG_INVALID" | "BODY_REQUIRED" | "TEXT_TOO_LONG" | "DATE_INVALID" | "CATEGORY_INVALID";
@@ -105,6 +108,9 @@ export type PostPlan = Readonly<{
   status: "DRAFT" | "PUBLISHED";
   publishedAt: Date | null;
   category: Readonly<{ name: string; slug: string }> | null;
+  format: "NEWS" | "ARTICLE";
+  stateCode: string | null;
+  isFeatured: boolean;
 }>;
 
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -145,6 +151,9 @@ export function planPost(input: PostInput, now: Date): { ok: true; post: PostPla
       status,
       publishedAt,
       category: categoryName ? { name: categoryName, slug: slugifyPost(categoryName) } : null,
+      format: input.format === "ARTICLE" ? "ARTICLE" : "NEWS",
+      stateCode: parseStateCode(input.stateCode),
+      isFeatured: input.isFeatured === true,
     },
   };
 }
@@ -153,4 +162,63 @@ export function planPost(input: PostInput, now: Date): { ok: true; post: PostPla
 export function toSaoPauloInput(date: Date | null): string {
   if (!date) return "";
   return new Date(date.getTime() - 3 * 3_600_000).toISOString().slice(0, 16);
+}
+
+export const BRAZIL_STATES = {
+  AC: "Acre",
+  AL: "Alagoas",
+  AM: "Amazonas",
+  AP: "Amapá",
+  BA: "Bahia",
+  CE: "Ceará",
+  DF: "Distrito Federal",
+  ES: "Espírito Santo",
+  GO: "Goiás",
+  MA: "Maranhão",
+  MG: "Minas Gerais",
+  MS: "Mato Grosso do Sul",
+  MT: "Mato Grosso",
+  PA: "Pará",
+  PB: "Paraíba",
+  PE: "Pernambuco",
+  PI: "Piauí",
+  PR: "Paraná",
+  RJ: "Rio de Janeiro",
+  RN: "Rio Grande do Norte",
+  RO: "Rondônia",
+  RR: "Roraima",
+  RS: "Rio Grande do Sul",
+  SC: "Santa Catarina",
+  SE: "Sergipe",
+  SP: "São Paulo",
+  TO: "Tocantins",
+} as const;
+
+export type StateCode = keyof typeof BRAZIL_STATES;
+
+export function parseStateCode(value: string | null | undefined): StateCode | null {
+  const code = (value ?? "").trim().toUpperCase();
+  return Object.hasOwn(BRAZIL_STATES, code) ? (code as StateCode) : null;
+}
+
+export const POST_FORMATS = { NEWS: "Notícia", ARTICLE: "Artigo" } as const;
+
+/** "Há 59 minutos", "Há uma hora", "Há 3 horas", then "24 de setembro" (São Paulo). */
+export function relativePublishedAt(date: Date, now: Date): string {
+  const minutes = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 60_000));
+
+  if (minutes < 1) return "Agora mesmo";
+  if (minutes === 1) return "Há um minuto";
+  if (minutes < 60) return `Há ${minutes} minutos`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours === 1) return "Há uma hora";
+  if (hours < 24) return `Há ${hours} horas`;
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "numeric",
+    month: "long",
+    ...(date.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}),
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
 }

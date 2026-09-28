@@ -80,6 +80,9 @@ export async function savePostAction(formData: FormData): Promise<void> {
       status: readString(formData, "status"),
       publishAt: readString(formData, "publishAt"),
       categoryName: readString(formData, "category"),
+      format: readString(formData, "format"),
+      stateCode: readString(formData, "stateCode"),
+      isFeatured: formData.get("isFeatured") === "on",
     },
     new Date(),
   );
@@ -120,6 +123,9 @@ export async function savePostAction(formData: FormData): Promise<void> {
           categoryId: category?.id ?? null,
           relatedOfferId: offerId,
           relatedBoardId: boardId,
+          format: post.format,
+          stateCode: post.stateCode,
+          isFeatured: post.isFeatured,
           ...(isFilledFile(cover) ? { coverAssetId: await storeImage(transaction, cover, `Capa: ${post.title}`) } : {}),
           ...(formData.get("removeCover") === "on" && !isFilledFile(cover) ? { coverAssetId: null } : {}),
         };

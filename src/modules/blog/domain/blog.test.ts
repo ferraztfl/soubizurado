@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { excerptOf, isPostVisible, parseArticleBlocks, planPost, readingMinutes, toSaoPauloInput, type PostInput } from "./blog";
+import {
+  excerptOf,
+  isPostVisible,
+  parseArticleBlocks,
+  parseStateCode,
+  planPost,
+  readingMinutes,
+  relativePublishedAt,
+  toSaoPauloInput,
+  type PostInput,
+} from "./blog";
 
 describe("parseArticleBlocks", () => {
   it("reads the article subset", () => {
@@ -79,5 +89,25 @@ describe("visibility and dates", () => {
 
   it("round-trips the datetime-local value", () => {
     expect(toSaoPauloInput(new Date("2026-10-01T11:00:00Z"))).toBe("2026-10-01T08:00");
+  });
+});
+
+describe("portal helpers", () => {
+  it("relative time in Portuguese", () => {
+    const at = new Date("2026-09-29T12:00:00Z");
+    expect(relativePublishedAt(new Date("2026-09-29T11:59:30Z"), at)).toBe("Agora mesmo");
+    expect(relativePublishedAt(new Date("2026-09-29T11:01:00Z"), at)).toBe("Há 59 minutos");
+    expect(relativePublishedAt(new Date("2026-09-29T10:30:00Z"), at)).toBe("Há uma hora");
+    expect(relativePublishedAt(new Date("2026-09-29T09:00:00Z"), at)).toBe("Há 3 horas");
+    expect(relativePublishedAt(new Date("2026-09-24T15:00:00Z"), at)).toBe("24 de setembro");
+  });
+
+  it("states and new post fields", () => {
+    expect(parseStateCode("pe")).toBe("PE");
+    expect(parseStateCode("XX")).toBeNull();
+    expect(planPost({ ...base, format: "ARTICLE", stateCode: "pe", isFeatured: true }, now)).toMatchObject({
+      ok: true,
+      post: { format: "ARTICLE", stateCode: "PE", isFeatured: true },
+    });
   });
 });

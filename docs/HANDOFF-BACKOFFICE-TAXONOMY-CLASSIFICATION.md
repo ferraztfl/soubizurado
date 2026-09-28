@@ -765,3 +765,18 @@ Vale sobre §1/§12 onde divergir.
   canônica, JSON-LD NewsArticle com `<` escapado, chamadas para Loja/questões, "Leia também").
   Imagens só de posts no ar em `/api/blog/imagens/[id]` (liberadas no robots). `/blog/sitemap.xml`,
   `/blog/rss.xml`; links "Blog" na home e no topo público.
+
+### 13.23 Blog com cara de portal de notícias (29/09/2026)
+
+- Migration aditiva `20260929040000_blog_portal` (RLS on, CHECKs): categorias ganham grupo (CARREIRA /
+  EXAME / GERAL), ícone, descrição e ordem (editorias semeadas com `ON CONFLICT DO NOTHING`); posts ganham
+  formato (NEWS/ARTICLE), UF e destaque; tabela `newsletter_subscribers` (e-mail minúsculo, consentimento).
+- Layout em `src/app/blog/layout.tsx` + `portal.module.css`: topo com busca, CTA, menu com dropdown de
+  editorias (e menu sanfona no celular), barra de regiões (27 UFs), rodapé com colunas (carreiras, bancas).
+- Home: banner da oferta, ticker "Em destaque", manchete + grade de 4, últimas notícias, artigos em
+  destaque, barra lateral (editorias + newsletter), vitrine da plataforma (sem depoimentos inventados),
+  texto SEO. Páginas: `/blog/noticias`, `/artigos`, `/editoria/[slug]`, `/regiao/[uf]`, `/busca` (noindex).
+- Post: breadcrumb, lead, autor e tempo relativo, compartilhar (WhatsApp, Telegram, X, Facebook,
+  LinkedIn), chamada para questões/oferta, "Leia também" e últimas notícias ao lado.
+- Admin: formato, UF e destaque no formulário do post. Conferido 375px/1366px **sem posts** (banco
+  vazio); manchete/cards com capa ainda não vistos com dados reais.
