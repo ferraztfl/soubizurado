@@ -8,26 +8,45 @@ import { NewQuestionForm, type TaxonomyOption } from "./new-question-form";
 
 export const dynamic = "force-dynamic";
 
+/** Suggestions only (datalist): a new name is still accepted. */
+const MAX_SUGGESTIONS = 2_000;
+
 export default async function NewQuestionPage() {
   await requireAdminUser();
 
-  const disciplines = await getPrismaClient().discipline.findMany({
-    where: { isActive: true, knowledgeAreaId: { not: null } },
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      areas: {
-        where: { isActive: true },
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-        select: {
-          id: true,
-          name: true,
-          topics: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true } },
+  const prisma = getPrismaClient();
+  const [disciplines, boards, organizations, careerPositions] = await Promise.all([
+    prisma.discipline.findMany({
+      where: { isActive: true, knowledgeAreaId: { not: null } },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        areas: {
+          where: { isActive: true },
+          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            topics: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.examiningBoard.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.publicOrganization.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      take: MAX_SUGGESTIONS,
+      select: { name: true },
+    }),
+    prisma.careerPosition.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      take: MAX_SUGGESTIONS,
+      select: { name: true },
+    }),
+  ]);
 
   const taxonomy: TaxonomyOption[] = disciplines.map((discipline) => ({
     id: discipline.id,
@@ -46,15 +65,21 @@ export default async function NewQuestionPage() {
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Banco de questões</p>
-          <h1>Nova questão autoral</h1>
+          <h1>Nova questão</h1>
           <p className={styles.subtitle}>
-            Questões escritas pela equipe. Ela entra em revisão e só vai para os alunos depois de publicada pela
-            política de publicação. Questões de provas oficiais entram pela Central de importação.
+            Questão de uma prova de concurso (com banca, ano, órgão e cargo) ou questão autoral. Ela entra em revisão
+            e só vai para os alunos depois de publicada pela política de publicação.
           </p>
         </div>
       </header>
 
-      <NewQuestionForm taxonomy={taxonomy} />
+      <NewQuestionForm
+        taxonomy={taxonomy}
+        boards={boards}
+        organizations={organizations.map((item) => item.name)}
+        careerPositions={careerPositions.map((item) => item.name)}
+        currentYear={new Date().getFullYear()}
+      />
     </main>
   );
 }

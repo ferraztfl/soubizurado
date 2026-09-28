@@ -662,6 +662,15 @@ export default async function ReviewQuestionPage(
       }),
     );
 
+  // Images placed in the statement ("media:<id>", backoffice uploads)
+  // render there, like on the student page, and are not repeated below.
+  const statementImages: Record<string, string> = Object.fromEntries(
+    questionMedia.map((media) => [`media:${media.id}`, media.url]),
+  );
+  const mediaBelowStatement = questionMedia.filter(
+    (media) => !question.statement.includes(`(media:${media.id})`),
+  );
+
   const errorMessage =
     searchParams.error
       ? errorMessages[
@@ -922,11 +931,12 @@ export default async function ReviewQuestionPage(
             <div className={styles.statement}>
               <RichText
                 text={question.statement}
+                images={statementImages}
               />
             </div>
 
             <QuestionMedia
-              media={questionMedia}
+              media={mediaBelowStatement}
               fallbackAlt="Imagem da questão"
             />
 
