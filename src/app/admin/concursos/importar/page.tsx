@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { isNoticeAiConfigured } from "@/modules/contests/infrastructure/notice-reader";
+import { isLocalNoticeAiAvailable, isNoticeAiConfigured, localNoticeModel } from "@/modules/contests/infrastructure/notice-reader";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -16,10 +16,12 @@ export default async function ImportNoticePage(props: ImportNoticePageProps) {
   await requireAdminUser();
 
   const params = await props.searchParams;
-  const [options, contests] = await Promise.all([
+  const [options, contests, localAvailable] = await Promise.all([
     loadContestFormOptions(),
     getPrismaClient().contest.findMany({ orderBy: { name: "asc" }, take: 500, select: { id: true, name: true } }),
+    isLocalNoticeAiAvailable(),
   ]);
+  const remoteAvailable = isNoticeAiConfigured();
 
   return (
     <main className={styles.page}>
@@ -34,12 +36,18 @@ export default async function ImportNoticePage(props: ImportNoticePageProps) {
         </p>
       </header>
 
-      {!isNoticeAiConfigured() ? (
-        <p className={styles.error}>A IA não está configurada no .env (CLASSIFIER_API_BASE_URL e CLASSIFIER_MODEL).</p>
+      {!localAvailable && !remoteAvailable ? (
+        <p className={styles.error}>Nenhuma IA disponível: abra o Ollama (modelo {localNoticeModel()}) ou configure a IA online no .env.</p>
       ) : null}
       {params.erro ? <p className={styles.error}>{params.erro.slice(0, 300)}</p> : null}
 
-      <NoticeImporter contests={contests} {...options} />
+      <NoticeImporter
+        localAvailable={localAvailable}
+        localModel={localNoticeModel()}
+        remoteAvailable={remoteAvailable}
+        contests={contests}
+        {...options}
+      />
     </main>
   );
 }

@@ -1,0 +1,52 @@
+import { describe, expect, it } from "vitest";
+
+import { parseArticleBlocks } from "@/modules/blog/domain/blog";
+
+import { buildContestSummary, buildNewsDraft, selectNoticeExcerpts } from "./notice-drafts";
+
+const facts = {
+  name: "Concurso TJRS Juiz 2026",
+  organizationName: "Tribunal de Justiça do Rio Grande do Sul",
+  stateCode: "RS",
+  boardName: "FGV",
+  vacancies: "30",
+  hasReserveList: false,
+  salaryMin: "",
+  salaryMax: "30.505,36",
+  educationLevels: ["SUPERIOR" as const],
+  positionLines: "Juiz de Direito Substituto | 30 | 30505,36 | superior",
+  registrationStart: "2026-09-15",
+  registrationEnd: "2026-10-14",
+  examDate: "2026-12-13",
+  feeText: "R$ 305,00",
+  stages: "Prova objetiva seletiva\nProvas escritas",
+  examLocations: "Porto Alegre",
+};
+
+describe("notice drafts", () => {
+  it("keeps the opening and the informative paragraphs of a long notice", () => {
+    const filler = Array.from({ length: 400 }, (_, index) => `Parágrafo genérico número ${index} sobre disposições gerais.`).join("\n\n");
+    const text = `EDITAL Nº 1 — TRIBUNAL\n\n${"x".repeat(4_000)}\n\n${filler}\n\nCRONOGRAMA: inscrições de 15/09/2026 a 14/10/2026, taxa R$ 305,00.\n\n${filler}`;
+    const excerpt = selectNoticeExcerpts(text, 8_000);
+    expect(excerpt.length).toBeLessThanOrEqual(8_000);
+    expect(excerpt.startsWith("EDITAL Nº 1")).toBe(true);
+    expect(excerpt).toContain("CRONOGRAMA: inscrições de 15/09/2026");
+  });
+
+  it("writes the summary only from facts", () => {
+    const summary = buildContestSummary(facts);
+    expect(summary).toContain("organizado pela banca FGV");
+    expect(summary).toContain("30 vagas");
+    expect(summary).toContain("15/09/2026 a 14/10/2026");
+    expect(buildContestSummary({ ...facts, salaryMax: "", vacancies: "", examDate: "" })).not.toMatch(/remuneração|prova/i);
+  });
+
+  it("builds a news draft in the blog format", () => {
+    const draft = buildNewsDraft(facts);
+    expect(draft.title.replace(/ /g, " ")).toBe("Concurso TJRS Juiz 2026: edital publicado com 30 vagas e salário de R$ 30.505,36");
+    const kinds = parseArticleBlocks(draft.body).map((block) => block.type);
+    expect(kinds).toContain("callout");
+    expect(kinds).toContain("table");
+    expect(draft.excerpt).toContain("Inscrições até 14/10/2026");
+  });
+});

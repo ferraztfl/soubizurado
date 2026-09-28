@@ -3,8 +3,15 @@
 import { redirect } from "next/navigation";
 
 import { planPost } from "@/modules/blog/domain/blog";
+import { buildContestSummary, buildNewsDraft } from "@/modules/contests/domain/notice-drafts";
 import { matchBoard, toNoticeSuggestion } from "@/modules/contests/domain/notice-extraction";
-import { extractNoticeFacts, isNoticeAiConfigured, NoticeReadError, readNoticePdf } from "@/modules/contests/infrastructure/notice-reader";
+import {
+  extractNoticeFacts,
+  extractNoticeFactsLocal,
+  isNoticeAiConfigured,
+  NoticeReadError,
+  readNoticePdf,
+} from "@/modules/contests/infrastructure/notice-reader";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { isFilledFile } from "@/modules/question-bank/infrastructure/uploaded-question-image";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
@@ -24,7 +31,7 @@ export type NoticeImportState =
       values: ContestFormValues;
       news: Readonly<{ title: string; excerpt: string; body: string }> | null;
       warnings: readonly string[];
-      usage: Readonly<{ inputTokens: number; outputTokens: number }>;
+      usage: Readonly<{ inputTokens: number; outputTokens: number; provider: "local" | "remote"; seconds: number }>;
     }>;
 
 function readString(formData: FormData, key: string): string {
@@ -48,8 +55,9 @@ function httpsUrl(value: string): string | null {
 export async function importNoticeAction(_previous: NoticeImportState, formData: FormData): Promise<NoticeImportState> {
   await requireAdminUser();
 
-  if (!isNoticeAiConfigured()) {
-    return { status: "error", message: "A IA não está configurada no .env (CLASSIFIER_API_BASE_URL e CLASSIFIER_MODEL)." };
+  const provider = readString(formData, "ai") === "remote" ? "remote" : "local";
+  if (provider === "remote" && !isNoticeAiConfigured()) {
+    return { status: "error", message: "A IA online não está configurada no .env (CLASSIFIER_API_BASE_URL e CLASSIFIER_MODEL)." };
   }
 
   const file = formData.get("pdf");
@@ -66,9 +74,18 @@ export async function importNoticeAction(_previous: NoticeImportState, formData:
     : null;
 
   try {
+    const started = Date.now();
     const text = await readNoticePdf(file);
-    const { extraction, inputTokens, outputTokens } = await extractNoticeFacts(text, officialUrl);
-    const suggestion = toNoticeSuggestion(extraction);
+    const { extraction, inputTokens, outputTokens } =
+      provider === "remote" ? await extractNoticeFacts(text, officialUrl) : await extractNoticeFactsLocal(text, officialUrl);
+    const extracted = toNoticeSuggestion(extraction);
+    // The local model only extracts facts: summary and news come from our template.
+    const suggestion = {
+      ...extracted,
+      summary: extracted.summary || buildContestSummary(extracted),
+      news: extracted.news ?? buildNewsDraft(extracted),
+      warnings: extracted.warnings.filter((warning) => !warning.includes("rascunho da notícia")),
+    };
 
     const boards = await prisma.examiningBoard.findMany({ where: { isActive: true }, select: { id: true, name: true } });
     const board = matchBoard(boards, suggestion.boardName);
@@ -110,7 +127,7 @@ export async function importNoticeAction(_previous: NoticeImportState, formData:
       values,
       news: suggestion.news,
       warnings,
-      usage: { inputTokens, outputTokens },
+      usage: { inputTokens, outputTokens, provider, seconds: Math.round((Date.now() - started) / 1000) },
     };
   } catch (error) {
     if (error instanceof NoticeReadError) return { status: "error", message: error.message };

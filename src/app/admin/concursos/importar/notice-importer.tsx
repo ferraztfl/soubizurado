@@ -10,6 +10,9 @@ import { createNewsDraftAction, importNoticeAction, type NoticeImportState } fro
 type Option = Readonly<{ id: string; name: string }>;
 
 type NoticeImporterProps = Readonly<{
+  localAvailable: boolean;
+  localModel: string;
+  remoteAvailable: boolean;
   contests: readonly Option[];
   organizations: readonly string[];
   boards: readonly Option[];
@@ -23,13 +26,13 @@ function ReadButton() {
   const { pending } = useFormStatus();
   return (
     <button type="submit" className={styles.primary} disabled={pending}>
-      {pending ? "Lendo o edital… (pode levar até 1 minuto)" : "Ler o edital com IA"}
+      {pending ? "Lendo o edital… (com a IA local pode levar alguns minutos — não feche a página)" : "Ler o edital com IA"}
     </button>
   );
 }
 
 /** Upload → AI suggestions → review in the normal contest form → save; plus a news draft. */
-export function NoticeImporter({ contests, organizations, boards, careers, offers }: NoticeImporterProps) {
+export function NoticeImporter({ localAvailable, localModel, remoteAvailable, contests, organizations, boards, careers, offers }: NoticeImporterProps) {
   const [state, action] = useActionState(importNoticeAction, initial);
 
   return (
@@ -56,6 +59,17 @@ export function NoticeImporter({ contests, organizations, boards, careers, offer
               ))}
             </select>
           </label>
+          <label className={styles.field}>
+            <span>Qual IA usar</span>
+            <select name="ai" defaultValue={localAvailable || !remoteAvailable ? "local" : "remote"}>
+              <option value="local">
+                Local — {localModel} (grátis, neste computador){localAvailable ? "" : " — indisponível"}
+              </option>
+              <option value="remote" disabled={!remoteAvailable}>
+                Online (chave do .env){remoteAvailable ? "" : " — não configurada"}
+              </option>
+            </select>
+          </label>
           <div className={styles.full}>
             <ReadButton />
           </div>
@@ -70,7 +84,7 @@ export function NoticeImporter({ contests, organizations, boards, careers, offer
             <p className={styles.hint}>
               Tudo abaixo foi sugerido pela IA a partir do edital. Confira cada campo com o PDF antes de salvar — ao salvar, as regras
               normais do cadastro valem. Marque “Publicado no site” só depois de revisar.
-              {state.usage.inputTokens > 0 ? ` (IA: ${state.usage.inputTokens.toLocaleString("pt-BR")} tokens de entrada)` : ""}
+              {` (IA ${state.usage.provider === "local" ? "local" : "online"}: ${state.usage.seconds} s, ${state.usage.inputTokens.toLocaleString("pt-BR")} tokens lidos.)`}
             </p>
             {state.warnings.length > 0 ? (
               <ul className={styles.error}>
@@ -86,7 +100,7 @@ export function NoticeImporter({ contests, organizations, boards, careers, offer
             <section className={styles.card}>
               <h2>3. Rascunho da notícia</h2>
               <p className={styles.hint}>
-                Texto escrito pela IA com base no edital. Ele vira um <strong>rascunho</strong> no Blog (não é publicado daqui): lá você
+                Texto montado a partir dos dados do edital. Ele vira um <strong>rascunho</strong> no Blog (não é publicado daqui): lá você
                 revisa, põe a capa e publica.
               </p>
               <form key={`news-${state.key}`} action={createNewsDraftAction} className={styles.form}>
