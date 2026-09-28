@@ -1,0 +1,40 @@
+.page {
+  width: min(760px, calc(100% - 32px));
+  margin: 32px auto 48px;
+  color: var(--sb-text);
+  font-size: 15.5px;
+  line-height: 1.7;
+}
+
+.page h1 {
+  margin: 12px 0 4px;
+  color: var(--sb-text-strong);
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1.15;
+}
+
+.page h2 {
+  margin: 28px 0 6px;
+  color: var(--sb-text-strong);
+  font-size: 1.15rem;
+}
+
+.page p,
+.page ul {
+  margin: 0 0 10px;
+}
+
+.page a {
+  color: var(--sb-brand-strong);
+  font-weight: 700;
+}
+
+.back {
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.meta {
+  color: var(--sb-text-muted);
+  font-size: 13.5px;
+}

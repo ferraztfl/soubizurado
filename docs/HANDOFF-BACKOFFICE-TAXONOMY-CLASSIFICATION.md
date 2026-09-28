@@ -714,3 +714,23 @@ Vale sobre §1/§12 onde divergir.
   45 mil por faixa de número público); `robots.txt` bloqueia admin/api/áreas privadas.
 - Home com "Questões grátis" e "Resolver uma questão agora, sem cadastro".
 - Próximo: Fase 2 — Loja + checkout Mercado Pago (ofertas → entitlements via webhook).
+
+### 13.20 Fase 2: Loja + checkout Mercado Pago (28/09/2026)
+
+- Migration aditiva `20260928220000_store_offers_orders` (RLS on, CHECKs): `offers`, `offer_grants`
+  (QUESTION_BANK N dias ou sem prazo; COURSE na Fase 3), `orders` (PENDING/PAID/FAILED/CANCELLED/REFUNDED).
+- Mercado Pago Checkout Pro via REST (`store/infrastructure/mercado-pago`): preferência com
+  `external_reference` = id do pedido; o comprador paga na página do MP (sem dados de cartão aqui).
+  `processMercadoPagoPayment(paymentId)` sempre relê o pagamento na API, confere valor/moeda com o pedido,
+  move PENDING→PAID uma vez (update guardado) e cria o entitlement (Premium soma ao tempo ativo); estorno
+  revoga. Testado com mocks (idempotência, valor adulterado, estorno).
+- Webhook `/api/webhooks/mercadopago`: assinatura `x-signature` verificada (manifest oficial
+  `id:{data.id};request-id:{x-request-id};ts:{ts};`, HMAC-SHA256, tempo constante); 401 sem assinatura.
+  Página `/loja/retorno` também processa (funciona em localhost, sem webhook público).
+- Vitrine pública `/loja` e `/loja/[slug]`: logado compra em um clique; visitante cria a conta no checkout
+  (signUp) e segue para o pagamento. Aceite obrigatório de `/termos` e `/privacidade` (versões iniciais —
+  revisar com advogado). `/app/compras` (pedidos + validade do Premium). Admin `/admin/loja`: ofertas,
+  pedidos, faturamento, "Conferir pagamento" por número do MP.
+- Configuração do usuário (.env, credenciais de TESTE primeiro): `MERCADOPAGO_ACCESS_TOKEN`,
+  `MERCADOPAGO_WEBHOOK_SECRET` (Suas integrações > Webhooks), `NEXT_PUBLIC_SITE_URL`. O webhook e o retorno
+  automático só funcionam com URL pública HTTPS.

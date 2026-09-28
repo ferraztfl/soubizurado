@@ -49,7 +49,8 @@ const navigationGroups: readonly NavigationGroup[] = [
     label: "Conta",
     items: [
       { label: "Comunidade", href: null },
-      { label: "Loja", href: null },
+      { label: "Loja", href: "/loja" },
+      { label: "Minhas compras", href: "/app/compras" },
       { label: "Perfil", href: "/app/perfil" },
       { label: "Configurações", href: "/app/configuracoes" },
     ],
@@ -179,7 +180,7 @@ export function StudentSidebar({
           </p>
 
           <span className={styles.planFooter}>
-            {plan.premium ? "Obrigado por apoiar o SouBizurado" : "Premium em breve na Loja"}
+            {plan.premium ? "Obrigado por apoiar o SouBizurado" : "Conheça o Premium na Loja"}
           </span>
         </section>
 
