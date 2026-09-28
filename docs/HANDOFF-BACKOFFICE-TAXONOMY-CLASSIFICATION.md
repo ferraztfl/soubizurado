@@ -670,3 +670,11 @@ Vale sobre §1/§12 onde divergir.
 - Sorteio escalável: `drawPublishedIds` (contagem + janela aleatória, sem carregar todos os ids).
   Pendente: os simulados ainda usam `listPublishedIds` (carrega todos os ids) — trocar para
   `drawPublishedIds` antes de milhões de questões.
+
+### 13.16 Missões (28/09/2026)
+
+- `/app/missoes`: diárias (meta do Perfil; acertar 60% da meta; revisões em dia) e semanais (5 dias de
+  estudo; 70% de acerto com ≥30 respostas; 3 sessões do Estudar; 1 simulado). Calculadas na hora a partir
+  das respostas, fila de revisão, sessões e simulados (`missions.ts` + `mission-progress.ts`, fuso de
+  São Paulo, semana começa na segunda) — sem tabela nova, nada para "resgatar".
+- Simulados agora sorteiam com `drawPublishedIds` (não carregam mais todos os ids).

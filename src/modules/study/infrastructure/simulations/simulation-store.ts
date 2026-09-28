@@ -1,7 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { PublicQuestionReadFilters } from "@/modules/question-bank/application/ports/public-question-read-repository";
 import { PrismaPublicQuestionReadRepository } from "@/modules/question-bank/infrastructure/repositories/prisma-public-question-read-repository";
-import { drawQuestionIds, isSimulationExpired } from "@/modules/study/domain/simulation";
+import { isSimulationExpired } from "@/modules/study/domain/simulation";
 import { createSubmitStudyQuestionAnswerUseCase } from "@/modules/study/infrastructure/composition/study-application";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -36,8 +36,8 @@ export async function createSimulation(
     timeLimitMinutes: number | null;
   }>,
 ): Promise<{ id: string; drawn: number } | null> {
-  const ids = await new PrismaPublicQuestionReadRepository().listPublishedIds(input.filters);
-  const drawn = drawQuestionIds(ids, input.questionCount);
+  // Drawn in the database: never loads every matching id (millions of questions).
+  const drawn = await new PrismaPublicQuestionReadRepository().drawPublishedIds(input.filters, input.questionCount);
 
   if (drawn.length === 0) {
     return null;
