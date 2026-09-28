@@ -255,8 +255,8 @@ export function salaryLabel(minCents: number | null, maxCents: number | null): s
 
 /** Short badge text for a contest without a logo: acronym in parentheses or the initials. */
 export function organizationBadge(organizationName: string): string {
-  const acronym = /\(([A-ZÀ-Ú0-9-]{2,10})\)/.exec(organizationName)?.[1];
-  if (acronym) return acronym;
+  const acronym = /\(([A-Za-zÀ-ú0-9-]{2,10})\)/.exec(organizationName)?.[1];
+  if (acronym) return acronym.toUpperCase();
   const firstWord = organizationName.trim().split(/\s+/)[0] ?? "";
   if (/^[A-ZÀ-Ú0-9-]{2,8}$/.test(firstWord)) return firstWord;
   return organizationName

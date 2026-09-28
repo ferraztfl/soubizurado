@@ -853,3 +853,15 @@ Vale sobre §1/§12 onde divergir.
   (migration aditiva `20260929100000_offer_banners`: `offers.banner_asset_id`; envio no admin da Loja,
   convertido para WebP; servido só para ofertas ativas em `/api/loja/banners/[id]`). Sem banner, o slide é
   montado com nome, chamada e preço. Não conferido com dados (nenhuma oferta ativa).
+
+### 13.29 Primeira carga editorial (29/09/2026)
+
+- `npm run editorial:seed -- <json> [--apply] [--publish]` (`scripts/seed-editorial.ts`): carrega concursos e posts de
+  um JSON revisado em `data-private/editorial/` (fontes anotadas por item), casando banca/órgão/editoria com o
+  catálogo (nada é criado nos catálogos), pula slugs existentes e grava log de reversão em `data-private/logs/`.
+- Aplicado com `--publish` (autorizado pelo usuário): 11 concursos (PM AL, TJRS Juiz, Sesa AP, PMPE, PCPE, CBMPE,
+  Polícia Penal PE, Bacen, Receita, CGU, ANPD) e 8 posts (7 notícias + 1 artigo). Log:
+  `data-private/logs/editorial-seed-2026-09-28T18-59-27-263Z.json`. Salários só onde a fonte era oficial ou
+  consistente; demais "a definir". Nenhum concurso ficou ligado a órgão do banco de questões (nomes diferentes).
+- Ajustes: post mostra "Ver a página do concurso"; "atualizado em" só para edições reais; selo do concurso usa a
+  sigla entre parênteses (ex.: BACEN).

@@ -138,6 +138,7 @@ export async function loadLivePost(slug: string, now: Date) {
       stateCode: true,
       publishedAt: true,
       updatedAt: true,
+      createdAt: true,
       coverAssetId: true,
       categoryId: true,
       category: { select: { name: true, slug: true } },
@@ -145,6 +146,7 @@ export async function loadLivePost(slug: string, now: Date) {
       images: { orderBy: { position: "asc" }, select: { position: true, mediaAssetId: true } },
       relatedOffer: { select: { slug: true, name: true, headline: true, priceCents: true, isActive: true } },
       relatedBoard: { select: { id: true, name: true } },
+      contest: { select: { slug: true, name: true, isPublished: true } },
     },
   });
 

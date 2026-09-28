@@ -94,7 +94,9 @@ export default async function PostPage({ params }: PostPageProps) {
   ]).replace(/</g, "\\u003c");
 
   const published = post.publishedAt ?? post.updatedAt;
-  const edited = post.updatedAt.getTime() - published.getTime() > 3_600_000;
+  // "Atualizado" only for real edits after the post was written and published.
+  const edited = post.updatedAt.getTime() - Math.max(published.getTime(), post.createdAt.getTime()) > 3_600_000;
+  const contest = post.contest?.isPublished ? post.contest : null;
   const author = post.author?.displayName ?? "Redação Sou Bizurado";
   const initials = author
     .split(/\s+/)
@@ -162,6 +164,11 @@ export default async function PostPage({ params }: PostPageProps) {
           <aside className={styles.cta} aria-label="Estude para este concurso">
             <strong>{offer || post.relatedBoard ? "Estude para este concurso no Sou Bizurado" : "Leu a notícia? Agora é treinar."}</strong>
             <div>
+              {contest ? (
+                <Link href={`/concursos/${contest.slug}`} className={styles.ctaSecondary}>
+                  Ver a página do {contest.name}
+                </Link>
+              ) : null}
               <Link href={post.relatedBoard ? `/questoes?board=${post.relatedBoard.id}` : "/questoes"} className={styles.ctaSecondary}>
                 {post.relatedBoard ? `Resolver questões da banca ${post.relatedBoard.name} grátis` : "Resolver questões grátis"}
               </Link>

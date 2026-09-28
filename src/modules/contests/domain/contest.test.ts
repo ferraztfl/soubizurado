@@ -82,6 +82,7 @@ describe("labels", () => {
 
   it("builds a badge from the organization", () => {
     expect(organizationBadge("Polícia Militar de Pernambuco (PMPE)")).toBe("PMPE");
+    expect(organizationBadge("Banco Central do Brasil (Bacen)")).toBe("BACEN");
     expect(organizationBadge("INSS Instituto Nacional do Seguro Social")).toBe("INSS");
     expect(organizationBadge("Prefeitura de Curitiba")).toBe("PC");
   });
