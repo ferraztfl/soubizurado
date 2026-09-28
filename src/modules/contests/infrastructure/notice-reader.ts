@@ -125,6 +125,14 @@ export async function extractNoticeFacts(noticeText: string, sourceUrl: string |
   }
 
   // The body may echo request data; keep only the status.
+  if (response.status === 402 || response.status === 429) {
+    throw new NoticeReadError(
+      `A IA recusou por cota ou créditos esgotados (HTTP ${response.status}). Confira o faturamento e os limites da chave no painel do provedor (Google AI Studio) e tente de novo.`,
+    );
+  }
+  if (response.status === 401 || response.status === 403) {
+    throw new NoticeReadError(`A chave da IA foi recusada (HTTP ${response.status}). Confira CLASSIFIER_API_KEY no .env.`);
+  }
   if (!response.ok) throw new NoticeReadError(`A IA respondeu com erro HTTP ${response.status}.`);
 
   const completion = completionSchema.safeParse(await response.json());
