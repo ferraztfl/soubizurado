@@ -19,15 +19,18 @@ export default async function EditOfferPage(props: EditOfferPageProps) {
 
   const { offerId } = await props.params;
   const params = await props.searchParams;
-  const offer = /^[0-9a-f-]{36}$/i.test(offerId)
-    ? await getPrismaClient().offer.findUnique({ where: { id: offerId }, include: { grants: true } })
-    : null;
+  const prisma = getPrismaClient();
+  const [offer, courses] = await Promise.all([
+    /^[0-9a-f-]{36}$/i.test(offerId) ? prisma.offer.findUnique({ where: { id: offerId }, include: { grants: true } }) : null,
+    prisma.course.findMany({ orderBy: [{ sortOrder: "asc" }, { title: "asc" }], select: { id: true, title: true } }),
+  ]);
 
   if (!offer) {
     notFound();
   }
 
   const premium = offer.grants.find((grant) => grant.kind === "QUESTION_BANK");
+  const courseGrants = offer.grants.filter((grant) => grant.kind === "COURSE" && grant.courseId);
 
   return (
     <main className={styles.page}>
@@ -56,7 +59,10 @@ export default async function EditOfferPage(props: EditOfferPageProps) {
             isActive: offer.isActive,
             isFeatured: offer.isFeatured,
             sortOrder: offer.sortOrder,
+            courseIds: courseGrants.map((grant) => grant.courseId!),
+            courseDays: courseGrants[0]?.durationDays ?? null,
           }}
+          courses={courses}
         />
       </section>
     </main>

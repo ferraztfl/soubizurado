@@ -41,6 +41,8 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
     price: readString(formData, "price"),
     compareAt: readString(formData, "compareAt"),
     premiumDays: readString(formData, "premiumDays"),
+    courseIds: formData.getAll("courseIds").filter((value): value is string => typeof value === "string" && UUID.test(value)),
+    courseDays: readString(formData, "courseDays"),
   });
 
   if (!result.ok) {
@@ -50,6 +52,11 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
   const prisma = getPrismaClient();
   const { offer } = result;
   const taken = await prisma.offer.findUnique({ where: { slug: offer.slug }, select: { id: true } });
+  const courseIds = offer.grants.flatMap((grant) => (grant.kind === "COURSE" ? [grant.courseId] : []));
+
+  if (courseIds.length > 0 && (await prisma.course.count({ where: { id: { in: courseIds } } })) !== courseIds.length) {
+    redirect(`${back}?error=${encodeURIComponent("Curso inválido na oferta.")}`);
+  }
 
   if (taken && taken.id !== offerId) {
     redirect(`${back}?error=${encodeURIComponent(errorMessages.SLUG_TAKEN)}`);
@@ -75,7 +82,12 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
 
     await transaction.offerGrant.deleteMany({ where: { offerId: row.id } });
     await transaction.offerGrant.createMany({
-      data: offer.grants.map((grant) => ({ offerId: row.id, kind: grant.kind, durationDays: grant.durationDays })),
+      data: offer.grants.map((grant) => ({
+        offerId: row.id,
+        kind: grant.kind,
+        courseId: grant.kind === "COURSE" ? grant.courseId : null,
+        durationDays: grant.durationDays,
+      })),
     });
 
     return row;

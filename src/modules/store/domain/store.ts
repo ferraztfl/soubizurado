@@ -21,7 +21,9 @@ export function parseBRL(value: string): number | null {
   return Number.isSafeInteger(cents) && cents >= 0 ? cents : null;
 }
 
-export type OfferGrantInput = Readonly<{ kind: "QUESTION_BANK"; durationDays: number | null }>;
+export type OfferGrantInput =
+  | Readonly<{ kind: "QUESTION_BANK"; durationDays: number | null }>
+  | Readonly<{ kind: "COURSE"; courseId: string; durationDays: number | null }>;
 
 export type OfferInput = Readonly<{
   name: string;
@@ -31,6 +33,10 @@ export type OfferInput = Readonly<{
   price: string;
   compareAt: string;
   premiumDays: string;
+  /** Courses the offer gives access to (member area). */
+  courseIds?: readonly string[];
+  /** Course access in days; "0" or blank = no end date. */
+  courseDays?: string;
 }>;
 
 export type OfferError =
@@ -81,10 +87,29 @@ export function planOffer(input: OfferInput): { ok: true; offer: OfferPlan } | {
     return { ok: false, error: "COMPARE_AT_INVALID" };
   }
 
-  // "0" = no end date; blank = the offer grants no premium (courses come later).
-  if (premiumDays === "") return { ok: false, error: "GRANT_REQUIRED" };
-  const days = Number(premiumDays);
-  if (!Number.isSafeInteger(days) || days < 0 || days > 3660) return { ok: false, error: "GRANT_REQUIRED" };
+  // Days: "0" = no end date. Premium blank = the offer grants no premium
+  // (a course-only offer); at least one grant is required.
+  const parseDays = (value: string) => {
+    const days = Number(value);
+    return Number.isSafeInteger(days) && days >= 0 && days <= 3660 ? (days === 0 ? null : days) : undefined;
+  };
+
+  const grants: OfferGrantInput[] = [];
+
+  if (premiumDays !== "") {
+    const days = parseDays(premiumDays);
+    if (days === undefined) return { ok: false, error: "GRANT_REQUIRED" };
+    grants.push({ kind: "QUESTION_BANK", durationDays: days });
+  }
+
+  const courseIds = [...new Set(input.courseIds ?? [])];
+  if (courseIds.length > 0) {
+    const days = parseDays((input.courseDays ?? "").trim() || "0");
+    if (days === undefined) return { ok: false, error: "GRANT_REQUIRED" };
+    grants.push(...courseIds.map((courseId) => ({ kind: "COURSE" as const, courseId, durationDays: days })));
+  }
+
+  if (grants.length === 0) return { ok: false, error: "GRANT_REQUIRED" };
 
   return {
     ok: true,
@@ -95,7 +120,7 @@ export function planOffer(input: OfferInput): { ok: true; offer: OfferPlan } | {
       description,
       priceCents,
       compareAtCents,
-      grants: [{ kind: "QUESTION_BANK", durationDays: days === 0 ? null : days }],
+      grants,
     },
   };
 }

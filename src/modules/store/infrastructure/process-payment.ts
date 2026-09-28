@@ -78,7 +78,24 @@ export async function processMercadoPagoPayment(paymentId: string): Promise<Proc
       }
 
       for (const grant of order.offer.grants) {
-        if (grant.kind !== "QUESTION_BANK") continue; // courses: Phase 3
+        if (grant.kind === "COURSE" && grant.courseId) {
+          // Course access starts at payment (no stacking).
+          const period = grantPeriod(grant.durationDays, paidAt, null);
+          await transaction.entitlement.create({
+            data: {
+              profileId: order.profileId,
+              kind: "COURSE",
+              courseId: grant.courseId,
+              startsAt: period.startsAt,
+              endsAt: period.endsAt,
+              source: "ORDER",
+              sourceId: order.id,
+            },
+          });
+          continue;
+        }
+
+        if (grant.kind !== "QUESTION_BANK") continue;
 
         const period = grantPeriod(grant.durationDays, paidAt, await currentPremiumEnd(transaction, order.profileId, now));
         await transaction.entitlement.create({

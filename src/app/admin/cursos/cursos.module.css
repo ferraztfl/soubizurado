@@ -1,0 +1,107 @@
+.modules {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.module {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--sb-border);
+  border-radius: 14px;
+}
+
+.moduleHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline input,
+.inline select {
+  min-width: 0;
+  flex: 1 1 200px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 9px;
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.inline select {
+  flex: 0 1 140px;
+}
+
+.inline button,
+.moves button,
+.danger {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 9px;
+  background: var(--sb-surface);
+  color: var(--sb-text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.danger {
+  border-color: #f1c4bf;
+  color: var(--sb-brand-strong);
+}
+
+.moves {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.moves button {
+  width: 36px;
+  padding: 0;
+}
+
+.lessons {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 12px;
+  list-style: none;
+}
+
+.lessons li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--sb-border-strong);
+  background: var(--sb-surface-muted, rgba(120, 120, 120, 0.05));
+  border-radius: 8px;
+}
+
+.lessons a {
+  color: var(--sb-text-strong);
+  font-weight: 750;
+}
+
+.meta {
+  flex: 1;
+  color: var(--sb-text-muted);
+  font-size: 0.82rem;
+}

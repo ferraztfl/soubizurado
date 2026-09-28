@@ -72,6 +72,10 @@ const navigationGroups: readonly NavigationGroup[] = [
         href: "/admin/loja",
       },
       {
+        label: "Cursos",
+        href: "/admin/cursos",
+      },
+      {
         label: "Taxonomia",
         href: "/admin/taxonomia",
       },

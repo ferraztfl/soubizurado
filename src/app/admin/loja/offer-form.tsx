@@ -15,12 +15,16 @@ export type OfferFormValues = Readonly<{
   isActive: boolean;
   isFeatured: boolean;
   sortOrder: number;
+  courseIds: readonly string[];
+  courseDays: number | null;
 }>;
+
+export type OfferFormCourse = Readonly<{ id: string; title: string }>;
 
 const cents = (value: number | null) => (value === null ? "" : formatBRL(value).replace(/R\$\s?/, ""));
 
 /** Server-rendered offer form (create and edit). */
-export function OfferForm({ values }: Readonly<{ values: OfferFormValues }>) {
+export function OfferForm({ values, courses }: Readonly<{ values: OfferFormValues; courses: readonly OfferFormCourse[] }>) {
   const premiumDays = values.premiumDays === "none" ? "" : values.premiumDays === null ? "0" : String(values.premiumDays);
 
   return (
@@ -52,9 +56,25 @@ export function OfferForm({ values }: Readonly<{ values: OfferFormValues }>) {
         <input name="compareAt" defaultValue={cents(values.compareAtCents)} inputMode="decimal" placeholder="79,90" />
       </label>
       <label className={styles.field}>
-        <span>Dias de Premium (0 = sem prazo)</span>
-        <input name="premiumDays" type="number" min={0} max={3660} defaultValue={premiumDays} required placeholder="180" />
+        <span>Dias de Premium (0 = sem prazo; vazio = sem Premium)</span>
+        <input name="premiumDays" type="number" min={0} max={3660} defaultValue={premiumDays} placeholder="180" />
       </label>
+      <fieldset className={`${styles.full} ${styles.courses}`}>
+        <legend>Cursos incluídos (área de membros)</legend>
+        {courses.length === 0 ? (
+          <p className={styles.hint}>Nenhum curso criado ainda — crie em Cursos.</p>
+        ) : (
+          courses.map((course) => (
+            <label key={course.id}>
+              <input type="checkbox" name="courseIds" value={course.id} defaultChecked={values.courseIds.includes(course.id)} /> {course.title}
+            </label>
+          ))
+        )}
+        <label className={styles.field}>
+          <span>Acesso aos cursos em dias (0 ou vazio = sem prazo)</span>
+          <input name="courseDays" type="number" min={0} max={3660} defaultValue={values.courseDays ?? ""} placeholder="365" />
+        </label>
+      </fieldset>
       <div className={styles.checks}>
         <label>
           <input type="checkbox" name="isActive" defaultChecked={values.isActive} /> À venda (aparece na Loja)
@@ -68,8 +88,7 @@ export function OfferForm({ values }: Readonly<{ values: OfferFormValues }>) {
         <textarea name="description" defaultValue={values.description} rows={8} maxLength={20000} />
       </label>
       <p className={`${styles.hint} ${styles.full}`}>
-        Cursos e materiais entram nas ofertas na Fase 3 (área de membros). Mudar a oferta não altera o acesso de quem já
-        comprou.
+        A oferta precisa dar Premium, cursos ou os dois. Mudar a oferta não altera o acesso de quem já comprou.
       </p>
       <div className={styles.full}>
         <button type="submit" className={styles.primary}>

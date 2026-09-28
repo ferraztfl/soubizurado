@@ -78,3 +78,22 @@ describe("orderStatusFromPayment", () => {
     expect(orderStatusFromPayment("charged_back")).toBe("REFUNDED");
   });
 });
+
+describe("planOffer with courses", () => {
+  it("course-only offers and combos", () => {
+    expect(planOffer({ ...base, premiumDays: "", courseIds: ["c1", "c1"], courseDays: "365" })).toMatchObject({
+      ok: true,
+      offer: { grants: [{ kind: "COURSE", courseId: "c1", durationDays: 365 }] },
+    });
+    expect(planOffer({ ...base, courseIds: ["c1"], courseDays: "" })).toMatchObject({
+      ok: true,
+      offer: {
+        grants: [
+          { kind: "QUESTION_BANK", durationDays: 180 },
+          { kind: "COURSE", courseId: "c1", durationDays: null },
+        ],
+      },
+    });
+    expect(planOffer({ ...base, premiumDays: "", courseIds: [] })).toEqual({ ok: false, error: "GRANT_REQUIRED" });
+  });
+});

@@ -30,7 +30,7 @@ export default async function AdminStorePage(props: StorePageProps) {
 
   const params = await props.searchParams;
   const prisma = getPrismaClient();
-  const [offers, orders, paid] = await Promise.all([
+  const [offers, orders, paid, courses] = await Promise.all([
     prisma.offer.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       select: {
@@ -40,7 +40,7 @@ export default async function AdminStorePage(props: StorePageProps) {
         priceCents: true,
         isActive: true,
         isFeatured: true,
-        grants: { select: { durationDays: true } },
+        grants: { select: { kind: true, durationDays: true } },
         _count: { select: { orders: { where: { status: "PAID" } } } },
       },
     }),
@@ -58,6 +58,7 @@ export default async function AdminStorePage(props: StorePageProps) {
       },
     }),
     prisma.order.aggregate({ where: { status: "PAID" }, _sum: { amountCents: true }, _count: { _all: true } }),
+    prisma.course.findMany({ orderBy: [{ sortOrder: "asc" }, { title: "asc" }], select: { id: true, title: true } }),
   ]);
 
   return (
@@ -102,13 +103,16 @@ export default async function AdminStorePage(props: StorePageProps) {
         ) : (
           <ul className={styles.list}>
             {offers.map((offer) => {
-              const days = offer.grants[0]?.durationDays;
+              const premium = offer.grants.find((grant) => grant.kind === "QUESTION_BANK");
+              const days = premium?.durationDays;
+              const courseCount = offer.grants.filter((grant) => grant.kind === "COURSE").length;
               return (
                 <li key={offer.id}>
                   <div>
                     <strong>{offer.name}</strong>
                     <span>
-                      {formatBRL(offer.priceCents)} · Premium {days === null || days === undefined ? "sem prazo" : `${days} dias`} ·{" "}
+                      {formatBRL(offer.priceCents)} · {premium ? `Premium ${days === null || days === undefined ? "sem prazo" : `${days} dias`}` : "sem Premium"}
+                      {courseCount > 0 ? ` + ${courseCount} curso(s)` : ""} ·{" "}
                       {offer._count.orders} vendidas · /loja/{offer.slug}
                     </span>
                   </div>
@@ -139,7 +143,10 @@ export default async function AdminStorePage(props: StorePageProps) {
             isActive: false,
             isFeatured: false,
             sortOrder: 0,
+            courseIds: [],
+            courseDays: null,
           }}
+          courses={courses}
         />
       </section>
 
