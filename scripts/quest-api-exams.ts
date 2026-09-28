@@ -44,7 +44,7 @@ type Exam = {
   alternativeType: string | null;
   totalQuestions: number;
   cost: number;
-  status: "planned" | "already-imported" | "already-in-bank" | "too-large" | "over-budget";
+  status: "planned" | "already-imported" | "already-in-bank" | "too-large" | "same-contest" | "over-budget";
   match?: string;
 };
 
@@ -236,20 +236,27 @@ async function plan(): Promise<void> {
     }
   }
 
-  // One exam per contest (organization + year) first — exams of the same
-  // contest repeat the common part, paid again and then dropped as
-  // duplicates — newest first; extra exams of a contest only if credits remain.
+  // One exam per contest (organization + year), newest first. Positions of
+  // one contest repeat the common part, and Quest stores a separate copy
+  // per exam (`provas` never lists two), so the repeats are only found as
+  // duplicates after being paid for. Extra positions — also of contests we
+  // already have — only with --extras.
   let budget = before - spent.credits - reserve;
   const contest = (exam: Exam) => `${simplify(exam.organization)}|${exam.year}`;
-  const firstOfContest = new Set<string>();
+  const extras = process.argv.includes("--extras");
+  const firstOfContest = new Set<string>(
+    exams.filter((exam) => exam.status === "already-imported" || exam.status === "already-in-bank").map(contest),
+  );
   const candidates = exams
     .filter((exam) => exam.status === "planned")
     .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || b.totalQuestions - a.totalQuestions)
     .map((exam) => {
       const first = !firstOfContest.has(contest(exam));
       firstOfContest.add(contest(exam));
+      if (!first && !extras) exam.status = "same-contest";
       return { exam, first };
     })
+    .filter(({ exam }) => exam.status === "planned")
     .sort((a, b) => Number(b.first) - Number(a.first));
 
   // --somente=id,id: a reviewed selection replaces the automatic order.
@@ -272,7 +279,7 @@ async function plan(): Promise<void> {
   const planned = exams.filter((exam) => exam.status === "planned");
   const count = (status: Exam["status"]) => exams.filter((exam) => exam.status === status).length;
   console.log(`\nProvas listadas: ${exams.length} (custo da listagem: ${spent.credits} créditos)`);
-  console.log(`  já importadas da Quest: ${count("already-imported")} · já no banco (PDF oficial): ${count("already-in-bank")} · acima de ${MAX_QUESTIONS} questões ou vazias: ${count("too-large")} · fora do orçamento: ${count("over-budget")}`);
+  console.log(`  já importadas da Quest: ${count("already-imported")} · já no banco (PDF oficial): ${count("already-in-bank")} · acima de ${MAX_QUESTIONS} questões ou vazias: ${count("too-large")} · outro cargo de concurso que já temos (use --extras): ${count("same-contest")} · fora do orçamento: ${count("over-budget")}`);
   console.log(`  planejadas: ${planned.length} provas, ${planned.reduce((sum, exam) => sum + exam.totalQuestions, 0)} questões, ${planned.reduce((sum, exam) => sum + exam.cost + 1, 0)} créditos`);
 
   for (const exam of planned) {

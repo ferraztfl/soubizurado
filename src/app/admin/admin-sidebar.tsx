@@ -48,7 +48,7 @@ const navigationGroups: readonly NavigationGroup[] = [
       },
       {
         label: "Todas as questões",
-        href: null,
+        href: "/admin/questoes",
       },
       {
         label: "Nova questão",
@@ -92,8 +92,9 @@ function isActivePath(
   pathname: string,
   href: string,
 ): boolean {
-  if (href === "/admin") {
-    return pathname === "/admin";
+  // Prefixes of other sections (revisão, reportes live under /admin/questoes).
+  if (href === "/admin" || href === "/admin/questoes") {
+    return pathname === href;
   }
 
   return (
