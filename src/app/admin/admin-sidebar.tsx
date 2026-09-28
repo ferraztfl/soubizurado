@@ -73,7 +73,7 @@ const navigationGroups: readonly NavigationGroup[] = [
       },
       {
         label: "Mídias",
-        href: null,
+        href: "/admin/midias",
       },
     ],
   },
