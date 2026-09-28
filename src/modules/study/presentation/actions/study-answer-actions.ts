@@ -9,6 +9,7 @@ import {
   createSubmitStudyQuestionAnswerUseCase,
 } from "@/modules/study/infrastructure/composition/study-application";
 import { consumeVisitorAnswer } from "@/modules/study/infrastructure/visitors/visitor-usage";
+import { isQuestionInAccessibleCourse } from "@/modules/courses/infrastructure/course-access";
 import { limitReachedMessage } from "@/modules/study/domain/access";
 import { loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
 import {
@@ -120,7 +121,8 @@ export async function submitStudyAnswerAction(
     // Freemium: checked before grading, so the answer key is never revealed past the limit.
     const allowance = await loadAnswerAllowance(profile.id);
 
-    if (!allowance.canAnswer) {
+    // Questions of a course lesson the student can open are part of what they bought.
+    if (!allowance.canAnswer && !(await isQuestionInAccessibleCourse(profile.id, input.questionId))) {
       return {
         ok: false,
         code: ERROR_CODES.LIMIT_REACHED,

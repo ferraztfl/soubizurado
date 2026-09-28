@@ -734,3 +734,18 @@ Vale sobre §1/§12 onde divergir.
 - Configuração do usuário (.env, credenciais de TESTE primeiro): `MERCADOPAGO_ACCESS_TOKEN`,
   `MERCADOPAGO_WEBHOOK_SECRET` (Suas integrações > Webhooks), `NEXT_PUBLIC_SITE_URL`. O webhook e o retorno
   automático só funcionam com URL pública HTTPS.
+
+### 13.21 Fase 3: área de membros (29/09/2026)
+
+- Migration aditiva `20260929000000_courses_member_area` (RLS on, CHECKs): `courses`, `course_modules`,
+  `course_lessons` (TEXT/PDF/VIDEO/QUESTIONS, aula grátis de amostra), `course_lesson_questions`,
+  `course_lesson_progress`; FKs de `offer_grants.course_id` e `entitlements.course_id` para `courses`.
+- Ofertas podem incluir cursos (com prazo próprio) e/ou Premium; pedido pago cria entitlement COURSE.
+- Admin `/admin/cursos`: cursos, módulos (reordenar, excluir só vazios), aulas (texto markdown, PDF até 50 MB
+  validado por `%PDF-` no bucket privado, vídeo por link de incorporação de Panda/Bunny/Vimeo/YouTube —
+  lista permitida, verificada ao salvar e ao exibir —, lista de questões por códigos publicados).
+- Aluno: `/app/cursos` (meus cursos + progresso + outros à venda), `/app/cursos/[slug]` (módulos, cadeados,
+  continuar), `/app/cursos/[slug]/[lessonId]` (vídeo, PDF embutido + baixar, texto, questões com o painel de
+  resposta, concluir e ir para a próxima). PDF só por `/api/cursos/aulas/[id]/pdf` (confere acesso; 404
+  igual para inexistente e sem acesso; `no-store`). Questões de aula com acesso não consomem o limite diário.
+- Pendente: marca d'água com e-mail do comprador nos PDFs; escolher o serviço de vídeo; capa do curso.
