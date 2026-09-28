@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
@@ -58,7 +59,7 @@ export function isBootstrapAdminCandidate(
   );
 }
 
-export async function requireAdminUser():
+async function loadAdminUser():
   Promise<RequiredAdminUser> {
   const supabase =
     await createSupabaseServerClient();
@@ -179,3 +180,9 @@ export async function requireAdminUser():
     email,
   };
 }
+
+/**
+ * Server-side admin check. Memoized per request, so the admin layout and the
+ * page share one check instead of repeating it (and its database reads).
+ */
+export const requireAdminUser = cache(loadAdminUser);
