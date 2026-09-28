@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 
 import type {
@@ -15,7 +17,7 @@ import {
 import { ApplicationError } from "@/shared/errors/application-error";
 import { ERROR_CODES } from "@/shared/errors/error-code";
 import { PageHeader } from "@/shared/ui/page-header";
-import { hasVisibleContent } from "@/shared/ui/inline-markdown";
+import { hasVisibleContent, removeMarkdownImages, stripInlineMarkdown } from "@/shared/ui/inline-markdown";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 import { RichText } from "@/shared/ui/rich-text";
 
@@ -31,28 +33,44 @@ type QuestionDetailPageProps = Readonly<{
   }>;
 }>;
 
+/** One load per request, shared by the metadata and the page. */
+const loadPublishedQuestion = cache(async (questionId: string): Promise<PublicQuestionDto | null> => {
+  try {
+    return await createGetPublishedQuestionByIdUseCase().execute(questionId);
+  } catch (error) {
+    if (error instanceof ApplicationError && error.code === ERROR_CODES.NOT_FOUND) {
+      return null;
+    }
+    throw error;
+  }
+});
+
+export async function generateMetadata({ params }: QuestionDetailPageProps): Promise<Metadata> {
+  const question = await loadPublishedQuestion((await params).questionId);
+
+  if (!question) {
+    return { title: "Questão não encontrada", robots: { index: false } };
+  }
+
+  const board = question.examination?.board?.acronym ?? question.examination?.board?.name;
+  const origin = question.isOriginal ? "Questão inédita" : [board, question.examination?.year].filter(Boolean).join(" ");
+  const text = stripInlineMarkdown(removeMarkdownImages(question.statement)).replace(/\s+/g, " ").trim();
+
+  return {
+    title: [`${question.code} · ${question.classification.discipline.name}`, origin].filter(Boolean).join(" · "),
+    description: text.length > 155 ? `${text.slice(0, 152).trimEnd()}…` : text,
+    alternates: { canonical: `/questoes/${question.code}` },
+  };
+}
+
 export default async function QuestionDetailPage({
   params,
 }: QuestionDetailPageProps) {
   const { questionId } = await params;
-  const getQuestion =
-    createGetPublishedQuestionByIdUseCase();
+  const question = await loadPublishedQuestion(questionId);
 
-  let question: PublicQuestionDto;
-
-  try {
-    question = await getQuestion.execute(
-      questionId,
-    );
-  } catch (error) {
-    if (
-      error instanceof ApplicationError &&
-      error.code === ERROR_CODES.NOT_FOUND
-    ) {
-      notFound();
-    }
-
-    throw error;
+  if (!question) {
+    notFound();
   }
 
   // The student's favorite / note / open report for this question.
@@ -158,7 +176,14 @@ export default async function QuestionDetailPage({
             question={question}
           />
 
-          <QuestionStudyTools questionId={question.id} code={question.code} initial={tools} />
+          {user ? (
+            <QuestionStudyTools questionId={question.id} code={question.code} initial={tools} />
+          ) : (
+            <p className={styles.visitorTools}>
+              <Link href="/cadastro">Crie sua conta grátis</Link> para responder 10 questões por dia, favoritar e
+              anotar.
+            </p>
+          )}
         </article>
 
         <aside className={styles.context}>

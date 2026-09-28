@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { answerAllowance } from "@/modules/study/domain/access";
 import { findStudentProfileId } from "@/modules/study/infrastructure/queries/answered-question-status";
 import { loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
+import { loadVisitorAllowance } from "@/modules/study/infrastructure/visitors/visitor-usage";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
 import {
@@ -29,8 +29,26 @@ export default async function StudentAppLayout({
     error,
   } = await supabase.auth.getUser();
 
+  const cookieStore = await cookies();
+  const theme = parseTheme(cookieStore.get(THEME_COOKIE)?.value);
+  const fontScale = parseFontScale(cookieStore.get(FONT_SCALE_COOKIE)?.value);
+
+  // Signed out: only the public question bank gets here (the proxy sends the
+  // rest of /app to the login), shown in visitor mode.
   if (error || !user) {
-    redirect("/login");
+    const visitor = await loadVisitorAllowance();
+
+    return (
+      <StudentAppShell
+        displayName="Visitante"
+        firstName="visitante"
+        initialTheme={theme}
+        initialFontScale={fontScale}
+        plan={{ premium: false, visitor: true, remaining: visitor.remaining, limit: visitor.limit }}
+      >
+        {children}
+      </StudentAppShell>
+    );
   }
 
   const metadataDisplayName =
@@ -46,7 +64,6 @@ export default async function StudentAppLayout({
   const firstName =
     displayName.trim().split(/\s+/)[0] || "Aluno";
 
-  const cookieStore = await cookies();
   const profileId = await findStudentProfileId(user.id);
   const allowance = profileId ? await loadAnswerAllowance(profileId) : answerAllowance("free", 0);
 
@@ -55,8 +72,8 @@ export default async function StudentAppLayout({
       displayName={displayName}
       email={user.email}
       firstName={firstName}
-      initialTheme={parseTheme(cookieStore.get(THEME_COOKIE)?.value)}
-      initialFontScale={parseFontScale(cookieStore.get(FONT_SCALE_COOKIE)?.value)}
+      initialTheme={theme}
+      initialFontScale={fontScale}
       plan={{ premium: allowance.plan === "premium", remaining: allowance.remaining, limit: allowance.limit }}
     >
       {children}

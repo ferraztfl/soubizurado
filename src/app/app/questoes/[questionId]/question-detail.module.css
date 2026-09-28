@@ -248,3 +248,14 @@
     margin-top: 20px;
   }
 }
+
+.visitorTools {
+  margin: 16px 0 0;
+  color: var(--sb-text-muted);
+  font-size: 13.5px;
+}
+
+.visitorTools a {
+  color: var(--sb-brand-strong);
+  font-weight: 750;
+}

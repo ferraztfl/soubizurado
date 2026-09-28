@@ -19,6 +19,8 @@ type QuestionListItemProps = Readonly<{
   position: number;
   status: AnsweredQuestionStatus | null;
   tools: QuestionStudyToolsState;
+  /** Visitors see a sign-in prompt instead of favorite / note / report. */
+  signedIn?: boolean;
 }>;
 
 /**
@@ -26,7 +28,7 @@ type QuestionListItemProps = Readonly<{
  * public code and classification, exam facts that act as filters, the
  * shared text (collapsible), the statement and the answer panel.
  */
-export function QuestionListItem({ question, position, status, tools }: QuestionListItemProps) {
+export function QuestionListItem({ question, position, status, tools, signedIn }: QuestionListItemProps) {
   const board = question.examination?.board ?? null;
   const supports = question.supportContents.filter(
     (support) => hasVisibleContent(support.content, question.textImages),
@@ -144,7 +146,13 @@ export function QuestionListItem({ question, position, status, tools }: Question
 
         <QuestionAnswerPanel question={question} compact />
 
-        <QuestionStudyTools questionId={question.id} code={question.code} initial={tools} />
+        {signedIn === false ? (
+          <p className={styles.visitorTools}>
+            <Link href="/cadastro">Crie sua conta grátis</Link> para favoritar, anotar e reportar erros.
+          </p>
+        ) : (
+          <QuestionStudyTools questionId={question.id} code={question.code} initial={tools} />
+        )}
       </div>
     </article>
   );

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -34,6 +35,13 @@ import { QuestionResultsToolbar } from "./_components/question-results-toolbar";
 import styles from "./question-explorer.module.css";
 
 const NO_PROFILE_ID = "00000000-0000-0000-0000-000000000000";
+
+export const metadata: Metadata = {
+  title: "Questões de concursos públicos grátis",
+  description:
+    "Resolva questões de concursos públicos e do ENEM com gabarito comentado por matéria, banca, órgão e ano. Crie sua conta grátis e acompanhe seu desempenho.",
+  alternates: { canonical: "/questoes" },
+};
 
 type QuestionExplorerPageProps = Readonly<{
   searchParams: Promise<QuestionExplorerRawSearchParams>;
@@ -129,6 +137,7 @@ export default async function QuestionExplorerPage({ searchParams }: QuestionExp
                   position={firstItem + index}
                   status={answered.get(question.id) ?? null}
                   tools={studyTools.get(question.id) ?? EMPTY_QUESTION_STUDY_TOOLS}
+                  signedIn={Boolean(user)}
                 />
               </li>
             ))}

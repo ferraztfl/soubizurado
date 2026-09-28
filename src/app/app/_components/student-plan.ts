@@ -1,6 +1,8 @@
 /** What the student shell shows about the plan (computed server-side in the layout). */
 export type StudentPlan = Readonly<{
   premium: boolean;
+  /** Signed out (public question bank). */
+  visitor?: boolean;
   /** Free answers left today; null = unlimited. */
   remaining: number | null;
   /** Daily free answers; null = unlimited. */
@@ -8,5 +10,6 @@ export type StudentPlan = Readonly<{
 }>;
 
 export function planChipLabel(plan: StudentPlan): string {
-  return plan.premium ? "Premium" : `Grátis · ${plan.remaining}/${plan.limit} hoje`;
+  if (plan.premium) return "Premium";
+  return `${plan.visitor ? "Visitante" : "Grátis"} · ${plan.remaining}/${plan.limit} hoje`;
 }

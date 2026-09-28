@@ -700,3 +700,17 @@ Vale sobre §1/§12 onde divergir.
   Administradores = ilimitado. Topo e barra lateral mostram "Grátis · X/10 hoje" ou "Premium".
 - `/admin/usuarios`: conceder Premium (30/90/180/365 dias ou sem prazo) e retirar o concedido pelo painel;
   auditado. Próximo: Fase 1b — questões públicas (SEO) + limite de visitante (1/dia).
+
+### 13.19 Fase 1b: questões públicas + visitante 1/dia + SEO (28/09/2026)
+
+- Proxy (`supabase/proxy.ts`) exige sessão em `/app/*`, exceto `/app/questoes*` (públicas). O layout de
+  `/app` sem sessão renderiza o modo visitante (topo "Visitante · X/1 hoje", barra com "Criar conta
+  grátis"/"Entrar"); favoritar/anotar/reportar viram convite para criar conta.
+- Visitante: `submitStudyAnswerAction` sem sessão → corrige sem gravar tentativa, 1 resposta/dia contada
+  por cookie aleatório `sb_visitante` **e** por IP — só hashes HMAC em `visitor_answer_usage` (migration
+  aditiva `20260928200000_…`, RLS on). Segredo: `VISITOR_HASH_SECRET` (fallback: SUPABASE_SECRET_KEY).
+- URLs públicas `/questoes` e `/questoes/Q123` (rewrites no next.config) com título/descrição/canônica;
+  `metadataBase` = NEXT_PUBLIC_SITE_URL. Sitemaps: `/sitemap.xml` + `/questoes/sitemap/[id].xml` (blocos de
+  45 mil por faixa de número público); `robots.txt` bloqueia admin/api/áreas privadas.
+- Home com "Questões grátis" e "Resolver uma questão agora, sem cadastro".
+- Próximo: Fase 2 — Loja + checkout Mercado Pago (ofertas → entitlements via webhook).

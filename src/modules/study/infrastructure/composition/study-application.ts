@@ -57,3 +57,8 @@ export function createListStudyIncorrectQuestionsUseCase(): ListStudyIncorrectQu
     new PrismaStudyRepository(),
   );
 }
+
+/** Grades an answer without recording it (signed-out visitors). */
+export function createQuestionAnswerEvaluator(): QuestionBankAnswerEvaluator {
+  return new QuestionBankAnswerEvaluator(createSubmitPublishedQuestionAnswerUseCase());
+}

@@ -38,7 +38,25 @@ export async function updateSupabaseSession(
     },
   );
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+
+  // The student area needs a session, except the public question bank
+  // (visitors browse questions and answer 1 per day; SEO).
+  const path = request.nextUrl.pathname;
+  const isStudentArea = path === "/app" || path.startsWith("/app/");
+  const isPublicQuestions = path === "/app/questoes" || path.startsWith("/app/questoes/");
+
+  if (isStudentArea && !isPublicQuestions && !data?.claims) {
+    const login = request.nextUrl.clone();
+    login.pathname = "/login";
+    login.search = "";
+
+    const redirect = NextResponse.redirect(login);
+    // Keep any refreshed auth cookies.
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+
+    return redirect;
+  }
 
   return response;
 }

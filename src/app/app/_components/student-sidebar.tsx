@@ -164,16 +164,18 @@ export function StudentSidebar({
               Plano atual
             </span>
             <span className={styles.planBadge}>
-              {plan.premium ? "Premium" : "Grátis"}
+              {plan.premium ? "Premium" : plan.visitor ? "Visitante" : "Grátis"}
             </span>
           </div>
 
-          <strong>{plan.premium ? "Plano Premium" : "Plano gratuito"}</strong>
+          <strong>{plan.premium ? "Plano Premium" : plan.visitor ? "Sem conta" : "Plano gratuito"}</strong>
 
           <p>
             {plan.premium
               ? "Questões e simulados ilimitados."
-              : `${plan.remaining} de ${plan.limit} respostas grátis restantes hoje.`}
+              : plan.visitor
+                ? `${plan.remaining} de ${plan.limit} resposta grátis hoje. Crie sua conta para responder 10 por dia.`
+                : `${plan.remaining} de ${plan.limit} respostas grátis restantes hoje.`}
           </p>
 
           <span className={styles.planFooter}>
@@ -181,6 +183,16 @@ export function StudentSidebar({
           </span>
         </section>
 
+        {plan.visitor ? (
+          <div className={styles.visitorActions}>
+            <Link href="/cadastro" className={styles.visitorPrimary} onClick={onNavigate}>
+              Criar conta grátis
+            </Link>
+            <Link href="/login" className={styles.visitorSecondary} onClick={onNavigate}>
+              Entrar
+            </Link>
+          </div>
+        ) : (
         <div className={styles.user}>
           <div
             className={styles.avatar}
@@ -204,6 +216,7 @@ export function StudentSidebar({
             </button>
           </form>
         </div>
+        )}
       </div>
     </div>
   );

@@ -18,6 +18,13 @@ export default function Home() {
 
         <nav className={styles.actions}>
           <Link
+            href="/questoes"
+            className={styles.textLink}
+          >
+            Questões grátis
+          </Link>
+
+          <Link
             href="/login"
             className={styles.secondary}
           >
@@ -58,6 +65,13 @@ export default function Home() {
               className={styles.primaryLarge}
             >
               Começar gratuitamente
+            </Link>
+
+            <Link
+              href="/questoes"
+              className={styles.textLink}
+            >
+              Resolver uma questão agora, sem cadastro
             </Link>
 
             <Link

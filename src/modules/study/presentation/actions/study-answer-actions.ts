@@ -5,8 +5,10 @@ import type {
   StudyAnswerDisplay,
 } from "@/modules/study/application/ports/question-answer-evaluator";
 import {
+  createQuestionAnswerEvaluator,
   createSubmitStudyQuestionAnswerUseCase,
 } from "@/modules/study/infrastructure/composition/study-application";
+import { consumeVisitorAnswer } from "@/modules/study/infrastructure/visitors/visitor-usage";
 import { limitReachedMessage } from "@/modules/study/domain/access";
 import { loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
 import {
@@ -99,12 +101,7 @@ export async function submitStudyAnswerAction(
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    return {
-      ok: false,
-      code: ERROR_CODES.UNAUTHENTICATED,
-      message:
-        "Sua sessão expirou. Entre novamente para responder.",
-    };
+    return submitVisitorAnswer(input);
   }
 
   try {
@@ -177,5 +174,43 @@ export async function submitStudyAnswerAction(
         ERROR_CODES.INTERNAL_ERROR,
       ),
     };
+  }
+}
+
+/**
+ * Signed-out visitor (public question pages): 1 graded answer per day,
+ * nothing recorded but the hashed daily counter.
+ */
+async function submitVisitorAnswer(
+  input: NonNullable<ReturnType<typeof parseStudyAnswerActionInput>>,
+): Promise<StudyAnswerActionResult> {
+  try {
+    const { allowed, allowance } = await consumeVisitorAnswer();
+
+    if (!allowed) {
+      return { ok: false, code: ERROR_CODES.LIMIT_REACHED, message: limitReachedMessage(allowance) };
+    }
+
+    const evaluation = await createQuestionAnswerEvaluator().evaluate({
+      questionId: input.questionId,
+      answer: input.answer,
+    });
+
+    return {
+      ok: true,
+      data: {
+        attemptId: "",
+        answeredAt: new Date().toISOString(),
+        questionId: evaluation.questionId,
+        isCorrect: evaluation.isCorrect,
+        selectedAnswer: evaluation.selectedAnswer,
+        correctAnswer: evaluation.correctAnswer,
+        explanation: evaluation.explanation,
+        statistics: await loadQuestionAnswerStatistics(evaluation.questionId).catch(() => null),
+      },
+    };
+  } catch (caught) {
+    const code = caught instanceof ApplicationError ? caught.code : ERROR_CODES.INTERNAL_ERROR;
+    return { ok: false, code, message: publicErrorMessage(code) };
   }
 }

@@ -1070,3 +1070,16 @@ model Entitlement {
   @@index([profileId, kind])
   @@map("entitlements")
 }
+
+/// Daily answers of signed-out visitors (freemium: 1 per day). Keys are HMAC
+/// hashes of a random cookie id and of the IP — never the raw values.
+model VisitorAnswerUsage {
+  keyHash   String   @map("key_hash") @db.Char(64)
+  day       DateTime @db.Date
+  answers   Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@id([keyHash, day])
+  @@index([day])
+  @@map("visitor_answer_usage")
+}
