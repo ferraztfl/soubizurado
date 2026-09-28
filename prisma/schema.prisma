@@ -1361,6 +1361,13 @@ model Contest {
   examDate          DateTime? @map("exam_date") @db.Date
   /// Official notice (https).
   noticeUrl         String?   @map("notice_url") @db.VarChar(500)
+  /// Registration fee as in the notice, e.g. "R$ 150,00" or "R$ 90,00 a R$ 200,00".
+  feeText           String?   @map("fee_text") @db.VarChar(120)
+  /// Exam stages, one per line (objetiva, discursiva, TAF…).
+  stages            String    @default("") @db.VarChar(2000)
+  examLocations     String?   @map("exam_locations") @db.VarChar(300)
+  /// Authorization act, e.g. "Portaria MGI nº 5.508/2026".
+  authorization     String?   @db.VarChar(300)
   relatedOfferId    String?   @map("related_offer_id") @db.Uuid
   /// Logo / coat of arms of the organization (optional; shown on the cards).
   logoAssetId       String?   @map("logo_asset_id") @db.Uuid
@@ -1369,12 +1376,13 @@ model Contest {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  organization   PublicOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  board          ExaminingBoard?     @relation(fields: [boardId], references: [id], onDelete: SetNull)
-  careerCategory BlogCategory?       @relation(fields: [careerCategoryId], references: [id], onDelete: SetNull)
-  relatedOffer   Offer?              @relation(fields: [relatedOfferId], references: [id], onDelete: SetNull)
-  logo           MediaAsset?         @relation(fields: [logoAssetId], references: [id], onDelete: SetNull)
-  posts          BlogPost[]
+  organization     PublicOrganization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  board            ExaminingBoard?     @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  careerCategory   BlogCategory?       @relation(fields: [careerCategoryId], references: [id], onDelete: SetNull)
+  relatedOffer     Offer?              @relation(fields: [relatedOfferId], references: [id], onDelete: SetNull)
+  logo             MediaAsset?         @relation(fields: [logoAssetId], references: [id], onDelete: SetNull)
+  posts            BlogPost[]
+  contestPositions ContestPosition[]
 
   @@index([isPublished, status])
   @@index([isPublished, isFeatured])
@@ -1428,4 +1436,23 @@ model SubscriptionPayment {
 
   @@index([subscriptionId])
   @@map("subscription_payments")
+}
+
+/// A position (cargo) of a contest, with its own vacancies, salary and requirements.
+model ContestPosition {
+  id             String  @id @default(uuid()) @db.Uuid
+  contestId      String  @map("contest_id") @db.Uuid
+  name           String  @db.VarChar(200)
+  vacancies      Int?
+  hasReserveList Boolean @default(false) @map("has_reserve_list")
+  salaryCents    Int?    @map("salary_cents")
+  /// FUNDAMENTAL, MEDIO or SUPERIOR.
+  educationLevel String? @map("education_level") @db.VarChar(20)
+  requirements   String  @default("") @db.VarChar(500)
+  sortOrder      Int     @default(0) @map("sort_order")
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  @@index([contestId, sortOrder])
+  @@map("contest_positions")
 }

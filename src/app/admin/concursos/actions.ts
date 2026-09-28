@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { planContest, type ContestError } from "@/modules/contests/domain/contest";
+import { parsePositionLines, planContest, type ContestError } from "@/modules/contests/domain/contest";
 import { storeContestLogo } from "@/modules/contests/infrastructure/contest-logo";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { InvalidImageError, isFilledFile } from "@/modules/question-bank/infrastructure/uploaded-question-image";
@@ -78,6 +78,21 @@ export async function saveContestAction(formData: FormData): Promise<void> {
   if (!result.ok) fail(back, errors[result.error]);
 
   const { contest } = result;
+
+  const positionLines = parsePositionLines(readString(formData, "positionLines"));
+  if (!positionLines.ok) fail(back, `Cargos: confira a linha ${positionLines.line} (formato: Cargo | vagas | salário | escolaridade | requisitos).`);
+
+  const optionalText = (key: string, max: number) => {
+    const value = readString(formData, key).trim().replace(/[ \t]+/g, " ");
+    return value ? value.slice(0, max) : null;
+  };
+  const details = {
+    feeText: optionalText("feeText", 120),
+    examLocations: optionalText("examLocations", 300),
+    authorization: optionalText("authorization", 300),
+    stages: readString(formData, "stages").trim().slice(0, 2000),
+  };
+
   const prisma = getPrismaClient();
   const taken = await prisma.contest.findUnique({ where: { slug: contest.slug }, select: { id: true } });
   if (taken && taken.id !== contestId) fail(back, errors.SLUG_TAKEN);
@@ -114,6 +129,7 @@ export async function saveContestAction(formData: FormData): Promise<void> {
 
   const data = {
     ...contest,
+    ...details,
     ...(logoAssetId !== undefined ? { logoAssetId } : {}),
     organizationId: organization?.id ?? null,
     boardId: board?.id ?? null,
@@ -124,9 +140,19 @@ export async function saveContestAction(formData: FormData): Promise<void> {
   const previous = contestId ? await prisma.contest.findUnique({ where: { id: contestId }, select: { slug: true } }) : null;
   if (contestId && !previous) fail("/admin/concursos", "Concurso não encontrado.");
 
-  const saved = contestId
-    ? await prisma.contest.update({ where: { id: contestId }, data, select: { id: true } })
-    : await prisma.contest.create({ data, select: { id: true } });
+  // The positions are replaced as a whole on every save.
+  const saved = await prisma.$transaction(async (transaction) => {
+    const row = contestId
+      ? await transaction.contest.update({ where: { id: contestId }, data, select: { id: true } })
+      : await transaction.contest.create({ data, select: { id: true } });
+    await transaction.contestPosition.deleteMany({ where: { contestId: row.id } });
+    if (positionLines.positions.length > 0) {
+      await transaction.contestPosition.createMany({
+        data: positionLines.positions.map((position, index) => ({ ...position, contestId: row.id, sortOrder: index })),
+      });
+    }
+    return row;
+  });
 
   if (previous && previous.slug !== contest.slug) revalidatePath(`/concursos/${previous.slug}`);
   revalidatePublic(contest.slug);

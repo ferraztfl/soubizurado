@@ -872,3 +872,16 @@ Vale sobre §1/§12 onde divergir.
   brasão do órgão" (PNG/JPG/WebP/SVG; `contest-logo.ts` recorta a borda vazia, encaixa em 256×256 e mantém a
   transparência, WebP). Servida só para concursos publicados em `/api/concursos/logos/[id]` (liberada no robots).
 - Cartão e página do concurso mostram a logo num quadro branco; sem logo, continua o selo com a sigla.
+
+### 13.31 Fontes do site e nova página do concurso (29/09/2026)
+
+- Fontes (pedido do usuário, iguais às do CFP; ambas OFL): Inter (texto) e Plus Jakarta Sans (títulos h1–h4), via
+  `next/font/google` em `src/app/layout.tsx` (servidas pelo próprio site). Antes o CSS pedia Inter mas nunca carregava.
+- Migration aditiva `20260929140000_contest_details`: `contests.fee_text`, `stages`, `exam_locations`, `authorization`
+  e tabela `contest_positions` (cargo, vagas, CR, salário, escolaridade, requisitos; RLS on, CHECKs).
+- Admin do concurso: cargos um por linha (`Cargo | vagas | salário | escolaridade | requisitos`, `parsePositionLines`),
+  taxa, autorização, locais e etapas.
+- `/concursos/[slug]` refeita (`contest-page.module.css`): hero escuro com logo, números-chave e ações; barra de
+  seções fixa; visão geral, tabela de cargos, cronograma (linha do tempo por situação + datas), etapas, questões da
+  banca por matéria (dados reais do banco), notícias, perguntas frequentes (JSON-LD FAQPage), coluna lateral fixa
+  (resumo, combo ou Premium, compartilhar) e relacionados.

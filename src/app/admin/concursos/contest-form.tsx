@@ -28,6 +28,11 @@ export type ContestFormValues = Readonly<{
   isFeatured: boolean;
   isPublished: boolean;
   hasLogo: boolean;
+  positionLines: string;
+  feeText: string;
+  stages: string;
+  examLocations: string;
+  authorization: string;
 }>;
 
 type Option = Readonly<{ id: string; name: string }>;
@@ -163,8 +168,37 @@ export function ContestForm({
       </label>
 
       <label className={`${styles.field} ${styles.full}`}>
-        <span>Cargos (um resumo, ex.: Soldado; Oficial)</span>
+        <span>
+          Cargos — um por linha: <code>Cargo | vagas | salário | escolaridade | requisitos</code> (só o nome é obrigatório; vagas
+          aceita <code>1.250</code>, <code>30 + CR</code> ou <code>CR</code>; escolaridade: fundamental, médio ou superior)
+        </span>
+        <textarea
+          name="positionLines"
+          defaultValue={values.positionLines}
+          rows={5}
+          maxLength={20000}
+          placeholder={"Soldado | 1.250 | 5.617,92 | médio | CNH categoria B\nOficial | 70 | | superior | Bacharel em Direito"}
+        />
+      </label>
+      <label className={`${styles.field} ${styles.full}`}>
+        <span>Resumo dos cargos (texto curto, aparece quando não há a tabela acima)</span>
         <textarea name="positions" defaultValue={values.positions} rows={2} maxLength={1000} />
+      </label>
+      <label className={styles.field}>
+        <span>Taxa de inscrição</span>
+        <input name="feeText" defaultValue={values.feeText} maxLength={120} placeholder="R$ 150,00" />
+      </label>
+      <label className={styles.field}>
+        <span>Autorização (ato oficial)</span>
+        <input name="authorization" defaultValue={values.authorization} maxLength={300} placeholder="Portaria MGI nº 5.508/2026" />
+      </label>
+      <label className={styles.field}>
+        <span>Locais de prova</span>
+        <input name="examLocations" defaultValue={values.examLocations} maxLength={300} placeholder="Maceió e Arapiraca" />
+      </label>
+      <label className={styles.field}>
+        <span>Etapas (uma por linha)</span>
+        <textarea name="stages" defaultValue={values.stages} rows={4} maxLength={2000} placeholder={"Prova objetiva\nProva discursiva\nTeste de aptidão física"} />
       </label>
       <label className={`${styles.field} ${styles.full}`}>
         <span>Resumo — escrito por nós (situação, requisitos, etapas). Não copie texto de outros sites.</span>

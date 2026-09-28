@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { toDayInput } from "@/modules/contests/domain/contest";
+import { asEducationLevel, formatPositionLines, toDayInput } from "@/modules/contests/domain/contest";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -27,7 +27,10 @@ export default async function EditContestPage(props: EditContestPageProps) {
   const { contestId } = await props.params;
   const params = await props.searchParams;
   const [contest, options] = await Promise.all([
-    /^[0-9a-f-]{36}$/i.test(contestId) ? getPrismaClient().contest.findUnique({ where: { id: contestId } }) : null,
+    /^[0-9a-f-]{36}$/i.test(contestId) ? getPrismaClient().contest.findUnique({
+          where: { id: contestId },
+          include: { contestPositions: { orderBy: { sortOrder: "asc" } } },
+        }) : null,
     loadContestFormOptions(),
   ]);
 
@@ -79,6 +82,13 @@ export default async function EditContestPage(props: EditContestPageProps) {
             isFeatured: contest.isFeatured,
             isPublished: contest.isPublished,
             hasLogo: contest.logoAssetId !== null,
+            positionLines: formatPositionLines(
+              contest.contestPositions.map((position) => ({ ...position, educationLevel: asEducationLevel(position.educationLevel) })),
+            ),
+            feeText: contest.feeText ?? "",
+            stages: contest.stages,
+            examLocations: contest.examLocations ?? "",
+            authorization: contest.authorization ?? "",
           }}
           {...options}
         />

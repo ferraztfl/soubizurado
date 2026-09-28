@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  contestFaq,
+  contestTimeline,
+  formatPositionLines,
   organizationBadge,
+  parsePositionLines,
   parseContestTab,
   planContest,
   salaryLabel,
@@ -91,5 +95,62 @@ describe("labels", () => {
     expect(parseContestTab("previstos")).toBe("previstos");
     expect(parseContestTab("qualquer")).toBe("destaques");
     expect(slugifyContest("Concurso TRF 5ª Região — Juiz")).toBe("concurso-trf-5a-regiao-juiz");
+  });
+});
+
+describe("positions, timeline and FAQ", () => {
+  it("parses and formats position lines", () => {
+    const result = parsePositionLines("Soldado | 1.250 | 5.617,92 | médio | CNH categoria B\n\nOficial | 70 + CR | | superior\nCadastro | CR");
+    expect(result).toEqual({
+      ok: true,
+      positions: [
+        { name: "Soldado", vacancies: 1250, hasReserveList: false, salaryCents: 561792, educationLevel: "MEDIO", requirements: "CNH categoria B" },
+        { name: "Oficial", vacancies: 70, hasReserveList: true, salaryCents: null, educationLevel: "SUPERIOR", requirements: "" },
+        { name: "Cadastro", vacancies: null, hasReserveList: true, salaryCents: null, educationLevel: null, requirements: "" },
+      ],
+    });
+    if (!result.ok) return;
+    expect(formatPositionLines(result.positions)).toBe(
+      "Soldado | 1250 | 5617,92 | médio | CNH categoria B\nOficial | 70 + CR |  | superior\nCadastro | CR",
+    );
+  });
+
+  it("points to the invalid line", () => {
+    expect(parsePositionLines("Soldado | muitas")).toEqual({ ok: false, line: 1 });
+    expect(parsePositionLines("Soldado | 10\nOficial | 5 | abc")).toEqual({ ok: false, line: 2 });
+    expect(parsePositionLines("Soldado | 10 | | doutorado")).toEqual({ ok: false, line: 1 });
+  });
+
+  it("marks the timeline", () => {
+    const steps = contestTimeline({
+      status: "REGISTRATION_OPEN",
+      registrationStart: null,
+      registrationEnd: new Date("2026-10-16T00:00:00Z"),
+      examDate: null,
+    });
+    expect(steps.map((step) => step.state)).toEqual(["done", "done", "current", "next", "next"]);
+    expect(steps[2]?.detail).toBe("16/10/2026");
+    const expected = contestTimeline({ status: "EXPECTED", registrationStart: null, registrationEnd: null, examDate: null });
+    expect(expected.every((step) => step.state === "next")).toBe(true);
+  });
+
+  it("answers the FAQ only with known facts", () => {
+    const faq = contestFaq({
+      name: "Concurso PMPE 2026",
+      status: "AUTHORIZED",
+      vacancies: 1320,
+      hasReserveList: false,
+      salaryMinCents: null,
+      salaryMaxCents: null,
+      boardName: "Instituto AOCP",
+      registrationStart: null,
+      registrationEnd: null,
+      examDate: null,
+      feeText: null,
+      educationLevels: [],
+    });
+    expect(faq.find((item) => item.question.includes("vagas"))?.answer).toBe("São 1.320 vagas.");
+    expect(faq.find((item) => item.question.includes("salário"))?.answer).toContain("ainda não foi confirmada");
+    expect(faq.find((item) => item.question.includes("banca"))?.answer).toBe("A banca organizadora é Instituto AOCP.");
   });
 });

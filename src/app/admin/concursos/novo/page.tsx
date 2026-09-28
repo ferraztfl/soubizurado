@@ -49,6 +49,11 @@ export default async function NewContestPage(props: NewContestPageProps) {
             isFeatured: false,
             isPublished: false,
             hasLogo: false,
+            positionLines: "",
+            feeText: "",
+            stages: "",
+            examLocations: "",
+            authorization: "",
           }}
           {...options}
         />

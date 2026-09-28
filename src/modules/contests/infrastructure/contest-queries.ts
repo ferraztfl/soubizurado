@@ -93,12 +93,13 @@ export async function loadPublishedContest(slug: string, now: Date) {
       organization: { select: { id: true, name: true } },
       careerCategory: { select: { slug: true, name: true } },
       relatedOffer: { select: { slug: true, name: true, priceCents: true, compareAtCents: true, isActive: true } },
+      contestPositions: { orderBy: { sortOrder: "asc" } },
     },
   });
 
   if (!contest) return null;
 
-  const [posts, related] = await Promise.all([
+  const [posts, related, boardQuestions] = await Promise.all([
     prisma.blogPost.findMany({
       where: { ...livePostsWhere(now), contestId: contest.id },
       orderBy: { publishedAt: "desc" },
@@ -120,9 +121,15 @@ export async function loadPublishedContest(slug: string, now: Date) {
       take: 4,
       select: contestCardSelect,
     }),
+    contest.boardId ? loadBoardQuestionStats(contest.boardId) : Promise.resolve(null),
   ]);
 
-  return { ...contest, posts, related: contest.careerCategoryId || contest.stateCode || contest.boardId ? related : [] };
+  return {
+    ...contest,
+    posts,
+    boardQuestions,
+    related: contest.careerCategoryId || contest.stateCode || contest.boardId ? related : [],
+  };
 }
 
 export async function publishedContestSlugs() {
@@ -132,4 +139,32 @@ export async function publishedContestSlugs() {
     take: 45_000,
     select: { slug: true, updatedAt: true },
   });
+}
+
+export type BoardQuestionStats = Readonly<{ total: number; disciplines: { id: string; name: string; count: number }[] }>;
+
+/** Published questions of an exam board, with the disciplines it asks the most (for "treine para este concurso"). */
+export async function loadBoardQuestionStats(boardId: string): Promise<BoardQuestionStats> {
+  const prisma = getPrismaClient();
+  const [totals, disciplines] = await Promise.all([
+    prisma.$queryRaw<{ total: bigint }[]>`
+      SELECT COUNT(*) AS total
+      FROM questions q
+      JOIN examinations e ON e.id = q.examination_id
+      WHERE q.status = 'PUBLISHED' AND e.board_id = ${boardId}::uuid`,
+    prisma.$queryRaw<{ id: string; name: string; count: bigint }[]>`
+      SELECT d.id, d.name, COUNT(*) AS count
+      FROM questions q
+      JOIN examinations e ON e.id = q.examination_id
+      JOIN disciplines d ON d.id = q.discipline_id
+      WHERE q.status = 'PUBLISHED' AND e.board_id = ${boardId}::uuid AND d.is_active
+      GROUP BY d.id, d.name
+      ORDER BY count DESC, d.name
+      LIMIT 10`,
+  ]);
+
+  return {
+    total: Number(totals[0]?.total ?? 0),
+    disciplines: disciplines.map((row) => ({ id: row.id, name: row.name, count: Number(row.count) })),
+  };
 }

@@ -153,6 +153,7 @@ body {
   background: var(--sb-background);
   color: var(--sb-text);
   font-family:
+    var(--font-body),
     Inter,
     ui-sans-serif,
     system-ui,
@@ -169,6 +170,14 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading), var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 button,

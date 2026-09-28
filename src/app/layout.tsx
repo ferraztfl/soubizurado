@@ -2,6 +2,7 @@ import type {
   Metadata,
   Viewport,
 } from "next";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
 import "./globals.css";
@@ -24,6 +25,16 @@ export const viewport: Viewport = {
   themeColor: "#111113",
 };
 
+// Self-hosted by next/font (no request to Google at runtime). Inter for text,
+// Plus Jakarta Sans for headings.
+const bodyFont = Inter({ subsets: ["latin"], display: "swap", variable: "--font-body" });
+const headingFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-heading",
+});
+
 type RootLayoutProps = Readonly<{
   children: ReactNode;
 }>;
@@ -32,7 +43,7 @@ export default function RootLayout({
   children,
 }: RootLayoutProps) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={`${bodyFont.variable} ${headingFont.variable}`}>
       <body>{children}</body>
     </html>
   );

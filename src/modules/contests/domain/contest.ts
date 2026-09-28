@@ -283,3 +283,190 @@ export function toDayInput(date: Date | null): string {
 export function contestLogoUrl(assetId: string): string {
   return `/api/concursos/logos/${assetId}`;
 }
+
+/* ------------------------------------------------------------ positions */
+
+export type ContestPositionPlan = Readonly<{
+  name: string;
+  vacancies: number | null;
+  hasReserveList: boolean;
+  salaryCents: number | null;
+  educationLevel: EducationLevel | null;
+  requirements: string;
+}>;
+
+const EDUCATION_WORDS: Readonly<Record<string, EducationLevel>> = {
+  fundamental: "FUNDAMENTAL",
+  medio: "MEDIO",
+  "médio": "MEDIO",
+  tecnico: "MEDIO",
+  "técnico": "MEDIO",
+  superior: "SUPERIOR",
+};
+
+/** Vacancies cell: "1.250", "30 + CR", "CR", "" → count and reserve list. */
+function parseVacancyCell(value: string): { vacancies: number | null; hasReserveList: boolean } | null {
+  const text = value.trim().toUpperCase();
+  if (!text) return { vacancies: null, hasReserveList: false };
+  const reserve = /\bCR\b|CADASTRO/.test(text);
+  const number = text.replace(/\+?\s*CR\b|CADASTRO( DE)? RESERVA/g, "").trim();
+  if (!number) return { vacancies: null, hasReserveList: reserve };
+  const parsed = parseVacancies(number);
+  return parsed === undefined ? null : { vacancies: parsed, hasReserveList: reserve };
+}
+
+/**
+ * Positions typed one per line: "Cargo | vagas | salário | escolaridade | requisitos"
+ * (only the name is required). Returns the 1-based line of the first invalid row.
+ */
+export function parsePositionLines(
+  text: string,
+): { ok: true; positions: ContestPositionPlan[] } | { ok: false; line: number } {
+  const positions: ContestPositionPlan[] = [];
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+
+  for (const [index, raw] of lines.entries()) {
+    if (!raw.trim()) continue;
+    const [name = "", vacancyCell = "", salaryCell = "", educationCell = "", ...rest] = raw.split("|").map((cell) => cell.trim());
+    const vacancy = parseVacancyCell(vacancyCell);
+    const salaryCents = parseSalary(salaryCell);
+    const educationKey = educationCell.toLowerCase();
+    const educationLevel = educationKey ? EDUCATION_WORDS[educationKey] : null;
+    const requirements = rest.join(" | ").trim();
+
+    if (name.length < 2 || name.length > 200 || !vacancy || salaryCents === undefined || educationLevel === undefined || requirements.length > 500) {
+      return { ok: false, line: index + 1 };
+    }
+
+    positions.push({ name, ...vacancy, salaryCents, educationLevel, requirements });
+  }
+
+  return { ok: true, positions: positions.slice(0, 40) };
+}
+
+/** A stored education level (free VARCHAR) back to the typed value. */
+export function asEducationLevel(value: string | null): EducationLevel | null {
+  return value && Object.hasOwn(EDUCATION_LEVELS, value) ? (value as EducationLevel) : null;
+}
+
+/** Back to the editable text of the admin form. */
+export function formatPositionLines(positions: readonly ContestPositionPlan[]): string {
+  const education: Readonly<Record<EducationLevel, string>> = { FUNDAMENTAL: "fundamental", MEDIO: "médio", SUPERIOR: "superior" };
+  return positions
+    .map((position) => {
+      const vacancies =
+        position.vacancies === null ? (position.hasReserveList ? "CR" : "") : `${position.vacancies}${position.hasReserveList ? " + CR" : ""}`;
+      const salary = position.salaryCents === null ? "" : (position.salaryCents / 100).toFixed(2).replace(".", ",");
+      const cells = [position.name, vacancies, salary, position.educationLevel ? education[position.educationLevel] : "", position.requirements];
+      while (cells.length > 1 && cells[cells.length - 1] === "") cells.pop();
+      return cells.join(" | ");
+    })
+    .join("\n");
+}
+
+/* ------------------------------------------------------------- timeline */
+
+export type TimelineStep = Readonly<{ label: string; state: "done" | "current" | "next"; detail: string | null }>;
+
+const TIMELINE_ORDER: readonly ContestStatus[] = [
+  "EXPECTED",
+  "AUTHORIZED",
+  "NOTICE_PUBLISHED",
+  "REGISTRATION_OPEN",
+  "REGISTRATION_CLOSED",
+  "EXAM_DONE",
+  "FINISHED",
+];
+
+/** Where the contest is: previsto → autorizado → edital → inscrições → prova → resultado. */
+export function contestTimeline(
+  contest: Readonly<{ status: string; registrationStart: Date | null; registrationEnd: Date | null; examDate: Date | null }>,
+): TimelineStep[] {
+  const position = TIMELINE_ORDER.indexOf(isContestStatus(contest.status) ? contest.status : "EXPECTED");
+  const registration =
+    contest.registrationStart && contest.registrationEnd
+      ? `${formatContestDate(contest.registrationStart)} a ${formatContestDate(contest.registrationEnd)}`
+      : formatContestDate(contest.registrationEnd);
+
+  const steps: { label: string; at: number; detail: string | null }[] = [
+    { label: "Autorizado", at: 1, detail: null },
+    { label: "Edital publicado", at: 2, detail: null },
+    { label: "Inscrições", at: 3, detail: registration },
+    { label: "Prova", at: 5, detail: formatContestDate(contest.examDate) },
+    { label: "Resultado", at: 6, detail: null },
+  ];
+
+  return steps.map((step, index) => {
+    const nextAt = steps[index + 1]?.at ?? Number.POSITIVE_INFINITY;
+    const state = position >= nextAt ? "done" : position >= step.at ? "current" : "next";
+    return { label: step.label, state, detail: step.detail };
+  });
+}
+
+/* ------------------------------------------------------------------ FAQ */
+
+export type ContestFaqInput = Readonly<{
+  name: string;
+  status: string;
+  vacancies: number | null;
+  hasReserveList: boolean;
+  salaryMinCents: number | null;
+  salaryMaxCents: number | null;
+  boardName: string | null;
+  registrationStart: Date | null;
+  registrationEnd: Date | null;
+  examDate: Date | null;
+  feeText: string | null;
+  educationLevels: readonly string[];
+}>;
+
+/** Questions people search for, answered only from what we know (unknowns say so). */
+export function contestFaq(contest: ContestFaqInput): { question: string; answer: string }[] {
+  const status = isContestStatus(contest.status) ? CONTEST_STATUSES[contest.status].toLowerCase() : "em acompanhamento";
+  const levels = contest.educationLevels
+    .filter((level): level is EducationLevel => Object.hasOwn(EDUCATION_LEVELS, level))
+    .map((level) => EDUCATION_LEVELS[level].toLowerCase());
+  const faq = [
+    {
+      question: `Qual a situação do ${contest.name}?`,
+      answer: `O concurso está com situação "${status}". Esta página é atualizada a cada novidade oficial.`,
+    },
+    {
+      question: `Quantas vagas tem o ${contest.name}?`,
+      answer:
+        contest.vacancies === null
+          ? contest.hasReserveList
+            ? "O concurso é para formação de cadastro de reserva."
+            : "O número de vagas ainda não foi divulgado."
+          : `São ${vacanciesLabel(contest.vacancies, contest.hasReserveList).replace("+ CR", "e cadastro de reserva")}.`,
+    },
+    {
+      question: `Qual o salário do ${contest.name}?`,
+      answer:
+        contest.salaryMinCents === null && contest.salaryMaxCents === null
+          ? "A remuneração ainda não foi confirmada em fonte oficial."
+          : `${salaryLabel(contest.salaryMinCents, contest.salaryMaxCents)}, conforme as informações oficiais divulgadas.`,
+    },
+    {
+      question: `Qual a banca do ${contest.name}?`,
+      answer: contest.boardName ? `A banca organizadora é ${contest.boardName}.` : "A banca organizadora ainda não foi definida.",
+    },
+    {
+      question: `Quando são as inscrições do ${contest.name}?`,
+      answer:
+        contest.registrationStart && contest.registrationEnd
+          ? `De ${formatContestDate(contest.registrationStart)} a ${formatContestDate(contest.registrationEnd)}${contest.feeText ? `, com taxa de ${contest.feeText}` : ""}.`
+          : "As datas de inscrição ainda não foram divulgadas.",
+    },
+    {
+      question: `Quando é a prova do ${contest.name}?`,
+      answer: contest.examDate ? `A prova está marcada para ${formatContestDate(contest.examDate)}.` : "A data da prova ainda não foi divulgada.",
+    },
+  ];
+
+  if (levels.length > 0) {
+    faq.push({ question: `Qual a escolaridade exigida no ${contest.name}?`, answer: `Há cargos de nível ${levels.join(" e ")}.` });
+  }
+
+  return faq;
+}

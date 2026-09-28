@@ -5,6 +5,8 @@
   flex-direction: column;
   background: #ffffff;
   color: #1c1d22;
+  /* Full-bleed bands use 100vw; clip (unlike hidden) keeps sticky headers working. */
+  overflow-x: clip;
 }
 
 /* Room for the fixed Premium bar, so it never covers the footer. */
