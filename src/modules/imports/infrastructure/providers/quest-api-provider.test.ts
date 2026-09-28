@@ -390,10 +390,10 @@ describe("QuestApiProvider", () => {
 
     expect(fetcher).toHaveBeenCalledTimes(2);
     expect(String(fetcher.mock.calls[0]?.[0]))
-      .toContain("/v1/provas/2511693");
+      .toContain("/v2/provas/2511693");
     expect(String(fetcher.mock.calls[1]?.[0]))
       .toContain(
-        "/v1/provas/2511693/gabarito",
+        "/v2/provas/2511693/gabarito",
       );
 
     expect(result).toMatchObject({
@@ -511,7 +511,7 @@ describe("QuestApiProvider", () => {
     );
 
     expect(requestUrl).toContain(
-      "/v1/provas?",
+      "/v2/provas?",
     );
     expect(requestUrl).toContain(
       "ano=2025",
@@ -583,7 +583,7 @@ describe("QuestApiProvider", () => {
     );
 
     expect(requestUrl).toContain(
-      "/v1/provas?",
+      "/v2/provas?",
     );
     expect(requestUrl).toContain(
       "codigo=2554075",

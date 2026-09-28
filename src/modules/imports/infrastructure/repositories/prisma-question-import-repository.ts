@@ -114,24 +114,18 @@ async function resolveExamination(
     return null;
   }
 
+  // Boards come from the curated catalog (boards:seed), never from provider
+  // data: "Instituto AOCP" and "AOCP" are different boards, and a provider
+  // spelling must not create a third one. Unknown boards stay empty (the
+  // exam then cannot be published until a reviewer sets it).
   const board = metadata.board
-    ? await transaction.examiningBoard.upsert({
+    ? await transaction.examiningBoard.findFirst({
         where: {
-          slug: slugify(
-            metadata.board,
-            200,
-          ),
-        },
-        update: {
-          name: metadata.board,
-        },
-        create: {
-          name: metadata.board,
-          acronym: null,
-          slug: slugify(
-            metadata.board,
-            200,
-          ),
+          isActive: true,
+          OR: [
+            { slug: slugify(metadata.board, 200) },
+            { name: { equals: metadata.board.trim(), mode: "insensitive" } },
+          ],
         },
         select: {
           id: true,
@@ -313,23 +307,18 @@ async function resolveTaxonomy(
       },
     });
 
-  const discipline =
-    canonical ??
-    (await transaction.discipline.upsert({
-      where: {
-        slug: slugify(disciplineName, 180),
-      },
-      // Never rename or reactivate curated taxonomy from provider data.
-      update: {},
-      create: {
-        name: disciplineName,
-        slug: slugify(disciplineName, 180),
-      },
-      select: {
-        id: true,
-        knowledgeAreaId: true,
-      },
-    }));
+  // Taxonomy is controlled: a provider subject that is not a canonical
+  // discipline (or alias) never creates one. The question keeps only the
+  // knowledge area (when known) and the classifier picks the discipline.
+  if (!canonical) {
+    return {
+      knowledgeAreaId: explicitKnowledgeArea?.id ?? null,
+      disciplineId: null,
+      topicId: null,
+    };
+  }
+
+  const discipline = canonical;
 
   const knowledgeAreaId =
     discipline.knowledgeAreaId ??

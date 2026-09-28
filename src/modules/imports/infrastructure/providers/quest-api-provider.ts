@@ -870,7 +870,7 @@ export class QuestApiProvider
     }
 
     const url = new URL(
-      "/v1/provas",
+      "/v2/provas",
       this.baseUrl,
     );
 
@@ -996,7 +996,7 @@ export class QuestApiProvider
     }
 
     const url = new URL(
-      "/v1/provas",
+      "/v2/provas",
       this.baseUrl,
     );
 
@@ -1141,7 +1141,7 @@ export class QuestApiProvider
       }
 
       const contentUrl = new URL(
-        `/v1/provas/${encodeURIComponent(
+        `/v2/provas/${encodeURIComponent(
           normalizedExaminationId,
         )}`,
         this.baseUrl,
@@ -1171,7 +1171,7 @@ export class QuestApiProvider
         input.requireAnswerKey
       ) {
         const answerKeyUrl = new URL(
-          `/v1/provas/${encodeURIComponent(
+          `/v2/provas/${encodeURIComponent(
             normalizedExaminationId,
           )}/gabarito`,
           this.baseUrl,

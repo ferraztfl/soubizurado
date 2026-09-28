@@ -17,6 +17,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
     "import:quest-api": "npx --yes tsx scripts/import-quest-api.ts",
+    "quest:plan": "npx --yes tsx scripts/quest-api-exams.ts plan",
+    "quest:import": "npx --yes tsx scripts/quest-api-exams.ts import",
     "quest-api:check": "npx --yes tsx scripts/check-quest-api.ts",
     "quest-api:provas": "npx --yes tsx scripts/list-quest-api-exams.ts",
     "import:inspect": "npx --yes tsx scripts/inspect-import-job.ts",
