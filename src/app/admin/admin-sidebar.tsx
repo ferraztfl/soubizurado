@@ -69,7 +69,7 @@ const navigationGroups: readonly NavigationGroup[] = [
       },
       {
         label: "Taxonomia",
-        href: null,
+        href: "/admin/taxonomia",
       },
       {
         label: "Mídias",
