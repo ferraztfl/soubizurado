@@ -909,3 +909,11 @@ Vale sobre §1/§12 onde divergir.
 - Teste real com o edital TJRS Juiz (FGV, `data-private/editorial/editais/`): 3 min 49 s, 5.862 tokens; após as
   conferências, todos os campos conferidos batem (30 vagas, R$ 30.505,36, FGV, 15/09–14/10, taxa R$ 305,00, prova
   13/12/2026, etapas). Locais de prova não vieram.
+- Progresso da importação (pedido do usuário): `startNoticeImportAction` cria uma tarefa em memória
+  (`notice-import-jobs.ts`, por admin, expira em 1 h, máx. 2 simultâneas) e roda `runNoticeImport` em `after()`;
+  a tela consulta `GET /api/admin/notice-import/[jobId]` a cada 1 s e mostra barra (%), etapa, tempo decorrido e
+  estimativa restante. Fases: PDF recebido 5% → texto 10% → trechos 18% → IA lendo 20–70% (estimado pelo tempo e pela
+  velocidade medida) → IA escrevendo 70–95% (medido: Ollama em streaming, token a token) → conferência 97% → 100%.
+  Velocidade medida nesta máquina (Ryzen 3 4350G, só CPU): leitura ~42 tok/s, escrita ~5,4 tok/s; valores iniciais
+  calibrados e reaprendidos a cada leitura. Teste real (TJRS): 3 min 19 s, resultado igual ao conferido.
+  Limitação: tarefas vivem na memória do processo (reiniciar o `npm run dev` perde as em andamento).

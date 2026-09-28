@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 
 import { z } from "zod";
 
+import { estimatePromptTokens } from "../domain/import-progress";
 import { selectNoticeExcerpts } from "../domain/notice-drafts";
 import { noticeExtractionSchema, type NoticeExtraction } from "../domain/notice-extraction";
 
@@ -246,11 +247,29 @@ Use somente o que está escrito no texto; se não encontrar, use null ou lista v
 - stages: etapas da seleção em ordem, curtas.
 - examLocations: cidades de prova.`;
 
-const ollamaSchema = z.object({
-  message: z.object({ content: z.string() }),
+const ollamaChunkSchema = z.object({
+  message: z.object({ content: z.string() }).optional(),
+  done: z.boolean().optional(),
   prompt_eval_count: z.number().optional(),
+  prompt_eval_duration: z.number().optional(),
   eval_count: z.number().optional(),
+  eval_duration: z.number().optional(),
 });
+
+/*
+ * Measured speed of this machine (tokens per second), refined after every
+ * local run; used to estimate how long the next "reading" phase takes.
+ */
+const speeds = globalThis as unknown as { __sbNoticeSpeeds?: { reading: number; writing: number } };
+speeds.__sbNoticeSpeeds ??= { reading: 40, writing: 5.5 }; // measured on a Ryzen 3 4350G (CPU only)
+
+export function localAiSpeeds(): Readonly<{ reading: number; writing: number }> {
+  return speeds.__sbNoticeSpeeds!;
+}
+
+export type LocalAiProgress =
+  | Readonly<{ phase: "reading"; promptTokens: number }>
+  | Readonly<{ phase: "writing"; generatedTokens: number }>;
 
 function localBaseUrl(): string {
   const url = (process.env.NOTICE_AI_LOCAL_URL?.trim() || "http://localhost:11434").replace(/\/+$/, "");
@@ -277,8 +296,13 @@ export async function isLocalNoticeAiAvailable(): Promise<boolean> {
 }
 
 /** Facts of a notice from the local model (the relevant excerpts only). */
-export async function extractNoticeFactsLocal(noticeText: string, sourceUrl: string | null): Promise<NoticeAiResult> {
+export async function extractNoticeFactsLocal(
+  noticeText: string,
+  sourceUrl: string | null,
+  onProgress?: (progress: LocalAiProgress) => void,
+): Promise<NoticeAiResult> {
   const excerpt = selectNoticeExcerpts(noticeText, LOCAL_EXCERPT_CHARS);
+  onProgress?.({ phase: "reading", promptTokens: estimatePromptTokens(excerpt.length) });
 
   let response: Response;
   try {
@@ -288,7 +312,8 @@ export async function extractNoticeFactsLocal(noticeText: string, sourceUrl: str
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: localNoticeModel(),
-        stream: false,
+        // Streaming: the answer arrives token by token (measurable progress).
+        stream: true,
         format: LOCAL_SCHEMA,
         options: { temperature: 0, num_ctx: 16_384, num_predict: 2_048 },
         messages: [
@@ -302,14 +327,50 @@ export async function extractNoticeFactsLocal(noticeText: string, sourceUrl: str
   }
 
   if (response.status === 404) throw new NoticeReadError(`O modelo local "${localNoticeModel()}" não está instalado no Ollama.`);
-  if (!response.ok) throw new NoticeReadError(`A IA local respondeu com erro HTTP ${response.status}.`);
+  if (!response.ok || !response.body) throw new NoticeReadError(`A IA local respondeu com erro HTTP ${response.status}.`);
 
-  const answer = ollamaSchema.safeParse(await response.json());
-  if (!answer.success) throw new NoticeReadError("A IA local devolveu uma resposta inesperada.");
+  // NDJSON: one chunk per line; the last one (done) carries the counters.
+  let content = "";
+  let generated = 0;
+  let last: z.infer<typeof ollamaChunkSchema> | null = null;
+  const decoder = new TextDecoder();
+  let buffered = "";
+
+  try {
+    for await (const piece of response.body as unknown as AsyncIterable<Uint8Array>) {
+      buffered += decoder.decode(piece, { stream: true });
+      let newline = buffered.indexOf("\n");
+      while (newline >= 0) {
+        const line = buffered.slice(0, newline).trim();
+        buffered = buffered.slice(newline + 1);
+        newline = buffered.indexOf("\n");
+        if (!line) continue;
+        const chunk = ollamaChunkSchema.safeParse(JSON.parse(line));
+        if (!chunk.success) continue;
+        if (chunk.data.message?.content) {
+          content += chunk.data.message.content;
+          generated += 1;
+          if (generated === 1 || generated % 5 === 0) onProgress?.({ phase: "writing", generatedTokens: generated });
+        }
+        if (chunk.data.done) last = chunk.data;
+      }
+    }
+  } catch (error) {
+    if (error instanceof NoticeReadError) throw error;
+    throw new NoticeReadError("A conexão com a IA local caiu no meio da resposta. Tente de novo.");
+  }
+
+  // Learn this machine's speed for the next estimate.
+  if (last?.prompt_eval_count && last.prompt_eval_duration) {
+    speeds.__sbNoticeSpeeds!.reading = last.prompt_eval_count / (last.prompt_eval_duration / 1e9);
+  }
+  if (last?.eval_count && last.eval_duration) {
+    speeds.__sbNoticeSpeeds!.writing = last.eval_count / (last.eval_duration / 1e9);
+  }
 
   let json: unknown;
   try {
-    json = JSON.parse(answer.data.message.content);
+    json = JSON.parse(content);
   } catch {
     throw new NoticeReadError("A IA local devolveu um JSON inválido. Tente de novo.");
   }
@@ -319,7 +380,7 @@ export async function extractNoticeFactsLocal(noticeText: string, sourceUrl: str
 
   return {
     extraction: extraction.data,
-    inputTokens: answer.data.prompt_eval_count ?? 0,
-    outputTokens: answer.data.eval_count ?? 0,
+    inputTokens: last?.prompt_eval_count ?? 0,
+    outputTokens: last?.eval_count ?? generated,
   };
 }

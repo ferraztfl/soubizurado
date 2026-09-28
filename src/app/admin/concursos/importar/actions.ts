@@ -1,38 +1,21 @@
 "use server";
 
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 
 import { planPost } from "@/modules/blog/domain/blog";
-import { buildContestSummary, buildNewsDraft } from "@/modules/contests/domain/notice-drafts";
-import { matchBoard, toNoticeSuggestion } from "@/modules/contests/domain/notice-extraction";
-import {
-  extractNoticeFacts,
-  extractNoticeFactsLocal,
-  isNoticeAiConfigured,
-  NoticeReadError,
-  readNoticePdf,
-} from "@/modules/contests/infrastructure/notice-reader";
+import { createNoticeImportJob } from "@/modules/contests/infrastructure/notice-import-jobs";
+import { isNoticeAiConfigured, localAiSpeeds, MAX_NOTICE_BYTES } from "@/modules/contests/infrastructure/notice-reader";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { isFilledFile } from "@/modules/question-bank/infrastructure/uploaded-question-image";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
-import type { ContestFormValues } from "../contest-form";
-import { contestFormValues, EMPTY_CONTEST_FORM_VALUES } from "../contest-form-values";
+import type { NoticeImportResult } from "./import-types";
+import { initialReadingEstimateMs, runNoticeImport } from "./run-notice-import";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export type NoticeImportState =
-  | Readonly<{ status: "idle" }>
-  | Readonly<{ status: "error"; message: string }>
-  | Readonly<{
-      status: "ok";
-      /** Changes every import, so the prefilled form remounts. */
-      key: string;
-      values: ContestFormValues;
-      news: Readonly<{ title: string; excerpt: string; body: string }> | null;
-      warnings: readonly string[];
-      usage: Readonly<{ inputTokens: number; outputTokens: number; provider: "local" | "remote"; seconds: number }>;
-    }>;
+export type StartNoticeImportResult = Readonly<{ ok: true; jobId: string }> | Readonly<{ ok: false; message: string }>;
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -49,90 +32,43 @@ function httpsUrl(value: string): string | null {
 }
 
 /**
- * Reads an official notice (PDF) with the AI and returns suggestions for the
- * contest form. Nothing is saved here: the admin reviews and saves.
+ * Starts reading an official notice (PDF) with the AI. Answers right away with
+ * a job id; the screen follows the progress. Nothing is saved: the admin
+ * reviews the suggestions and saves through the normal form.
  */
-export async function importNoticeAction(_previous: NoticeImportState, formData: FormData): Promise<NoticeImportState> {
-  await requireAdminUser();
+export async function startNoticeImportAction(formData: FormData): Promise<StartNoticeImportResult> {
+  const admin = await requireAdminUser();
 
   const provider = readString(formData, "ai") === "remote" ? "remote" : "local";
   if (provider === "remote" && !isNoticeAiConfigured()) {
-    return { status: "error", message: "A IA online não está configurada no .env (CLASSIFIER_API_BASE_URL e CLASSIFIER_MODEL)." };
+    return { ok: false, message: "A IA online não está configurada no .env (CLASSIFIER_API_BASE_URL e CLASSIFIER_MODEL)." };
   }
 
   const file = formData.get("pdf");
-  if (!isFilledFile(file)) return { status: "error", message: "Envie o PDF do edital." };
+  if (!isFilledFile(file)) return { ok: false, message: "Envie o PDF do edital." };
+  if (file.size > MAX_NOTICE_BYTES) return { ok: false, message: "O PDF passa de 30 MB." };
 
   const noticeUrl = readString(formData, "noticeUrl").trim();
   const officialUrl = noticeUrl ? httpsUrl(noticeUrl) : null;
-  if (noticeUrl && !officialUrl) return { status: "error", message: "O link do edital precisa começar com https://." };
+  if (noticeUrl && !officialUrl) return { ok: false, message: "O link do edital precisa começar com https://." };
 
-  const prisma = getPrismaClient();
   const existingId = readString(formData, "contestId");
-  const existing = UUID.test(existingId)
-    ? await prisma.contest.findUnique({ where: { id: existingId }, include: { contestPositions: true } })
-    : null;
+  const job = createNoticeImportJob<NoticeImportResult>(admin.profileId, provider, localAiSpeeds().writing);
+  if (!job) return { ok: false, message: "Já há leituras em andamento. Espere uma terminar." };
 
-  try {
-    const started = Date.now();
-    const text = await readNoticePdf(file);
-    const { extraction, inputTokens, outputTokens } =
-      provider === "remote" ? await extractNoticeFacts(text, officialUrl) : await extractNoticeFactsLocal(text, officialUrl);
-    const extracted = toNoticeSuggestion(extraction, { noticeText: text });
-    // The local model only extracts facts: summary and news come from our template.
-    const suggestion = {
-      ...extracted,
-      summary: extracted.summary || buildContestSummary(extracted),
-      news: extracted.news ?? buildNewsDraft(extracted),
-      warnings: extracted.warnings.filter((warning) => !warning.includes("rascunho da notícia")),
-    };
+  // The uploaded file belongs to this request: keep a copy for the background work.
+  const copy = new File([new Uint8Array(await file.arrayBuffer())], "edital.pdf", { type: "application/pdf" });
+  job.expectedReadingMs = provider === "remote" ? 25_000 : initialReadingEstimateMs(copy.size);
 
-    const boards = await prisma.examiningBoard.findMany({ where: { isActive: true }, select: { id: true, name: true } });
-    const board = matchBoard(boards, suggestion.boardName);
-    const warnings = [...suggestion.warnings];
-    if (suggestion.boardName && !board) {
-      warnings.push(`Banca "${suggestion.boardName}" não está no catálogo; escolha a banca manualmente (ou cadastre-a em Bancas).`);
-    }
+  after(() =>
+    runNoticeImport(job, {
+      file: copy,
+      officialUrl,
+      existingContestId: UUID.test(existingId) ? existingId : null,
+    }),
+  );
 
-    // An existing contest keeps what the notice does not say.
-    const base = existing ? contestFormValues(existing) : EMPTY_CONTEST_FORM_VALUES;
-    const pick = (value: string, fallback: string) => (value ? value : fallback);
-
-    const values: ContestFormValues = {
-      ...base,
-      name: pick(suggestion.name, base.name),
-      organizationName: pick(suggestion.organizationName, base.organizationName),
-      stateCode: suggestion.stateCode ?? base.stateCode,
-      status: suggestion.status,
-      vacancies: pick(suggestion.vacancies, base.vacancies),
-      hasReserveList: suggestion.hasReserveList || base.hasReserveList,
-      salaryMin: pick(suggestion.salaryMin, base.salaryMin),
-      salaryMax: pick(suggestion.salaryMax, base.salaryMax),
-      educationLevels: suggestion.educationLevels.length > 0 ? suggestion.educationLevels : base.educationLevels,
-      summary: pick(suggestion.summary, base.summary),
-      registrationStart: pick(suggestion.registrationStart, base.registrationStart),
-      registrationEnd: pick(suggestion.registrationEnd, base.registrationEnd),
-      examDate: pick(suggestion.examDate, base.examDate),
-      noticeUrl: officialUrl ?? base.noticeUrl,
-      boardId: board?.id ?? base.boardId,
-      positionLines: pick(suggestion.positionLines, base.positionLines),
-      feeText: pick(suggestion.feeText, base.feeText),
-      stages: pick(suggestion.stages, base.stages),
-      examLocations: pick(suggestion.examLocations, base.examLocations),
-    };
-
-    return {
-      status: "ok",
-      key: `${Date.now()}`,
-      values,
-      news: suggestion.news,
-      warnings,
-      usage: { inputTokens, outputTokens, provider, seconds: Math.round((Date.now() - started) / 1000) },
-    };
-  } catch (error) {
-    if (error instanceof NoticeReadError) return { status: "error", message: error.message };
-    throw error;
-  }
+  return { ok: true, jobId: job.id };
 }
 
 /** Saves the AI news draft as a blog DRAFT (never published from here) and opens it in the editor. */
