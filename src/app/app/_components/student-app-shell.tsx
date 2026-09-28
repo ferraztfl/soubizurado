@@ -3,10 +3,12 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
   useCallback,
+  useMemo,
   useState,
 } from "react";
 
 import { MobileNavigationDrawer } from "./mobile-navigation-drawer";
+import { ReadingPreferencesContext } from "./reading-preferences-context";
 import {
   FONT_SCALE_COOKIE,
   savePreferenceCookie,
@@ -60,6 +62,11 @@ export function StudentAppShell({
     savePreferenceCookie(FONT_SCALE_COOKIE, String(next));
   }, []);
 
+  const readingPreferences = useMemo(
+    () => ({ theme, fontScale, changeTheme, changeFontScale }),
+    [theme, fontScale, changeTheme, changeFontScale],
+  );
+
   return (
     <div
       className={styles.shell}
@@ -86,7 +93,9 @@ export function StudentAppShell({
         />
 
         <main className={styles.content}>
-          {children}
+          <ReadingPreferencesContext.Provider value={readingPreferences}>
+            {children}
+          </ReadingPreferencesContext.Provider>
         </main>
       </div>
 

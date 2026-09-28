@@ -639,3 +639,16 @@ Vale sobre §1/§12 onde divergir.
 - Configuração no painel do Supabase (usuário): em Auth → URL Configuration, incluir
   `<site>/definir-senha` nas Redirect URLs; para volume de convites, configurar SMTP próprio (o envio
   padrão tem limite de poucos e-mails por hora).
+
+### 13.14 Área do aluno: Perfil e Configurações (28/09/2026)
+
+- Fila de prioridades da área do aluno: 1) Perfil + Configurações ✅ 2) Estudar (sessão guiada + revisão
+  espaçada) 3) Missões 4) Ranking (com opt-out) 5) Comunidade 6) Loja/Premium (depende de decisões do
+  usuário: pagamento, preços). Pendente de configuração: links de acesso sem e-mail (convites) — adiado.
+- `study_preferences` (migration aditiva `20260928120000_study_preferences`, RLS on, CHECK da meta 1–500):
+  meta diária, concurso-alvo, banca-alvo (catálogo), data da prova, `show_in_ranking`.
+- `/app/perfil`: identidade, resumo (resolvidas, acerto, sequência, simulados), meta de hoje, contagem
+  regressiva para a prova; editar nome (perfil + metadata da sessão) e objetivo.
+- `/app/configuracoes`: tema e tamanho do texto (contexto `ReadingPreferencesContext` do shell — muda na
+  hora), itens por página/ordem do explorador (cookies), aparecer no ranking, alterar senha (confere a
+  atual), sair de todos os dispositivos.

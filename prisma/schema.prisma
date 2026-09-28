@@ -105,6 +105,7 @@ model Profile {
   studySimulations       StudySimulation[]
   adminActions           AdminAuditLog[]              @relation("AdminAuditActor")
   adminActionsReceived   AdminAuditLog[]              @relation("AdminAuditTarget")
+  studyPreference        StudyPreference?
 
   @@map("profiles")
 }
@@ -350,6 +351,7 @@ model ExaminingBoard {
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   examinations Examination[]
+  targetedBy   StudyPreference[]
 
   @@index([isActive, name])
   @@map("examining_boards")
@@ -965,4 +967,21 @@ model AdminAuditLog {
   @@index([createdAt])
   @@index([targetProfileId, createdAt])
   @@map("admin_audit_logs")
+}
+
+/// A student's study goals and privacy choices (one row per profile).
+model StudyPreference {
+  profileId      String    @id @map("profile_id") @db.Uuid
+  dailyGoal      Int       @default(20) @map("daily_goal") @db.SmallInt
+  targetExam     String?   @map("target_exam") @db.VarChar(180)
+  targetBoardId  String?   @map("target_board_id") @db.Uuid
+  targetExamDate DateTime? @map("target_exam_date") @db.Date
+  showInRanking  Boolean   @default(true) @map("show_in_ranking")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile     Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  targetBoard ExaminingBoard? @relation(fields: [targetBoardId], references: [id], onDelete: SetNull)
+
+  @@map("study_preferences")
 }

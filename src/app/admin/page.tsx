@@ -438,8 +438,8 @@ export default async function AdminHomePage() {
               Em breve no backoffice
             </span>
             <p>
-              Cadastro manual de questões, central de importações
-              (PDF, JSON, CSV e XLSX) e gestão da taxonomia.
+              Links de acesso sem e-mail para convites, edição da
+              taxonomia pelo painel e relatórios de uso.
             </p>
           </div>
         </aside>
