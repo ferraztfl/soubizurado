@@ -6,6 +6,12 @@ import { redirect } from "next/navigation";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { planOffer, type OfferError } from "@/modules/store/domain/store";
 import { processMercadoPagoPayment } from "@/modules/store/infrastructure/process-payment";
+import {
+  InvalidImageError,
+  isFilledFile,
+  prepareUploadedImage,
+  uploadPreparedImage,
+} from "@/modules/question-bank/infrastructure/uploaded-question-image";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -23,6 +29,30 @@ const errorMessages: Readonly<Record<OfferError | "SLUG_TAKEN", string>> = {
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
+}
+
+/** Stores an admin-uploaded banner (re-encoded as WebP) and returns its media asset id. */
+async function storeBanner(file: File, alt: string): Promise<string> {
+  const prepared = await prepareUploadedImage(file);
+  const upload = await uploadPreparedImage(prepared);
+  const asset = await getPrismaClient().mediaAsset.upsert({
+    where: { checksum: prepared.checksum },
+    update: {},
+    create: {
+      checksum: prepared.checksum,
+      storageProvider: upload.provider,
+      bucket: upload.bucket,
+      storageKey: upload.storageKey,
+      mimeType: prepared.mimeType,
+      sizeBytes: BigInt(prepared.bytes.byteLength),
+      width: prepared.width,
+      height: prepared.height,
+      altText: alt.slice(0, 500),
+      sourceUrl: "admin-offer-banner",
+    },
+    select: { id: true },
+  });
+  return asset.id;
 }
 
 /** Creates or updates an offer (and replaces what it grants). Past orders keep their access. */
@@ -62,6 +92,16 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
     redirect(`${back}?error=${encodeURIComponent(errorMessages.SLUG_TAKEN)}`);
   }
 
+  const banner = formData.get("banner");
+  let bannerAssetId: string | null | undefined;
+
+  try {
+    bannerAssetId = isFilledFile(banner) ? await storeBanner(banner, `Banner: ${offer.name}`) : formData.get("removeBanner") === "on" ? null : undefined;
+  } catch (error) {
+    if (error instanceof InvalidImageError) redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+    throw error;
+  }
+
   const sortOrder = Number(readString(formData, "sortOrder")) || 0;
   const data = {
     name: offer.name,
@@ -73,6 +113,7 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
     isActive: formData.get("isActive") === "on",
     isFeatured: formData.get("isFeatured") === "on",
     sortOrder: Math.max(-1000, Math.min(1000, Math.trunc(sortOrder))),
+    ...(bannerAssetId !== undefined ? { bannerAssetId } : {}),
   };
 
   const saved = await prisma.$transaction(async (transaction) => {
@@ -95,6 +136,7 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/loja");
   revalidatePath("/loja");
+  revalidatePath("/");
   redirect(`/admin/loja/${saved.id}?ok=1`);
 }
 

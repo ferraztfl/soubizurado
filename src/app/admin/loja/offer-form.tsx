@@ -17,6 +17,7 @@ export type OfferFormValues = Readonly<{
   sortOrder: number;
   courseIds: readonly string[];
   courseDays: number | null;
+  hasBanner: boolean;
 }>;
 
 export type OfferFormCourse = Readonly<{ id: string; title: string }>;
@@ -83,6 +84,22 @@ export function OfferForm({ values, courses }: Readonly<{ values: OfferFormValue
           <input type="checkbox" name="isFeatured" defaultChecked={values.isFeatured} /> Destaque
         </label>
       </div>
+      <label className={styles.field}>
+        <span>
+          Banner da página inicial (largo, ex.: 1600×530; PNG, JPG ou WebP até 8 MB)
+          {values.hasBanner ? " — já tem; envie outro para trocar" : ""}
+        </span>
+        <input name="banner" type="file" accept="image/png,image/jpeg,image/webp" />
+      </label>
+      {values.hasBanner ? (
+        <div className={styles.checks}>
+          <label>
+            <input type="checkbox" name="removeBanner" /> Remover o banner
+          </label>
+        </div>
+      ) : (
+        <p className={styles.hint}>Sem banner, o carrossel da página inicial monta o slide com o nome, a chamada e o preço.</p>
+      )}
       <label className={`${styles.field} ${styles.full}`}>
         <span>Descrição (o que está incluído; aceita **negrito** e quebras de linha)</span>
         <textarea name="description" defaultValue={values.description} rows={8} maxLength={20000} />

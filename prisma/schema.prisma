@@ -773,6 +773,7 @@ model MediaAsset {
   lessonPdfs     CourseLesson[]
   blogCovers     BlogPost[]
   blogImages     BlogPostImage[]
+  offerBanners   Offer[]
 
   @@index([storageProvider, bucket])
   @@index([mimeType])
@@ -1109,9 +1110,12 @@ model Offer {
   isActive       Boolean  @default(false) @map("is_active")
   isFeatured     Boolean  @default(false) @map("is_featured")
   sortOrder      Int      @default(0) @map("sort_order")
+  /// Wide banner for the home page carousel (optional).
+  bannerAssetId  String?  @map("banner_asset_id") @db.Uuid
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  banner    MediaAsset?  @relation(fields: [bannerAssetId], references: [id], onDelete: SetNull)
   grants    OfferGrant[]
   orders    Order[]
   blogPosts BlogPost[]

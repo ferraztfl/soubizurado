@@ -10,6 +10,7 @@ import { formatBRL } from "@/modules/store/domain/store";
 import { DEFAULT_SUBSCRIPTION_PLAN, SUBSCRIPTION_PLANS } from "@/modules/store/domain/subscription";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
+import { ComboCarousel, type ComboSlide } from "./_components/combo-carousel";
 import { SiteShell } from "./_components/site-shell";
 import { loadSiteViewer } from "./_components/site-viewer";
 import { BlogIcon } from "./blog/_components/blog-icon";
@@ -62,9 +63,10 @@ export default async function Home() {
     getPrismaClient().offer.findMany({
       where: { isActive: true },
       orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
-      take: 1,
+      take: 8,
       select: {
         slug: true,
+        bannerAssetId: true,
         name: true,
         headline: true,
         priceCents: true,
@@ -78,6 +80,14 @@ export default async function Home() {
   ]);
   const signedIn = viewer.signedIn;
   const combo = offers[0] ?? null;
+  const slides: ComboSlide[] = offers.map((offer) => ({
+    slug: offer.slug,
+    name: offer.name,
+    headline: offer.headline,
+    price: formatBRL(offer.priceCents),
+    compareAt: offer.compareAtCents ? formatBRL(offer.compareAtCents) : null,
+    bannerUrl: offer.bannerAssetId ? `/api/loja/banners/${offer.bannerAssetId}` : null,
+  }));
   const monthly = SUBSCRIPTION_PLANS[DEFAULT_SUBSCRIPTION_PLAN];
   const enemBoard = highlights.topBoards.find((board) => board.name === "INEP");
 
@@ -115,6 +125,12 @@ export default async function Home() {
   return (
     <SiteShell mainClassName={styles.homeMain}>
       <>
+        {slides.length > 0 ? (
+          <div className={styles.carouselBand}>
+            <ComboCarousel slides={slides} />
+          </div>
+        ) : null}
+
         <section className={styles.hero}>
           <div className={styles.heroInner}>
             <div className={styles.heroCopy}>

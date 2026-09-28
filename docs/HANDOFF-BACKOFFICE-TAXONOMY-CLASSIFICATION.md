@@ -839,3 +839,17 @@ Vale sobre §1/§12 onde divergir.
   botão = linha só com `[rótulo](https://…)`, só https) e tabelas `| a | b |` (1ª linha = cabeçalho, até
   8 colunas / 80 linhas). Ajuda atualizada no editor.
 - Não conferido com post real (banco sem posts publicados).
+
+### 13.28 Visitante com o topo do site, app instalável e carrossel de combos (29/09/2026)
+
+- Usuário: integração real com o Mercado Pago fica para depois (credenciais/URL pública).
+- `/questoes` para visitante: `VisitorAppShell` (topo e rodapé do site, barra "resposta grátis de hoje" com
+  A−/A+/tema, faixa do Premium). Aluno logado continua com a área do aluno. Em dev, `127.0.0.1` está em
+  `allowedDevOrigins` para testar como visitante sem sair da sessão em `localhost`.
+- App instalável: `src/app/manifest.ts`, ícones em `public/icons` + `src/app/icon.png`/`apple-icon.png` (gerados
+  do `logo-mark.png`), página `/aplicativo` (botão de instalar ou passo a passo por aparelho, QR Code via
+  pacote `qrcode`). Item "App" no menu. Sem service worker (não prometemos offline).
+- Carrossel de combos na página inicial (`_components/combo-carousel.tsx`): ofertas à venda, banner opcional
+  (migration aditiva `20260929100000_offer_banners`: `offers.banner_asset_id`; envio no admin da Loja,
+  convertido para WebP; servido só para ofertas ativas em `/api/loja/banners/[id]`). Sem banner, o slide é
+  montado com nome, chamada e preço. Não conferido com dados (nenhuma oferta ativa).

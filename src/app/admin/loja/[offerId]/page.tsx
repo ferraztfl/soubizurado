@@ -61,6 +61,7 @@ export default async function EditOfferPage(props: EditOfferPageProps) {
             sortOrder: offer.sortOrder,
             courseIds: courseGrants.map((grant) => grant.courseId!),
             courseDays: courseGrants[0]?.durationDays ?? null,
+            hasBanner: offer.bannerAssetId !== null,
           }}
           courses={courses}
         />

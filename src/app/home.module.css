@@ -11,6 +11,10 @@
   flex: 1;
 }
 
+.carouselBand {
+  background: #111217;
+}
+
 .perMonth {
   color: #6b6d78;
   font-size: 13px;
