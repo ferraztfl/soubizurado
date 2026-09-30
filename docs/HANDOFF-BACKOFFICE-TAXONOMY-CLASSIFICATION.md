@@ -934,3 +934,23 @@ Vale sobre §1/§12 onde divergir.
   R$ 11.563,77 e Soldado 500 + CR R$ 6.067,51 (médio); taxa R$ 150,00; Arapiraca/AL e Maceió/AL; 7 etapas. O PDF
   impresso não traz o cronograma (datas ficam para preencher, com aviso). TJRS também confere por regras.
 - Barra "travada em 20%": não reproduzida; no reteste pela tela com IA local ela avançou 23% → 56% → 80% → 95% → fim.
+
+### 13.34 Preço novo e comparação com o concorrente (30/09/2026)
+
+- Estrutura e preços do Estratégia Militar levantados (apenas páginas públicas e menus; nada copiado): assinaturas
+  R$ 29,90/R$ 39,90 por mês (anual R$ 159/R$ 249), produtos avulsos por concurso (teoria R$ 59, 6 simulados R$ 59,
+  redação R$ 19,90, "conciliação" de 2 editais R$ 89,90) e ~25 módulos na área do aluno (flashcards, lei seca,
+  cronograma, TAF, "pergunte ao edital", comunidade…). Meta do usuário: mesma estrutura, preço menor; simulados e
+  teoria produzidos pelo usuário/professores, IA só como rascunho.
+- Premium mensal agora R$ 14,90 (`SUBSCRIPTION_PLANS`; textos usam `monthlyPriceLabel()`); anual = oferta da loja
+  `premium-anual` (R$ 118,80 = R$ 9,90/mês, 365 dias, criada no banco com log em `data-private/logs`).
+
+### 13.35 Editais PMPE e CBMPE 2026 (30/09/2026)
+
+- Editais publicados no DOE-PE de 29/09/2026 (Instituto AOCP). PDFs em `data-private/editorial/editais/{pmpe,cbmpe}-2027.pdf`.
+- Os concursos `concurso-pmpe-2026` e `concurso-cbmpe-2026` foram atualizados (status "Edital publicado", cargos,
+  requisitos, soldo, datas, taxa, locais, etapas) com dados conferidos página a página; estado anterior em
+  `data-private/logs/contests-pmpe-cbmpe-before-*.json`. Notícias "Edital … publicado" publicadas via `editorial:seed`
+  (`data-private/editorial/seed-2026-09-30-editais-pe.json`).
+- Limitação: o leitor por regras não entende o layout do Diário Oficial (várias colunas e tabelas) — devolveu datas de
+  leis como data de prova. Pendente: suporte a DOE no importador.
