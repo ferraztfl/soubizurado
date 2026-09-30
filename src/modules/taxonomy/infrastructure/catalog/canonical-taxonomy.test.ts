@@ -49,6 +49,9 @@ describe("CANONICAL_TAXONOMY", () => {
       "Direitos e Garantias Fundamentais": "Direito Constitucional",
       "Língua Portuguesa": "Língua Portuguesa",
       "Língua Estrangeira - Inglês": "",
+      "Clínica Geral": "Clínica Médica",
+      "Clínica Cirúrgica": "Cirurgia Geral",
+      "Conhecimentos de Odontologia": "Odontologia",
     };
 
     for (const [section, expected] of Object.entries(boardSections)) {

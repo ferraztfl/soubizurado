@@ -970,3 +970,17 @@ Vale sobre §1/§12 onde divergir.
   Sem matéria correspondente na taxonomia: História de Pernambuco, Direitos Humanos e Legislação Extravagante, Gestão de
   Saúde, Conhecimentos Específicos, Legislações pertinentes aos militares de PE (decisão do usuário criar/aliasar).
 - `data-private/**` passou a ser ignorado pelo ESLint.
+
+### 13.37 Taxonomia v8 e ligação explícita do edital (30/09/2026)
+
+- Catálogo v8 (`concursos-taxonomy-v8.ts`, aprovado pelo usuário): Clínica Médica, Cirurgia Geral, Odontologia (área Saúde)
+  e área "Gestão em Saúde" em Saúde Pública (`withAreas` agora aplica áreas extras a matérias de qualquer versão).
+  Seed aplicado: 3 matérias, 11 áreas, 65 tópicos, 25 aliases, 0 conflitos.
+- Edital verticalizado: 4ª coluna opcional "Disciplina" ou "Disciplina > Área ou Tópico" (migration aditiva
+  `20260930150000_contest_syllabus_links`: `area_id`/`topic_id`, CHECK de exclusividade). Ligação inexistente é
+  recusada no admin. "Resolver questões" usa `topic=`/`area=` (sem filtro de banca nesse caso).
+- Os 7 cargos PMPE/CBMPE foram religados (todas as matérias ligadas; log em `data-private/logs/syllabi-links-before-*`).
+  Gravação do edital agora só atualiza linhas alteradas e usa transação de até 60 s (a de 5 s estourava com 172 assuntos).
+- Lacunas de questões (30/09): História de PE 7, Estatística 8, Atualidades 1, Saúde Pública 1, Gestão em Saúde 0,
+  Clínica/Cirurgia/Odontologia 0, Penal Militar 16, Processual Penal Militar 14, Direitos Humanos 22. Fonte decidida:
+  provas oficiais anteriores (PDFs das bancas), importadas com dry-run.

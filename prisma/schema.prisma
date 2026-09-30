@@ -196,6 +196,7 @@ model Area {
   aliases   AreaAlias[]
 
   classificationSuggestions QuestionClassificationTask[]
+  contestSyllabusSubjects   ContestSyllabusSubject[]
 
   @@unique([disciplineId, slug])
   @@unique([id, disciplineId])
@@ -223,6 +224,7 @@ model Topic {
   aliases   TopicAlias[]
 
   classificationSuggestions QuestionClassificationTask[]
+  contestSyllabusSubjects   ContestSyllabusSubject[]
 
   @@unique([disciplineId, slug])
   @@unique([id, disciplineId])
@@ -1494,10 +1496,15 @@ model ContestSyllabusSubject {
   block         String? @db.VarChar(40)
   /// Matching discipline of the controlled taxonomy (never created from here).
   disciplineId  String? @map("discipline_id") @db.Uuid
+  /// Optional narrower link inside that discipline (e.g. História > História de Pernambuco).
+  areaId        String? @map("area_id") @db.Uuid
+  topicId       String? @map("topic_id") @db.Uuid
   sortOrder     Int     @default(0) @map("sort_order")
 
   syllabus   ContestSyllabus        @relation(fields: [syllabusId], references: [id], onDelete: Cascade)
   discipline Discipline?            @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  area       Area?                  @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  topic      Topic?                 @relation(fields: [topicId], references: [id], onDelete: SetNull)
   topics     ContestSyllabusTopic[]
 
   @@index([syllabusId, sortOrder])

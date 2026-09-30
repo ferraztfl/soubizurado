@@ -13,8 +13,9 @@ import { slugifyContest } from "./contest";
  *   2. Tipologias e gêneros textuais.
  *   # Direito Constitucional | 10
  *   1. Dos princípios fundamentais.
+ *   # História de Pernambuco | 10 | Bloco I | História > História de Pernambuco
  *
- * The question count and the block are optional; topic numbers too.
+ * The question count, the block, the taxonomy link and topic numbers are optional.
  */
 
 export const SYLLABUS_LIMITS = {
@@ -30,12 +31,30 @@ export const SYLLABUS_LIMITS = {
 
 export type SyllabusTopicPlan = Readonly<{ code: string | null; text: string }>;
 
+/**
+ * Explicit link to the taxonomy, typed as a 4th cell: "Disciplina" or
+ * "Disciplina > Área ou Tópico". Without it, the subject name is matched.
+ */
+export type SyllabusLink = Readonly<{ discipline: string; target: string | null }>;
+
 export type SyllabusSubjectPlan = Readonly<{
   name: string;
   questionCount: number | null;
   block: string | null;
+  link: SyllabusLink | null;
   topics: readonly SyllabusTopicPlan[];
 }>;
+
+const LINK_PART_MAX = 180;
+
+function parseLink(cell: string): SyllabusLink | null | undefined {
+  if (!cell) return null;
+  const parts = cell.split(">").map((part) => part.trim());
+  const [discipline = "", target = "", ...rest] = parts;
+  if (rest.length > 0 || discipline.length < 2 || discipline.length > LINK_PART_MAX) return undefined;
+  if (parts.length === 2 && (target.length < 2 || target.length > LINK_PART_MAX)) return undefined;
+  return { discipline, target: parts.length === 2 ? target : null };
+}
 
 export type SyllabusTextError = Readonly<{ line: number; reason: "SUBJECT" | "TOPIC_OUTSIDE_SUBJECT" | "TOPIC" | "TOO_MANY" }>;
 
@@ -45,7 +64,8 @@ const TOPIC_NUMBER = /^((?:\d{1,3}[.)])+(?:\d{1,3})?|[a-z]\))\s+/i;
 export function parseSyllabusText(
   text: string,
 ): { ok: true; subjects: SyllabusSubjectPlan[] } | { ok: false; error: SyllabusTextError } {
-  const subjects: { name: string; questionCount: number | null; block: string | null; topics: SyllabusTopicPlan[] }[] = [];
+  const subjects: { name: string; questionCount: number | null; block: string | null; link: SyllabusLink | null; topics: SyllabusTopicPlan[] }[] =
+    [];
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
 
   for (const [index, raw] of lines.entries()) {
@@ -54,21 +74,24 @@ export function parseSyllabusText(
     const at = index + 1;
 
     if (line.startsWith("#")) {
-      const [name = "", countCell = "", blockCell = ""] = line
+      const [name = "", countCell = "", blockCell = "", linkCell = "", ...extra] = line
         .replace(/^#+\s*/, "")
         .split("|")
         .map((cell) => cell.trim());
       const questionCount = countCell ? Number(countCell) : null;
+      const link = parseLink(linkCell);
       if (
         name.length < 2 ||
         name.length > SYLLABUS_LIMITS.subjectNameMax ||
         blockCell.length > SYLLABUS_LIMITS.blockMax ||
+        link === undefined ||
+        extra.length > 0 ||
         (questionCount !== null && (!Number.isInteger(questionCount) || questionCount < 0 || questionCount > SYLLABUS_LIMITS.questionsMax))
       ) {
         return { ok: false, error: { line: at, reason: "SUBJECT" } };
       }
       if (subjects.length >= SYLLABUS_LIMITS.subjectsMax) return { ok: false, error: { line: at, reason: "TOO_MANY" } };
-      subjects.push({ name, questionCount, block: blockCell || null, topics: [] });
+      subjects.push({ name, questionCount, block: blockCell || null, link, topics: [] });
       continue;
     }
 
@@ -92,12 +115,13 @@ export function parseSyllabusText(
 export function formatSyllabusText(subjects: readonly SyllabusSubjectPlan[]): string {
   return subjects
     .map((subject) => {
-      const cells = [subject.name, subject.questionCount === null ? "" : String(subject.questionCount), subject.block ?? ""];
+      const link = subject.link ? [subject.link.discipline, subject.link.target].filter(Boolean).join(" > ") : "";
+      const cells = [subject.name, subject.questionCount === null ? "" : String(subject.questionCount), subject.block ?? "", link];
       while (cells.length > 1 && cells[cells.length - 1] === "") cells.pop();
       const topics = subject.topics.map((topic) =>
         topic.code ? `${topic.code}${/^[a-z]$/i.test(topic.code) ? ")" : "."} ${topic.text}` : topic.text,
       );
-      return [`# ${cells.join(" | ")}`, ...topics].join("\n");
+      return [`# ${cells.join(" | ").replace(/\|\s{2}(?=\|)/g, "| ")}`, ...topics].join("\n");
     })
     .join("\n\n");
 }

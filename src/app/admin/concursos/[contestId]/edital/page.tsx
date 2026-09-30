@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { formatSyllabusText, totalQuestions } from "@/modules/contests/domain/syllabus";
-import { loadContestSyllabi, type LoadedSyllabus } from "@/modules/contests/infrastructure/syllabus-store";
+import { loadContestSyllabi, loadedSubjectPlans, type LoadedSyllabus } from "@/modules/contests/infrastructure/syllabus-store";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -19,8 +19,8 @@ type SyllabusPageProps = Readonly<{
 const EXAMPLE = `# Língua Portuguesa | 10 | Bloco I
 1. Compreensão e interpretação de textos.
 2. Tipologias e gêneros textuais.
-# Direito Constitucional | 10 | Bloco III
-1. Dos princípios fundamentais.`;
+# História de Pernambuco | 10 | Bloco I | História > História de Pernambuco
+1. Ocupação e colonização.`;
 
 /** "Edital verticalizado" of each position: subjects, number of questions and syllabus topics. */
 export default async function ContestSyllabusPage(props: SyllabusPageProps) {
@@ -45,7 +45,8 @@ export default async function ContestSyllabusPage(props: SyllabusPageProps) {
       <p className={styles.hint}>
         Um bloco por cargo: as matérias da prova com o número de questões e os assuntos do conteúdo programático, copiados do
         edital oficial. É a base da página “o que estudar”, do checklist do aluno, dos simulados e da teoria. Matérias com o mesmo
-        nome de uma matéria da taxonomia ficam ligadas a ela (nada é criado na taxonomia).
+        nome de uma matéria da taxonomia ficam ligadas a ela; para ligar a outro nome ou a um assunto, use a 4ª coluna
+        (“Disciplina” ou “Disciplina &gt; Área ou Tópico”). Nada é criado na taxonomia.
       </p>
       {params.ok ? <p className={styles.info}>Salvo.</p> : null}
       {params.error ? <p className={styles.error}>{params.error.slice(0, 300)}</p> : null}
@@ -88,8 +89,8 @@ function SyllabusCard({
       </p>
       {unmatched.length > 0 ? (
         <p className={styles.hint}>
-          Sem matéria correspondente na taxonomia: {unmatched.join(", ")}. Crie ou ajuste na{" "}
-          <Link href="/admin/taxonomia">Taxonomia</Link> e salve este cargo de novo para ligar.
+          Sem matéria correspondente na taxonomia: {unmatched.join(", ")}. Ligue pela 4ª coluna a uma matéria existente, ou crie
+          na <Link href="/admin/taxonomia">Taxonomia</Link> e salve este cargo de novo.
         </p>
       ) : null}
       <SyllabusForm contestId={contestId} syllabus={syllabus} />
@@ -129,12 +130,12 @@ function SyllabusForm({ contestId, syllabus }: Readonly<{ contestId: string; syl
         <input name="durationMinutes" type="number" min={1} max={1440} defaultValue={syllabus?.durationMinutes ?? ""} placeholder="270" />
       </label>
       <label className={`${styles.field} ${styles.full}`}>
-        <span>Matérias e assuntos — “# Matéria | nº de questões | bloco” e, abaixo, um assunto por linha</span>
+        <span>Matérias e assuntos — “# Matéria | nº de questões | bloco | Disciplina &gt; Área ou Tópico” e, abaixo, um assunto por linha</span>
         <textarea
           name="text"
           rows={syllabus ? 16 : 10}
           required
-          defaultValue={syllabus ? formatSyllabusText(syllabus.subjects) : ""}
+          defaultValue={syllabus ? formatSyllabusText(loadedSubjectPlans(syllabus)) : ""}
           placeholder={EXAMPLE}
         />
       </label>

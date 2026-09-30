@@ -36,12 +36,63 @@ export async function matchDisciplines(names: readonly string[]): Promise<Map<st
   return found;
 }
 
+export type ResolvedLink = Readonly<{ disciplineId: string | null; areaId: string | null; topicId: string | null }>;
+
+/**
+ * Taxonomy link of each subject, in order: the explicit "Disciplina > Área ou
+ * Tópico" when typed (names or aliases), else the subject name. Returns the
+ * names of the subjects whose explicit link was not found.
+ */
+export async function resolveSyllabusLinks(
+  subjects: readonly SyllabusSubjectPlan[],
+): Promise<{ ok: true; links: ResolvedLink[] } | { ok: false; unresolved: string[] }> {
+  const prisma = getPrismaClient();
+  const byName = await matchDisciplines(subjects.map((subject) => subject.link?.discipline ?? subject.name));
+  const links: ResolvedLink[] = [];
+  const unresolved: string[] = [];
+
+  for (const subject of subjects) {
+    const disciplineId = byName.get(subject.link?.discipline ?? subject.name) ?? null;
+    if (!subject.link) {
+      links.push({ disciplineId, areaId: null, topicId: null });
+      continue;
+    }
+    if (!disciplineId) {
+      unresolved.push(subject.name);
+      links.push({ disciplineId: null, areaId: null, topicId: null });
+      continue;
+    }
+    if (!subject.link.target) {
+      links.push({ disciplineId, areaId: null, topicId: null });
+      continue;
+    }
+
+    const wanted = normalizeTaxonomyTerm(subject.link.target);
+    const [topics, topicAliases, areas, areaAliases] = await Promise.all([
+      prisma.topic.findMany({ where: { disciplineId, isActive: true }, select: { id: true, name: true } }),
+      prisma.topicAlias.findMany({ where: { disciplineId, normalizedName: wanted }, select: { topicId: true } }),
+      prisma.area.findMany({ where: { disciplineId, isActive: true }, select: { id: true, name: true } }),
+      prisma.areaAlias.findMany({ where: { disciplineId, normalizedName: wanted }, select: { areaId: true } }),
+    ]);
+    const topicId = topics.find((topic) => normalizeTaxonomyTerm(topic.name) === wanted)?.id ?? topicAliases[0]?.topicId ?? null;
+    const areaId = topicId ? null : (areas.find((area) => normalizeTaxonomyTerm(area.name) === wanted)?.id ?? areaAliases[0]?.areaId ?? null);
+    if (!topicId && !areaId) unresolved.push(subject.name);
+    links.push({ disciplineId, areaId, topicId });
+  }
+
+  return unresolved.length > 0 ? { ok: false, unresolved } : { ok: true, links };
+}
+
 const topicKey = (code: string | null, text: string) => `${code ?? ""}|${normalizeTaxonomyTerm(text)}`;
 
-/** Creates or updates one position's syllabus of a contest. Returns its id. */
-export async function saveSyllabus(contestId: string, plan: SyllabusPlan, syllabusId: string | null): Promise<string> {
+/** Creates or updates one position's syllabus of a contest (links already resolved, in subject order). Returns its id. */
+export async function saveSyllabus(
+  contestId: string,
+  plan: SyllabusPlan,
+  syllabusId: string | null,
+  links: readonly ResolvedLink[],
+): Promise<string> {
   const prisma = getPrismaClient();
-  const disciplines = await matchDisciplines(plan.subjects.map((subject) => subject.name));
 
   return prisma.$transaction(async (transaction) => {
     const data = {
@@ -61,7 +112,7 @@ export async function saveSyllabus(contestId: string, plan: SyllabusPlan, syllab
 
     const existing = await transaction.contestSyllabusSubject.findMany({
       where: { syllabusId: row.id },
-      select: { id: true, name: true, topics: { select: { id: true, code: true, text: true } } },
+      select: { id: true, name: true, topics: { select: { id: true, code: true, text: true, sortOrder: true } } },
     });
     const bySubject = new Map(existing.map((subject) => [normalizeTaxonomyTerm(subject.name), subject]));
     const keptSubjects = new Set<string>();
@@ -72,7 +123,9 @@ export async function saveSyllabus(contestId: string, plan: SyllabusPlan, syllab
         name: subject.name,
         questionCount: subject.questionCount,
         block: subject.block,
-        disciplineId: disciplines.get(subject.name) ?? null,
+        disciplineId: links[subjectIndex]?.disciplineId ?? null,
+        areaId: links[subjectIndex]?.areaId ?? null,
+        topicId: links[subjectIndex]?.topicId ?? null,
         sortOrder: subjectIndex,
       };
       const subjectId = previous
@@ -87,8 +140,11 @@ export async function saveSyllabus(contestId: string, plan: SyllabusPlan, syllab
     if (removed.length > 0) await transaction.contestSyllabusSubject.deleteMany({ where: { id: { in: removed } } });
 
     return row.id;
-  });
+    // Large syllabi (150+ topics) against a remote database need more than the 5 s default.
+  }, SAVE_TRANSACTION);
 }
+
+const SAVE_TRANSACTION = { maxWait: 10_000, timeout: 60_000 } as const;
 
 type Transaction = Parameters<Parameters<ReturnType<typeof getPrismaClient>["$transaction"]>[0]>[0];
 
@@ -96,10 +152,11 @@ async function saveTopics(
   transaction: Transaction,
   subjectId: string,
   subject: SyllabusSubjectPlan,
-  previous: readonly { id: string; code: string | null; text: string }[],
+  previous: readonly { id: string; code: string | null; text: string; sortOrder: number }[],
 ): Promise<void> {
   const byKey = new Map(previous.map((topic) => [topicKey(topic.code, topic.text), topic.id]));
   const byText = new Map(previous.map((topic) => [topicKey(null, topic.text), topic.id]));
+  const byId = new Map(previous.map((topic) => [topic.id, topic]));
   const kept = new Set<string>();
   const created: { subjectId: string; code: string | null; text: string; sortOrder: number }[] = [];
 
@@ -109,7 +166,11 @@ async function saveTopics(
     const id = candidates.find((candidate): candidate is string => candidate !== undefined && !kept.has(candidate));
     if (id) {
       kept.add(id);
-      await transaction.contestSyllabusTopic.update({ where: { id }, data: { code: topic.code, text: topic.text, sortOrder: index } });
+      const old = byId.get(id);
+      // Only rows that changed are written (a save usually touches few topics).
+      if (!old || old.code !== topic.code || old.text !== topic.text || old.sortOrder !== index) {
+        await transaction.contestSyllabusTopic.update({ where: { id }, data: { code: topic.code, text: topic.text, sortOrder: index } });
+      }
     } else {
       created.push({ subjectId, code: topic.code, text: topic.text, sortOrder: index });
     }
@@ -137,6 +198,8 @@ const SYLLABUS_SELECT = {
       questionCount: true,
       block: true,
       discipline: { select: { id: true, name: true, slug: true } },
+      area: { select: { id: true, name: true } },
+      topic: { select: { id: true, name: true } },
       topics: { orderBy: { sortOrder: "asc" }, select: { id: true, code: true, text: true } },
     },
   },
@@ -161,6 +224,21 @@ export async function loadPublishedSyllabi(contestId: string) {
 }
 
 export type LoadedSyllabus = Awaited<ReturnType<typeof loadContestSyllabi>>[number];
+
+/** Stored subjects back to plans (for the admin text): the link is written only when it is not the plain name match. */
+export function loadedSubjectPlans(syllabus: LoadedSyllabus): SyllabusSubjectPlan[] {
+  return syllabus.subjects.map((subject) => {
+    const target = subject.topic?.name ?? subject.area?.name ?? null;
+    const sameName = subject.discipline && normalizeTaxonomyTerm(subject.discipline.name) === normalizeTaxonomyTerm(subject.name);
+    return {
+      name: subject.name,
+      questionCount: subject.questionCount,
+      block: subject.block,
+      link: subject.discipline && (target || !sameName) ? { discipline: subject.discipline.name, target } : null,
+      topics: subject.topics,
+    };
+  });
+}
 
 /** Topic ids of these syllabi the student marked as studied. */
 export async function loadStudiedTopicIds(profileId: string, topicIds: readonly string[]): Promise<Set<string>> {

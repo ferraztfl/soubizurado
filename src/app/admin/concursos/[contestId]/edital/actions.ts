@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { planSyllabus, type SyllabusError, type SyllabusTextError } from "@/modules/contests/domain/syllabus";
-import { saveSyllabus } from "@/modules/contests/infrastructure/syllabus-store";
+import { resolveSyllabusLinks, saveSyllabus } from "@/modules/contests/infrastructure/syllabus-store";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -21,7 +21,7 @@ const errors: Readonly<Record<SyllabusError | "SLUG_TAKEN", string>> = {
 };
 
 const textErrors: Readonly<Record<SyllabusTextError["reason"], string>> = {
-  SUBJECT: "matéria inválida (formato: # Matéria | nº de questões | bloco)",
+  SUBJECT: "matéria inválida (formato: # Matéria | nº de questões | bloco | Disciplina > Área ou Tópico)",
   TOPIC_OUTSIDE_SUBJECT: "assunto antes da primeira matéria (comece com # Matéria)",
   TOPIC: "assunto vazio ou com mais de 600 caracteres",
   TOO_MANY: "limite de 40 matérias ou 200 assuntos por matéria",
@@ -71,7 +71,12 @@ export async function saveSyllabusAction(formData: FormData): Promise<void> {
     fail(back, "Cargo não encontrado neste concurso.");
   }
 
-  const savedId = await saveSyllabus(contestId, result.syllabus, syllabusId);
+  const links = await resolveSyllabusLinks(result.syllabus.subjects);
+  if (!links.ok) {
+    fail(back, `Ligação com a taxonomia não encontrada em: ${links.unresolved.join(", ")}. Use “Disciplina” ou “Disciplina > Área ou Tópico” com os nomes da Taxonomia.`);
+  }
+
+  const savedId = await saveSyllabus(contestId, result.syllabus, syllabusId, links.links);
 
   revalidatePath(back);
   revalidatePath(`/concursos/${contest.slug}`);

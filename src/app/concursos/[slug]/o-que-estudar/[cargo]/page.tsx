@@ -50,6 +50,8 @@ const loadSyllabus = cache(async (contestSlug: string, syllabusSlug: string) => 
           questionCount: true,
           block: true,
           disciplineId: true,
+          areaId: true,
+          topicId: true,
           topics: { orderBy: { sortOrder: "asc" }, select: { id: true, code: true, text: true } },
         },
       },
@@ -98,8 +100,14 @@ export default async function ContestSyllabusPage({ params }: SyllabusPageProps)
   const path = `/concursos/${contest.slug}/o-que-estudar/${syllabus.slug}`;
   const base = siteUrl();
 
-  const questionsHref = (disciplineId: string | null) =>
-    disciplineId ? `/questoes?${contest.board ? `board=${contest.board.id}&` : ""}discipline=${disciplineId}` : null;
+  // A narrow link (area/topic) already targets the subject; the board filter is kept for whole disciplines only.
+  const questionsHref = (subject: Readonly<{ disciplineId: string | null; areaId: string | null; topicId: string | null }>) => {
+    if (!subject.disciplineId) return null;
+    const narrow = subject.topicId ? `&topic=${subject.topicId}` : subject.areaId ? `&area=${subject.areaId}` : null;
+    return narrow
+      ? `/questoes?discipline=${subject.disciplineId}${narrow}`
+      : `/questoes?${contest.board ? `board=${contest.board.id}&` : ""}discipline=${subject.disciplineId}`;
+  };
 
   const jsonLd = JSON.stringify({
     "@context": "https://schema.org",
@@ -178,7 +186,7 @@ export default async function ContestSyllabusPage({ params }: SyllabusPageProps)
           name: subject.name,
           questionCount: subject.questionCount,
           block: subject.block,
-          questionsHref: questionsHref(subject.disciplineId),
+          questionsHref: questionsHref(subject),
           topics: subject.topics,
         }))}
         initialStudied={[...studied]}

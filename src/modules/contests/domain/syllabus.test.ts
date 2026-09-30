@@ -38,6 +38,19 @@ describe("syllabus text", () => {
     expect(again).toEqual(parsed);
   });
 
+  it("reads the optional taxonomy link", () => {
+    const parsed = parseSyllabusText("# História de Pernambuco | 10 | Bloco I | História > História de Pernambuco\n1. Olinda.\n# Gestão | | | Saúde Pública");
+    expect(parsed.ok && parsed.subjects.map((subject) => subject.link)).toEqual([
+      { discipline: "História", target: "História de Pernambuco" },
+      { discipline: "Saúde Pública", target: null },
+    ]);
+    if (!parsed.ok) return;
+    expect(formatSyllabusText(parsed.subjects)).toContain("# Gestão | | | Saúde Pública");
+    expect(parseSyllabusText(formatSyllabusText(parsed.subjects))).toEqual(parsed);
+    expect(parseSyllabusText("# X | 1 | B | a > b > c")).toMatchObject({ ok: false, error: { line: 1, reason: "SUBJECT" } });
+    expect(parseSyllabusText("# X | 1 | B | História > ")).toMatchObject({ ok: false, error: { line: 1, reason: "SUBJECT" } });
+  });
+
   it("points to the line of the problem", () => {
     expect(parseSyllabusText("1. Sem matéria antes")).toEqual({ ok: false, error: { line: 1, reason: "TOPIC_OUTSIDE_SUBJECT" } });
     expect(parseSyllabusText("# Português\n\n# X | dez")).toEqual({ ok: false, error: { line: 3, reason: "SUBJECT" } });
