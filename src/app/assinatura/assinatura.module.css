@@ -62,6 +62,15 @@
   gap: 22px;
 }
 
+.plansThree {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 22px;
+}
+
 .error {
   grid-column: 1 / -1;
   margin: 0;
@@ -389,12 +398,23 @@
   width: auto;
 }
 
+@media (max-width: 1080px) and (min-width: 761px) {
+  .plansThree {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .plansThree > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 760px) {
   .hero {
     padding: 40px 0 28px;
   }
 
-  .plans {
+  .plans,
+  .plansThree {
     grid-template-columns: minmax(0, 1fr);
   }
 

@@ -4,6 +4,8 @@
  * student has no limit. Enforced server-side before an answer is graded.
  */
 
+import { monthlyPriceLabel } from "@/modules/store/domain/subscription";
+
 export const FREE_DAILY_ANSWERS = {
   visitor: 1,
   free: 10,
@@ -45,5 +47,5 @@ export function isEntitlementActive(entitlement: EntitlementPeriod, now: Date): 
 export function limitReachedMessage(allowance: AnswerAllowance): string {
   return allowance.plan === "visitor"
     ? "Você já respondeu a questão gratuita de hoje. Crie sua conta grátis para responder 10 questões por dia."
-    : `Você usou suas ${allowance.limit} respostas gratuitas de hoje — elas renovam à meia-noite. Com o Premium (R$ 9,90/mês), as respostas são ilimitadas.`;
+    : `Você usou suas ${allowance.limit} respostas gratuitas de hoje — elas renovam à meia-noite. Com o Premium (${monthlyPriceLabel()}), as respostas são ilimitadas.`;
 }

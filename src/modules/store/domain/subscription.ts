@@ -9,10 +9,27 @@ export const SUBSCRIPTION_PLANS = {
   PREMIUM_MONTHLY: {
     name: "Premium mensal",
     reason: "Sou Bizurado Premium — assinatura mensal",
-    amountCents: 990,
+    amountCents: 1490,
     frequencyMonths: 1,
   },
 } as const;
+
+/*
+ * Yearly Premium is a one-time store offer (Pix or card in installments, no
+ * renewal): the price lives in the offer (admin → Loja), found by this slug.
+ */
+export const YEARLY_PREMIUM_OFFER_SLUG = "premium-anual";
+
+/** "R$ 9,90" per month for a one-time yearly price, rounded up to the cent. */
+export function monthlyEquivalentCents(yearlyCents: number): number {
+  return Math.ceil(yearlyCents / 12);
+}
+
+/** Monthly price as text, for messages ("R$ 14,90/mês"). */
+export function monthlyPriceLabel(): string {
+  const cents = SUBSCRIPTION_PLANS[DEFAULT_SUBSCRIPTION_PLAN].amountCents;
+  return `R$ ${Math.floor(cents / 100)},${String(cents % 100).padStart(2, "0")}/mês`;
+}
 
 export type SubscriptionPlanKey = keyof typeof SUBSCRIPTION_PLANS;
 
@@ -80,7 +97,7 @@ export function subscriptionPeriod(
   return { startsAt: paidAt, endsAt: end };
 }
 
-/** "R$ 0,33" — the monthly price split over 30 days, rounded up to the cent (shown as "só R$ 0,33 por dia"). */
+/** "R$ 0,50" — the monthly price split over 30 days, rounded up to the cent (shown as "só R$ 0,50 por dia"). */
 export function pricePerDayCents(planKey: SubscriptionPlanKey): number {
   const plan = SUBSCRIPTION_PLANS[planKey];
   return Math.ceil(plan.amountCents / (30 * plan.frequencyMonths));

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { formatBRL } from "@/modules/store/domain/store";
+import { monthlyPriceLabel } from "@/modules/store/domain/subscription";
 import { cancelSubscriptionAction } from "@/modules/store/presentation/subscription-actions";
 import { findStudentProfileId } from "@/modules/study/infrastructure/queries/answered-question-status";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
@@ -102,7 +103,7 @@ export default async function MySubscriptionPage({ searchParams }: MySubscriptio
         </span>
         {current?.status === "AUTHORIZED" ? null : (
           <Link href="/assinatura" className={styles.link}>
-            Assinar por R$ 9,90/mês
+            Assinar por {monthlyPriceLabel()}
           </Link>
         )}
       </section>

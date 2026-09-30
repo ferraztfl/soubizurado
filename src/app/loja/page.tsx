@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { formatBRL } from "@/modules/store/domain/store";
+import { monthlyPriceLabel } from "@/modules/store/domain/subscription";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import styles from "./loja.module.css";
@@ -46,7 +47,7 @@ export default async function StorePage() {
           Pagamento seguro pelo Mercado Pago (Pix, cartão ou boleto).
         </p>
         <p>
-          Prefere assinar? <Link href="/assinatura">Premium mensal por R$ 9,90/mês</Link>, com renovação automática — cancele quando quiser.
+          Prefere assinar? <Link href="/assinatura">Premium mensal por {monthlyPriceLabel()}</Link>, com renovação automática — cancele quando quiser.
         </p>
       </header>
 

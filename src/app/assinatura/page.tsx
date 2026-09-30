@@ -3,20 +3,46 @@ import Link from "next/link";
 
 import { FREE_DAILY_ANSWERS } from "@/modules/study/domain/access";
 import { formatBRL } from "@/modules/store/domain/store";
-import { DEFAULT_SUBSCRIPTION_PLAN, SUBSCRIPTION_PLANS, pricePerDayCents } from "@/modules/store/domain/subscription";
+import {
+  DEFAULT_SUBSCRIPTION_PLAN,
+  SUBSCRIPTION_PLANS,
+  YEARLY_PREMIUM_OFFER_SLUG,
+  monthlyEquivalentCents,
+  monthlyPriceLabel,
+  pricePerDayCents,
+} from "@/modules/store/domain/subscription";
 import { subscribeAction, subscribeNewAccountAction } from "@/modules/store/presentation/subscription-actions";
+import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import { loadSiteViewer } from "../_components/site-viewer";
 import styles from "./assinatura.module.css";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Assinatura Premium — questões ilimitadas por R$ 9,90/mês",
-  description:
-    "Assine o Sou Bizurado Premium por R$ 9,90 por mês: questões e simulados ilimitados, revisão dos seus erros e desempenho completo. Cancele quando quiser.",
-  alternates: { canonical: "/assinatura" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const yearly = await loadYearlyOffer();
+  const from = yearly ? `${formatBRL(monthlyEquivalentCents(yearly.priceCents))}/mês` : monthlyPriceLabel();
+  return {
+    title: `Assinatura Premium — questões ilimitadas a partir de ${from}`,
+    description: `Assine o Sou Bizurado Premium: questões e simulados ilimitados, revisão dos seus erros e desempenho completo. Mensal por ${monthlyPriceLabel()}${yearly ? ` ou anual por ${formatBRL(yearly.priceCents)}` : ""}.`,
+    alternates: { canonical: "/assinatura" },
+  };
+}
+
+/** The one-time yearly Premium offer, when it is on sale. */
+async function loadYearlyOffer() {
+  const offer = await getPrismaClient().offer.findUnique({
+    where: { slug: YEARLY_PREMIUM_OFFER_SLUG },
+    select: { slug: true, priceCents: true, isActive: true },
+  });
+  return offer?.isActive ? offer : null;
+}
+
+/** 1490 → ["14", "90"]. */
+function splitPrice(amountCents: number): [string, string] {
+  const [reais = "", cents = ""] = formatBRL(amountCents).replace(/^R\$\s*/, "").split(",");
+  return [reais, cents];
+}
 
 type SubscriptionPageProps = Readonly<{ searchParams: Promise<Readonly<{ erro?: string }>> }>;
 
@@ -68,22 +94,32 @@ const FAQ = [
 ] as const;
 
 export default async function SubscriptionPage({ searchParams }: SubscriptionPageProps) {
-  const [params, viewer] = await Promise.all([searchParams, loadSiteViewer()]);
+  const [params, viewer, yearly] = await Promise.all([searchParams, loadSiteViewer(), loadYearlyOffer()]);
   const plan = SUBSCRIPTION_PLANS[DEFAULT_SUBSCRIPTION_PLAN];
   const error = params.erro ? ERRORS[params.erro] : null;
-  const [reais, cents] = formatBRL(plan.amountCents).replace(/^R\$\s*/, "").split(",");
+  const [reais, cents] = splitPrice(plan.amountCents);
+  const yearlyMonthCents = yearly ? monthlyEquivalentCents(yearly.priceCents) : null;
+  const [yearlyReais, yearlyCents] = yearlyMonthCents === null ? ["", ""] : splitPrice(yearlyMonthCents);
 
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
         <span className={styles.eyebrow}>Sou Bizurado Premium</span>
         <h1>
-          Estude sem limites por <span>só {formatBRL(pricePerDayCents(DEFAULT_SUBSCRIPTION_PLAN))} por dia</span>
+          {yearlyMonthCents === null ? (
+            <>
+              Estude sem limites por <span>só {formatBRL(pricePerDayCents(DEFAULT_SUBSCRIPTION_PLAN))} por dia</span>
+            </>
+          ) : (
+            <>
+              Estude sem limites a partir de <span>{formatBRL(yearlyMonthCents)} por mês</span>
+            </>
+          )}
         </h1>
         <p>Questões e simulados ilimitados, revisão dos seus erros e desempenho completo. Cancele quando quiser.</p>
       </section>
 
-      <section className={styles.plans} aria-label="Planos">
+      <section className={yearly ? styles.plansThree : styles.plans} aria-label="Planos">
         {error ? (
           <p className={styles.error} role="alert">
             {error}
@@ -112,8 +148,8 @@ export default async function SubscriptionPage({ searchParams }: SubscriptionPag
           )}
         </article>
 
-        <article className={styles.planFeatured}>
-          <span className={styles.ribbon}>Recomendado</span>
+        <article className={yearly ? styles.plan : styles.planFeatured}>
+          {yearly ? null : <span className={styles.ribbon}>Recomendado</span>}
           <span className={styles.planName}>Premium mensal</span>
           <div className={styles.price}>
             <small>R$</small>
@@ -174,6 +210,31 @@ export default async function SubscriptionPage({ searchParams }: SubscriptionPag
           )}
           <p className={styles.secure}>Pagamento seguro pelo Mercado Pago · cartão de crédito</p>
         </article>
+
+        {yearly ? (
+          <article className={styles.planFeatured}>
+            <span className={styles.ribbon}>Mais econômico</span>
+            <span className={styles.planName}>Premium anual</span>
+            <div className={styles.price}>
+              <small>R$</small>
+              <strong>{yearlyReais}</strong>
+              <b>,{yearlyCents}</b>
+              <em>/mês</em>
+            </div>
+            <p className={styles.planNote}>
+              {formatBRL(yearly.priceCents)} por 12 meses, pagamento único. Sem renovação automática.
+            </p>
+            <ul>
+              {PREMIUM_FEATURES.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+            <Link href={`/loja/${yearly.slug}`} className={styles.primary}>
+              {viewer.premium ? "Garantir mais 12 meses" : "Quero o plano anual"}
+            </Link>
+            <p className={styles.secure}>Pagamento seguro pelo Mercado Pago · Pix, cartão ou boleto</p>
+          </article>
+        ) : null}
       </section>
 
       <section className={styles.section}>

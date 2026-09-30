@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   addMonths,
   chargeStatusFromPayment,
+  monthlyEquivalentCents,
+  monthlyPriceLabel,
   pricePerDayCents,
   subscriptionPeriod,
   subscriptionStatusFromProvider,
@@ -33,6 +35,8 @@ describe("subscription", () => {
   });
 
   it("prices per day", () => {
-    expect(pricePerDayCents("PREMIUM_MONTHLY")).toBe(33);
+    expect(pricePerDayCents("PREMIUM_MONTHLY")).toBe(50);
+    expect(monthlyPriceLabel()).toBe("R$ 14,90/mês");
+    expect(monthlyEquivalentCents(11_880)).toBe(990);
   });
 });
