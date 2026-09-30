@@ -108,7 +108,7 @@ export async function loadCourseOutline(slug: string, profileId: string) {
           title: true,
           lessons: {
             orderBy: { position: "asc" },
-            select: { id: true, title: true, kind: true, durationMinutes: true, isFreePreview: true },
+            select: { id: true, title: true, kind: true, durationMinutes: true, isFreePreview: true, contentStatus: true, syllabusTopicId: true },
           },
         },
       },
@@ -118,7 +118,7 @@ export async function loadCourseOutline(slug: string, profileId: string) {
   if (!course) return null;
 
   const lessonIds = course.modules.flatMap((module) => module.lessons.map((lesson) => lesson.id));
-  const [hasAccess, progress, offer] = await Promise.all([
+  const [hasAccess, progress, offer, reading] = await Promise.all([
     hasCourseAccess(profileId, course.id),
     prisma.courseLessonProgress.findMany({ where: { profileId, lessonId: { in: lessonIds } }, select: { lessonId: true } }),
     // Where to buy it (the cheapest active offer that includes the course).
@@ -126,6 +126,10 @@ export async function loadCourseOutline(slug: string, profileId: string) {
       where: { isActive: true, grants: { some: { kind: "COURSE", courseId: course.id } } },
       orderBy: { priceCents: "asc" },
       select: { slug: true },
+    }),
+    prisma.courseReadingState.findUnique({
+      where: { profileId_courseId: { profileId, courseId: course.id } },
+      select: { lessonId: true, scrollPercent: true },
     }),
   ]);
 
@@ -135,6 +139,9 @@ export async function loadCourseOutline(slug: string, profileId: string) {
     hasAccess,
     completed: new Set(progress.map((row) => row.lessonId)),
     offerSlug: offer?.slug ?? null,
+    isAdmin: admin,
+    // Where the student stopped ("continuar de onde parei"), when that lesson still exists.
+    reading: reading && lessonIds.includes(reading.lessonId) ? reading : null,
   };
 }
 

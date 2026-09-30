@@ -984,3 +984,24 @@ Vale sobre §1/§12 onde divergir.
 - Lacunas de questões (30/09): História de PE 7, Estatística 8, Atualidades 1, Saúde Pública 1, Gestão em Saúde 0,
   Clínica/Cirurgia/Odontologia 0, Penal Militar 16, Processual Penal Militar 14, Direitos Humanos 22. Fonte decidida:
   provas oficiais anteriores (PDFs das bancas), importadas com dry-run.
+
+### 13.38 CBMPE 2023, banner do combo e Teoria Completa (30/09/2026)
+
+- CBMPE 2023 (Instituto AOCP) importado do visualizador oficial (`link.institutoaocp.org.br`, cadernos Tipo 1 +
+  gabarito definitivo em texto; arquivos em `data-private/official-exams/cbmpe-2023/`): Soldado 50 + Oficial 68
+  questões novas, em revisão; classificação automática em andamento; publicar depois com `questions:publish`
+  (dry-run). O importador aceita o gabarito oficial como PDF **ou texto** ("1 A 2 X…").
+- Página inicial: o banner da oferta passou a ser o **fundo** do slide do combo (texto por cima). Banner do
+  `premium-anual` enviado (log em `data-private/logs/offer-banner-*`).
+- **Teoria Completa** (migration aditiva `20260930180000_theory_courses`): curso gerado do edital verticalizado
+  (`generateTheoryCourse`: módulo por matéria, aula por assunto; reaproveita texto do mesmo assunto), situação da aula
+  `EMPTY/DRAFT/REVIEWED` (aluno só vê REVISADA; admin vê rascunho com aviso), leitor com grifo em 4 cores, anotações,
+  ouvir (speechSynthesis pt-BR), continuar de onde parei (`course_reading_states`), "Questões deste assunto", concluir
+  aula marca o checklist do edital. 7 cursos gerados (634 aulas, não publicados).
+- Conteúdo: `npm run theory:drafts -- <json> [--apply] [--overwrite-drafts]` carrega rascunhos por módulo
+  (`data-private/editorial/teoria/*.json`), nunca sobrescreve REVISADA e replica para aulas idênticas de outros cargos.
+  Piloto: PMPE Soldado – Direito Constitucional (6 aulas, escritas pelo Claude) → 16 aulas em rascunho.
+- Ofertas: `promo_ends_at` + `effectiveOfferPrice` — depois do último dia da promoção o site e o checkout cobram o
+  preço "de" automaticamente. Admin da loja tem "Promoção até".
+- Pendente (decisão do usuário 30/09): combos por cargo "de R$ 59,90 por R$ 29,90 até 31/12/2026" com Teoria +
+  Premium 6 meses + 1 correção de redação/mês — criar junto com o **módulo de redação** (ainda não existe).

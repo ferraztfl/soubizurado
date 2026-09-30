@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
+import { withEffectivePrice } from "@/modules/store/domain/offer-price";
 import { formatBRL } from "@/modules/store/domain/store";
 import { checkoutAction, checkoutNewAccountAction } from "@/modules/store/presentation/checkout-actions";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
@@ -12,6 +13,8 @@ import { RichText } from "@/shared/ui/rich-text";
 import styles from "../loja.module.css";
 
 export const dynamic = "force-dynamic";
+
+const PROMO_DATE = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "America/Sao_Paulo" });
 
 type OfferPageProps = Readonly<{
   params: Promise<{ slug: string }>;
@@ -39,9 +42,10 @@ const loadOffer = cache(async (slug: string) =>
           description: true,
           priceCents: true,
           compareAtCents: true,
+          promoEndsAt: true,
           grants: { select: { kind: true, durationDays: true } },
         },
-      })
+      }).then((offer) => (offer ? withEffectivePrice(offer, new Date()) : null))
     : null,
 );
 
@@ -111,6 +115,11 @@ export default async function OfferPage(props: OfferPageProps) {
           {offer.compareAtCents ? <s>{formatBRL(offer.compareAtCents)}</s> : null}
           <strong>{formatBRL(offer.priceCents)}</strong>
         </div>
+        {offer.promoActive && offer.promoEndsAt ? (
+          <p className={styles.payHint}>
+            Promoção válida até {PROMO_DATE.format(new Date(offer.promoEndsAt.getTime() - 1))}. Depois, {offer.compareAtCents ? formatBRL(offer.compareAtCents) : "preço cheio"}.
+          </p>
+        ) : null}
         <p className={styles.payHint}>Pix, cartão de crédito ou boleto — pagamento processado pelo Mercado Pago.</p>
 
         {erro && ERRORS[erro] ? (

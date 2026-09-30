@@ -19,6 +19,7 @@ import {
 import { totalQuestions } from "@/modules/contests/domain/syllabus";
 import { loadPublishedContest } from "@/modules/contests/infrastructure/contest-queries";
 import { siteUrl } from "@/modules/question-bank/infrastructure/queries/question-sitemap";
+import { withEffectivePrice } from "@/modules/store/domain/offer-price";
 import { formatBRL } from "@/modules/store/domain/store";
 import { DEFAULT_SUBSCRIPTION_PLAN, SUBSCRIPTION_PLANS } from "@/modules/store/domain/subscription";
 
@@ -90,7 +91,7 @@ export default async function ContestPage({ params }: ContestPageProps) {
   const base = siteUrl();
   const url = `${base}/concursos/${contest.slug}`;
   const state = parseStateCode(contest.stateCode);
-  const offer = contest.relatedOffer?.isActive ? contest.relatedOffer : null;
+  const offer = contest.relatedOffer?.isActive ? withEffectivePrice(contest.relatedOffer, now) : null;
   const positions = contest.contestPositions.map((position) => ({ ...position, educationLevel: asEducationLevel(position.educationLevel) }));
   const stages = contest.stages
     .split("\n")

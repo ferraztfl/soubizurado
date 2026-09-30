@@ -139,6 +139,7 @@ export default async function AdminStorePage(props: StorePageProps) {
             description: "",
             priceCents: null,
             compareAtCents: null,
+            promoEndsAt: null,
             premiumDays: "none",
             isActive: false,
             isFeatured: false,

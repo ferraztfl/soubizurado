@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { ensureProfileForAuthUser } from "@/modules/identity/application/ensure-profile";
+import { effectiveOfferPrice } from "@/modules/store/domain/offer-price";
 import {
   createPreference,
   isMercadoPagoConfigured,
@@ -42,19 +43,30 @@ async function startPayment(
   const prisma = getPrismaClient();
   const offer = await prisma.offer.findFirst({
     where: { slug, isActive: true },
-    select: { id: true, name: true, headline: true, priceCents: true, grants: { select: { kind: true, durationDays: true } } },
+    select: {
+      id: true,
+      name: true,
+      headline: true,
+      priceCents: true,
+      compareAtCents: true,
+      promoEndsAt: true,
+      grants: { select: { kind: true, durationDays: true } },
+    },
   });
 
   if (!offer) {
     back(slug, "indisponivel");
   }
 
+  // Charged price decided here (server): a promotion past its end date sells at the regular price.
+  const { priceCents } = effectiveOfferPrice(offer, new Date());
+
   const order = await prisma.order.create({
     data: {
       profileId,
       offerId: offer.id,
-      amountCents: offer.priceCents,
-      offerSnapshot: { name: offer.name, priceCents: offer.priceCents, grants: offer.grants },
+      amountCents: priceCents,
+      offerSnapshot: { name: offer.name, priceCents, grants: offer.grants },
     },
     select: { id: true },
   });
@@ -66,7 +78,7 @@ async function startPayment(
       orderId: order.id,
       title: offer.name,
       description: offer.headline,
-      priceCents: offer.priceCents,
+      priceCents,
       payerEmail: payer.email,
       payerName: payer.name,
       siteUrl: siteUrl(),

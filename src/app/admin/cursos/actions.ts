@@ -10,6 +10,7 @@ import {
   slugifyCourse,
   type LessonError,
 } from "@/modules/courses/domain/course";
+import { isLessonContentStatus } from "@/modules/courses/domain/theory-course";
 import { InvalidPdfError, uploadLessonPdf } from "@/modules/courses/infrastructure/lesson-pdf-storage";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
@@ -192,6 +193,9 @@ export async function saveLessonAction(formData: FormData): Promise<void> {
   });
   if (!lesson) fail(`/admin/cursos/${courseId}`, "Aula não encontrada.");
 
+  const status = readString(formData, "contentStatus");
+  const contentStatus = isLessonContentStatus(status) ? status : undefined;
+
   const result = planLesson({
     title: readString(formData, "title"),
     kind: readString(formData, "kind"),
@@ -255,6 +259,7 @@ export async function saveLessonAction(formData: FormData): Promise<void> {
         durationMinutes: result.lesson.durationMinutes,
         isFreePreview: formData.get("isFreePreview") === "on",
         pdfAssetId,
+        ...(contentStatus ? { contentStatus } : {}),
       },
     }),
     prisma.courseLessonQuestion.deleteMany({ where: { lessonId: lesson.id } }),

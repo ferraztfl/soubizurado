@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { planSyllabus, type SyllabusError, type SyllabusTextError } from "@/modules/contests/domain/syllabus";
 import { resolveSyllabusLinks, saveSyllabus } from "@/modules/contests/infrastructure/syllabus-store";
+import { generateTheoryCourse } from "@/modules/courses/infrastructure/theory-course-generator";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -82,6 +83,29 @@ export async function saveSyllabusAction(formData: FormData): Promise<void> {
   revalidatePath(`/concursos/${contest.slug}`);
   revalidatePath(`/concursos/${contest.slug}/o-que-estudar/${result.syllabus.slug}`);
   redirect(`${back}?ok=1#cargo-${savedId}`);
+}
+
+/** Creates (or completes with new topics) the "Teoria Completa" course of one position. Nothing is published. */
+export async function generateTheoryCourseAction(formData: FormData): Promise<void> {
+  await requireAdminUser();
+
+  const contestId = readString(formData, "contestId");
+  const syllabusId = readString(formData, "syllabusId");
+  if (!UUID.test(contestId) || !UUID.test(syllabusId)) fail("/admin/concursos", "Cargo inválido.");
+  const back = `/admin/concursos/${contestId}/edital`;
+
+  const owned = await getPrismaClient().contestSyllabus.findFirst({ where: { id: syllabusId, contestId }, select: { id: true } });
+  if (!owned) fail(back, "Cargo não encontrado neste concurso.");
+
+  const result = await generateTheoryCourse(syllabusId);
+  revalidatePath(back);
+  revalidatePath("/admin/cursos");
+  const message = result.created
+    ? `Curso criado (rascunho): ${result.modulesCreated} matérias, ${result.lessonsCreated} aulas${result.lessonsReused ? `, ${result.lessonsReused} com texto reaproveitado` : ""}.`
+    : result.lessonsCreated > 0
+      ? `Curso atualizado: ${result.lessonsCreated} aulas novas${result.lessonsReused ? ` (${result.lessonsReused} com texto reaproveitado)` : ""}.`
+      : "O curso já tem todos os assuntos do edital.";
+  redirect(`${back}?info=${encodeURIComponent(message)}#cargo-${syllabusId}`);
 }
 
 /** Deletes one position's syllabus (and the students' checklist of it). */

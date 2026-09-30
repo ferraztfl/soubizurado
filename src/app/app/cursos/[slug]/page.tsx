@@ -58,7 +58,11 @@ export default async function CoursePage(props: CoursePageProps) {
             {course.offerSlug ? <Link href={`/loja/${course.offerSlug}`}>Comprar o curso completo</Link> : "Em breve na Loja."}
           </p>
         )}
-        {resume ? (
+        {course.reading && (course.hasAccess || lessons.some((lesson) => lesson.id === course.reading?.lessonId && lesson.isFreePreview)) ? (
+          <Link href={`/app/cursos/${course.slug}/${course.reading.lessonId}?continuar=${course.reading.scrollPercent}`} className={styles.primary}>
+            Continuar de onde parei
+          </Link>
+        ) : resume ? (
           <Link href={`/app/cursos/${course.slug}/${resume.id}`} className={styles.primary}>
             {percent === 0 ? "Começar" : "Continuar de onde parei"}
           </Link>
@@ -95,6 +99,7 @@ export default async function CoursePage(props: CoursePageProps) {
                       {LESSON_KINDS[lesson.kind as keyof typeof LESSON_KINDS] ?? lesson.kind}
                       {lesson.durationMinutes ? ` · ${lesson.durationMinutes} min` : ""}
                       {lesson.isFreePreview && !course.hasAccess ? " · grátis" : ""}
+                      {lesson.syllabusTopicId && lesson.contentStatus !== "REVIEWED" ? " · em preparação" : ""}
                     </span>
                   </li>
                 );

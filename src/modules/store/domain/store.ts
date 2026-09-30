@@ -40,6 +40,8 @@ export type OfferInput = Readonly<{
   courseIds?: readonly string[];
   /** Course access in days; "0" or blank = no end date. */
   courseDays?: string;
+  /** Last day of the promotional price (AAAA-MM-DD, São Paulo); blank = no end. Needs the regular price (compareAt). */
+  promoLastDay?: string;
 }>;
 
 export type OfferError =
@@ -48,6 +50,7 @@ export type OfferError =
   | "PRICE_INVALID"
   | "COMPARE_AT_INVALID"
   | "GRANT_REQUIRED"
+  | "PROMO_END_INVALID"
   | "TEXT_TOO_LONG";
 
 export type OfferPlan = Readonly<{
@@ -57,6 +60,8 @@ export type OfferPlan = Readonly<{
   description: string;
   priceCents: number;
   compareAtCents: number | null;
+  /** The promotional price ends at this instant (00:00 of the next day in São Paulo). */
+  promoEndsAt: Date | null;
   grants: readonly OfferGrantInput[];
 }>;
 
@@ -114,6 +119,16 @@ export function planOffer(input: OfferInput): { ok: true; offer: OfferPlan } | {
 
   if (grants.length === 0) return { ok: false, error: "GRANT_REQUIRED" };
 
+  const promoLastDay = (input.promoLastDay ?? "").trim();
+  let promoEndsAt: Date | null = null;
+  if (promoLastDay) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(promoLastDay);
+    // The promotion ends at midnight after the last day, São Paulo time (UTC−3).
+    const end = match ? new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + 1, 3)) : null;
+    if (!end || Number.isNaN(end.getTime()) || compareAtCents === null) return { ok: false, error: "PROMO_END_INVALID" };
+    promoEndsAt = end;
+  }
+
   return {
     ok: true,
     offer: {
@@ -123,6 +138,7 @@ export function planOffer(input: OfferInput): { ok: true; offer: OfferPlan } | {
       description,
       priceCents,
       compareAtCents,
+      promoEndsAt,
       grants,
     },
   };

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { withEffectivePrice } from "@/modules/store/domain/offer-price";
 import { formatBRL } from "@/modules/store/domain/store";
 import { monthlyPriceLabel } from "@/modules/store/domain/subscription";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
@@ -32,10 +33,11 @@ export default async function StorePage() {
       headline: true,
       priceCents: true,
       compareAtCents: true,
+      promoEndsAt: true,
       isFeatured: true,
       grants: { select: { kind: true, durationDays: true } },
     },
-  });
+  }).then((rows) => rows.map((row) => withEffectivePrice(row, new Date())));
 
   return (
     <div className={styles.page}>

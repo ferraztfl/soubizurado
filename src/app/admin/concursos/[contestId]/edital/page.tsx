@@ -2,18 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { formatSyllabusText, totalQuestions } from "@/modules/contests/domain/syllabus";
+import { theoryCourseStatus } from "@/modules/courses/infrastructure/theory-course-generator";
 import { loadContestSyllabi, loadedSubjectPlans, type LoadedSyllabus } from "@/modules/contests/infrastructure/syllabus-store";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import styles from "../../../loja/loja.module.css";
-import { deleteSyllabusAction, saveSyllabusAction } from "./actions";
+import { deleteSyllabusAction, generateTheoryCourseAction, saveSyllabusAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 type SyllabusPageProps = Readonly<{
   params: Promise<{ contestId: string }>;
-  searchParams: Promise<Readonly<{ ok?: string; error?: string }>>;
+  searchParams: Promise<Readonly<{ ok?: string; error?: string; info?: string }>>;
 }>;
 
 const EXAMPLE = `# Língua Portuguesa | 10 | Bloco I
@@ -34,6 +35,7 @@ export default async function ContestSyllabusPage(props: SyllabusPageProps) {
   if (!contest) notFound();
 
   const syllabi = await loadContestSyllabi(contest.id);
+  const courses = new Map(await Promise.all(syllabi.map(async (syllabus) => [syllabus.id, await theoryCourseStatus(syllabus.id)] as const)));
 
   return (
     <main className={styles.page}>
@@ -49,10 +51,18 @@ export default async function ContestSyllabusPage(props: SyllabusPageProps) {
         (“Disciplina” ou “Disciplina &gt; Área ou Tópico”). Nada é criado na taxonomia.
       </p>
       {params.ok ? <p className={styles.info}>Salvo.</p> : null}
+      {params.info ? <p className={styles.info}>{params.info.slice(0, 300)}</p> : null}
       {params.error ? <p className={styles.error}>{params.error.slice(0, 300)}</p> : null}
 
       {syllabi.map((syllabus) => (
-        <SyllabusCard key={syllabus.id} contestId={contest.id} contestSlug={contest.slug} contestPublished={contest.isPublished} syllabus={syllabus} />
+        <SyllabusCard
+          key={syllabus.id}
+          contestId={contest.id}
+          contestSlug={contest.slug}
+          contestPublished={contest.isPublished}
+          syllabus={syllabus}
+          course={courses.get(syllabus.id) ?? null}
+        />
       ))}
 
       <section className={styles.card}>
@@ -68,7 +78,14 @@ function SyllabusCard({
   contestSlug,
   contestPublished,
   syllabus,
-}: Readonly<{ contestId: string; contestSlug: string; contestPublished: boolean; syllabus: LoadedSyllabus }>) {
+  course,
+}: Readonly<{
+  contestId: string;
+  contestSlug: string;
+  contestPublished: boolean;
+  syllabus: LoadedSyllabus;
+  course: Awaited<ReturnType<typeof theoryCourseStatus>>;
+}>) {
   const topics = syllabus.subjects.reduce((sum, subject) => sum + subject.topics.length, 0);
   const unmatched = syllabus.subjects.filter((subject) => !subject.discipline).map((subject) => subject.name);
   const questions = totalQuestions(syllabus.subjects);
@@ -93,6 +110,24 @@ function SyllabusCard({
           na <Link href="/admin/taxonomia">Taxonomia</Link> e salve este cargo de novo.
         </p>
       ) : null}
+      <div className={styles.hint}>
+        <strong>Teoria Completa:</strong>{" "}
+        {course ? (
+          <>
+            <Link href={`/admin/cursos/${course.id}`}>{course.title}</Link> ({course.isPublished ? "publicado" : "rascunho"}) —{" "}
+            {course.reviewed} revisadas, {course.draft} em rascunho, {course.empty} a escrever
+          </>
+        ) : (
+          "ainda não gerada"
+        )}
+        <form action={generateTheoryCourseAction}>
+          <input type="hidden" name="contestId" value={contestId} />
+          <input type="hidden" name="syllabusId" value={syllabus.id} />
+          <button type="submit" className={styles.secondary}>
+            {course ? "Acrescentar assuntos novos do edital" : "Gerar Teoria Completa (rascunho)"}
+          </button>
+        </form>
+      </div>
       <SyllabusForm contestId={contestId} syllabus={syllabus} />
       <form action={deleteSyllabusAction} className={styles.checks}>
         <input type="hidden" name="contestId" value={contestId} />

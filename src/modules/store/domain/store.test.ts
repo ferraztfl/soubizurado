@@ -40,10 +40,18 @@ describe("planOffer", () => {
         description: "Tudo para a PMPE.",
         priceCents: 3990,
         compareAtCents: null,
+        promoEndsAt: null,
         grants: [{ kind: "QUESTION_BANK", durationDays: 180 }],
       },
     });
     expect(planOffer({ ...base, premiumDays: "0" })).toMatchObject({ ok: true, offer: { grants: [{ durationDays: null }] } });
+  });
+
+  it("ends the promotion at midnight after the last day (São Paulo)", () => {
+    const result = planOffer({ ...base, price: "29,90", compareAt: "59,90", promoLastDay: "2026-12-31" });
+    expect(result.ok && result.offer.promoEndsAt?.toISOString()).toBe("2027-01-01T03:00:00.000Z");
+    expect(planOffer({ ...base, promoLastDay: "2026-12-31" })).toEqual({ ok: false, error: "PROMO_END_INVALID" });
+    expect(planOffer({ ...base, compareAt: "59,90", promoLastDay: "31/12/2026" })).toEqual({ ok: false, error: "PROMO_END_INVALID" });
   });
 
   it("rejects bad prices, slugs and missing grants", () => {

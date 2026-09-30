@@ -92,7 +92,7 @@ export async function loadPublishedContest(slug: string, now: Date) {
       board: { select: { id: true, name: true } },
       organization: { select: { id: true, name: true } },
       careerCategory: { select: { slug: true, name: true } },
-      relatedOffer: { select: { slug: true, name: true, priceCents: true, compareAtCents: true, isActive: true } },
+      relatedOffer: { select: { slug: true, name: true, priceCents: true, compareAtCents: true, promoEndsAt: true, isActive: true } },
       contestPositions: { orderBy: { sortOrder: "asc" } },
       syllabi: {
         where: { isPublished: true },

@@ -11,6 +11,7 @@ export type OfferFormValues = Readonly<{
   description: string;
   priceCents: number | null;
   compareAtCents: number | null;
+  promoEndsAt: Date | null;
   premiumDays: number | null | "none";
   isActive: boolean;
   isFeatured: boolean;
@@ -55,6 +56,10 @@ export function OfferForm({ values, courses }: Readonly<{ values: OfferFormValue
       <label className={styles.field}>
         <span>Preço &quot;de&quot; riscado (opcional)</span>
         <input name="compareAt" defaultValue={cents(values.compareAtCents)} inputMode="decimal" placeholder="79,90" />
+      </label>
+      <label className={styles.field}>
+        <span>Promoção até (último dia; depois vale o preço &quot;de&quot;)</span>
+        <input name="promoLastDay" type="date" defaultValue={promoLastDayValue(values.promoEndsAt)} />
       </label>
       <label className={styles.field}>
         <span>Dias de Premium (0 = sem prazo; vazio = sem Premium)</span>
@@ -114,4 +119,10 @@ export function OfferForm({ values, courses }: Readonly<{ values: OfferFormValue
       </div>
     </form>
   );
+}
+
+/** Stored end instant (00:00 next day, São Paulo) → last promo day for the date input. */
+function promoLastDayValue(end: Date | null): string {
+  if (!end) return "";
+  return new Date(end.getTime() - 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }

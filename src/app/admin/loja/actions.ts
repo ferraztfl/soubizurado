@@ -21,6 +21,7 @@ const errorMessages: Readonly<Record<OfferError | "SLUG_TAKEN", string>> = {
   SLUG_INVALID: "O endereço (slug) aceita só letras minúsculas, números e hífens.",
   PRICE_INVALID: "Informe um preço válido (mínimo R$ 1,00).",
   COMPARE_AT_INVALID: "O preço \"de\" precisa ser maior que o preço de venda.",
+  PROMO_END_INVALID: "Fim da promoção: informe uma data válida e o preço \"de\" (preço cheio que volta a valer depois).",
   GRANT_REQUIRED: "Informe quantos dias de Premium a oferta dá (0 = sem prazo).",
   TEXT_TOO_LONG: "Chamada ou descrição longa demais.",
   SLUG_TAKEN: "Já existe outra oferta com esse endereço (slug).",
@@ -73,6 +74,7 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
     premiumDays: readString(formData, "premiumDays"),
     courseIds: formData.getAll("courseIds").filter((value): value is string => typeof value === "string" && UUID.test(value)),
     courseDays: readString(formData, "courseDays"),
+    promoLastDay: readString(formData, "promoLastDay"),
   });
 
   if (!result.ok) {
@@ -110,6 +112,7 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
     description: offer.description,
     priceCents: offer.priceCents,
     compareAtCents: offer.compareAtCents,
+    promoEndsAt: offer.promoEndsAt,
     isActive: formData.get("isActive") === "on",
     isFeatured: formData.get("isFeatured") === "on",
     sortOrder: Math.max(-1000, Math.min(1000, Math.trunc(sortOrder))),

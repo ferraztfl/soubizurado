@@ -55,6 +55,7 @@ export default async function EditOfferPage(props: EditOfferPageProps) {
             description: offer.description,
             priceCents: offer.priceCents,
             compareAtCents: offer.compareAtCents,
+            promoEndsAt: offer.promoEndsAt,
             premiumDays: premium ? premium.durationDays : "none",
             isActive: offer.isActive,
             isFeatured: offer.isFeatured,

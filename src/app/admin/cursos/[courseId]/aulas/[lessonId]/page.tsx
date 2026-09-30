@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LESSON_KINDS } from "@/modules/courses/domain/course";
+import { LESSON_CONTENT_STATUSES } from "@/modules/courses/domain/theory-course";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
@@ -27,6 +28,7 @@ export default async function AdminLessonPage(props: LessonPageProps) {
         include: {
           module: { select: { title: true, course: { select: { id: true, title: true } } } },
           pdf: { select: { sizeBytes: true } },
+          syllabusTopic: { select: { code: true, text: true, subject: { select: { name: true } } } },
           questions: { orderBy: { position: "asc" }, select: { question: { select: { publicNumber: true } } } },
         },
       })
@@ -47,6 +49,12 @@ export default async function AdminLessonPage(props: LessonPageProps) {
       <h1 className={styles.title}>{lesson.title}</h1>
       {params.ok ? <p className={styles.info}>Aula salva.</p> : null}
       {params.error ? <p className={styles.error}>{params.error.slice(0, 400)}</p> : null}
+      {lesson.syllabusTopic ? (
+        <p className={styles.hint}>
+          <strong>Assunto do edital ({lesson.syllabusTopic.subject.name}):</strong> {lesson.syllabusTopic.code ? `${lesson.syllabusTopic.code}. ` : ""}
+          {lesson.syllabusTopic.text}
+        </p>
+      ) : null}
 
       <section className={styles.card}>
         <form action={saveLessonAction} className={styles.form}>
@@ -68,12 +76,22 @@ export default async function AdminLessonPage(props: LessonPageProps) {
             </select>
           </label>
           <label className={styles.field}>
+            <span>Situação do conteúdo</span>
+            <select name="contentStatus" defaultValue={lesson.contentStatus}>
+              {Object.entries(LESSON_CONTENT_STATUSES).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.field}>
             <span>Duração (minutos, opcional)</span>
             <input name="durationMinutes" type="number" min={1} max={1440} defaultValue={lesson.durationMinutes ?? ""} />
           </label>
 
           <label className={`${styles.field} ${styles.full}`}>
-            <span>Texto da aula / descrição (aceita **negrito**, _itálico_ e quebras de linha)</span>
+            <span>Texto da aula / descrição (aceita **negrito**, _itálico_, ## subtítulos, listas, tabelas e caixas “!!! atencao Título” / “!!! resumo Título”)</span>
             <textarea name="body" defaultValue={lesson.body} rows={10} maxLength={100000} />
           </label>
 

@@ -53,6 +53,19 @@ export async function toggleLessonCompleteAction(formData: FormData): Promise<vo
     await prisma.courseLessonProgress.deleteMany({ where: { profileId: profile.id, lessonId } });
   }
 
+  // A theory lesson done = its topic studied in the edital verticalizado checklist (and back).
+  if (lesson.syllabusTopicId) {
+    if (done) {
+      await prisma.studySyllabusProgress.upsert({
+        where: { profileId_topicId: { profileId: profile.id, topicId: lesson.syllabusTopicId } },
+        update: {},
+        create: { profileId: profile.id, topicId: lesson.syllabusTopicId },
+      });
+    } else {
+      await prisma.studySyllabusProgress.deleteMany({ where: { profileId: profile.id, topicId: lesson.syllabusTopicId } });
+    }
+  }
+
   revalidatePath(`/app/cursos/${slug}`, "layout");
 
   const next = done ? nextLessonId(course.orderedLessonIds, lessonId) : null;

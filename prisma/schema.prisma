@@ -115,6 +115,8 @@ model Profile {
   blogPosts              BlogPost[]
   subscriptions          Subscription[]
   syllabusProgress       StudySyllabusProgress[]
+  lessonAnnotations      CourseLessonAnnotation[]
+  courseReadingStates    CourseReadingState[]
 
   @@map("profiles")
 }
@@ -1117,6 +1119,9 @@ model Offer {
   sortOrder      Int      @default(0) @map("sort_order")
   /// Wide banner for the home page carousel (optional).
   bannerAssetId  String?  @map("banner_asset_id") @db.Uuid
+  /// Promotional price (price_cents) ends at this moment; afterwards the offer
+  /// sells at compare_at_cents (the regular price) automatically.
+  promoEndsAt    DateTime? @map("promo_ends_at") @db.Timestamptz(6)
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -1181,14 +1186,19 @@ model Course {
   coverAssetId String?  @map("cover_asset_id") @db.Uuid
   isPublished  Boolean  @default(false) @map("is_published")
   sortOrder    Int      @default(0) @map("sort_order")
+  /// "Teoria Completa" generated from a position's edital verticalizado.
+  syllabusId   String?  @map("syllabus_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  cover        MediaAsset?    @relation(fields: [coverAssetId], references: [id], onDelete: SetNull)
-  modules      CourseModule[]
-  offerGrants  OfferGrant[]
-  entitlements Entitlement[]
+  cover         MediaAsset?          @relation(fields: [coverAssetId], references: [id], onDelete: SetNull)
+  syllabus      ContestSyllabus?     @relation(fields: [syllabusId], references: [id], onDelete: SetNull)
+  modules       CourseModule[]
+  offerGrants   OfferGrant[]
+  entitlements  Entitlement[]
+  readingStates CourseReadingState[]
 
+  @@index([syllabusId])
   @@map("courses")
 }
 
@@ -1217,16 +1227,61 @@ model CourseLesson {
   pdfAssetId      String?  @map("pdf_asset_id") @db.Uuid
   durationMinutes Int?     @map("duration_minutes")
   isFreePreview   Boolean  @default(false) @map("is_free_preview")
+  /// Topic of the edital verticalizado this lesson teaches (checklist and practice questions).
+  syllabusTopicId String?  @map("syllabus_topic_id") @db.Uuid
+  /// EMPTY (to write), DRAFT (written, e.g. by AI, awaiting review), REVIEWED (checked by a person).
+  contentStatus   String   @default("EMPTY") @map("content_status") @db.VarChar(20)
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  module    CourseModule           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  pdf       MediaAsset?            @relation(fields: [pdfAssetId], references: [id], onDelete: SetNull)
-  questions CourseLessonQuestion[]
-  progress  CourseLessonProgress[]
+  module        CourseModule            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  pdf           MediaAsset?             @relation(fields: [pdfAssetId], references: [id], onDelete: SetNull)
+  syllabusTopic ContestSyllabusTopic?   @relation(fields: [syllabusTopicId], references: [id], onDelete: SetNull)
+  questions     CourseLessonQuestion[]
+  progress      CourseLessonProgress[]
+  annotations   CourseLessonAnnotation[]
+  readingStates CourseReadingState[]
 
   @@index([moduleId, position])
+  @@index([syllabusTopicId])
   @@map("course_lessons")
+}
+
+/// A student's highlight in a lesson text, optionally with a note. The quote is
+/// found again by its text and a few characters around it (prefix/suffix).
+model CourseLessonAnnotation {
+  id        String   @id @default(uuid()) @db.Uuid
+  profileId String   @map("profile_id") @db.Uuid
+  lessonId  String   @map("lesson_id") @db.Uuid
+  quote     String   @db.VarChar(1000)
+  prefix    String   @default("") @db.VarChar(64)
+  suffix    String   @default("") @db.VarChar(64)
+  note      String?  @db.VarChar(2000)
+  color     String   @default("yellow") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  lesson  CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, lessonId])
+  @@map("course_lesson_annotations")
+}
+
+/// Where the student stopped in a course ("continuar de onde parei").
+model CourseReadingState {
+  profileId     String   @map("profile_id") @db.Uuid
+  courseId      String   @map("course_id") @db.Uuid
+  lessonId      String   @map("lesson_id") @db.Uuid
+  scrollPercent Int      @default(0) @map("scroll_percent") @db.SmallInt
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course  Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson  CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, courseId])
+  @@map("course_reading_states")
 }
 
 model CourseLessonQuestion {
@@ -1482,6 +1537,7 @@ model ContestSyllabus {
 
   contest  Contest                  @relation(fields: [contestId], references: [id], onDelete: Cascade)
   subjects ContestSyllabusSubject[]
+  courses  Course[]
 
   @@unique([contestId, slug])
   @@index([contestId, sortOrder])
@@ -1521,6 +1577,7 @@ model ContestSyllabusTopic {
 
   subject  ContestSyllabusSubject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   progress StudySyllabusProgress[]
+  lessons  CourseLesson[]
 
   @@index([subjectId, sortOrder])
   @@map("contest_syllabus_topics")

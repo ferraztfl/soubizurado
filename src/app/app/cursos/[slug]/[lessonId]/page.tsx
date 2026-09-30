@@ -10,14 +10,22 @@ import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 import { RichText } from "@/shared/ui/rich-text";
 
+import { ArticleBody } from "../../../../blog/article-body";
+
 import { QuestionMedia } from "../../../questoes/_components/question-media";
 import { QuestionAnswerPanel } from "../../../questoes/[questionId]/_components/question-answer-panel";
 import questionStyles from "../../../questoes/[questionId]/question-detail.module.css";
 import styles from "../../cursos.module.css";
+import { LessonReader } from "./lesson-reader";
 
 export const dynamic = "force-dynamic";
 
-type LessonPageProps = Readonly<{ params: Promise<{ slug: string; lessonId: string }> }>;
+type LessonPageProps = Readonly<{
+  params: Promise<{ slug: string; lessonId: string }>;
+  searchParams: Promise<Readonly<{ continuar?: string }>>;
+}>;
+
+const NO_IMAGES: ReadonlyMap<number, string> = new Map();
 
 export default async function LessonPage(props: LessonPageProps) {
   const supabase = await createSupabaseServerClient();
@@ -53,7 +61,20 @@ export default async function LessonPage(props: LessonPageProps) {
       body: true,
       videoEmbedUrl: true,
       pdfAssetId: true,
+      contentStatus: true,
+      syllabusTopic: {
+        select: {
+          code: true,
+          text: true,
+          subject: { select: { name: true, disciplineId: true, areaId: true, topicId: true } },
+        },
+      },
       questions: { orderBy: { position: "asc" }, select: { questionId: true } },
+      annotations: {
+        where: { profileId: profileId ?? "" },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, quote: true, prefix: true, suffix: true, note: true, color: true },
+      },
     },
   });
 
@@ -74,6 +95,13 @@ export default async function LessonPage(props: LessonPageProps) {
   const previous = index > 0 ? course.orderedLessonIds[index - 1] : null;
   const next = nextLessonId(course.orderedLessonIds, lessonId);
   const done = course.completed.has(lessonId);
+  // Only reviewed text reaches students; admins also see drafts (marked as such).
+  const showBody = Boolean(lesson.body) && (lesson.contentStatus === "REVIEWED" || course.isAdmin);
+  const resume = Number((await props.searchParams).continuar);
+  const topicLink = lesson.syllabusTopic?.subject;
+  const practiceHref = topicLink?.disciplineId
+    ? `/questoes?discipline=${topicLink.disciplineId}${topicLink.topicId ? `&topic=${topicLink.topicId}` : topicLink.areaId ? `&area=${topicLink.areaId}` : ""}`
+    : null;
 
   return (
     <div className={styles.page}>
@@ -116,11 +144,40 @@ export default async function LessonPage(props: LessonPageProps) {
         <p className={styles.locked}>O PDF desta aula está sendo preparado.</p>
       ) : null}
 
-      {lesson.body ? (
+      {lesson.syllabusTopic ? (
+        <p className={styles.muted}>
+          <strong>No edital ({lesson.syllabusTopic.subject.name}):</strong> {lesson.syllabusTopic.code ? `${lesson.syllabusTopic.code}. ` : ""}
+          {lesson.syllabusTopic.text}
+        </p>
+      ) : null}
+
+      {showBody ? (
         <section className={styles.card}>
-          <div className={styles.text}>
-            <RichText text={lesson.body} />
+          {lesson.contentStatus !== "REVIEWED" ? (
+            <p className={styles.locked}>Rascunho — visível só para administradores até ser revisado.</p>
+          ) : null}
+          <LessonReader
+            courseSlug={course.slug}
+            lessonId={lessonId}
+            annotations={lesson.annotations}
+            resumeAt={Number.isFinite(resume) ? resume : null}
+          >
+            <ArticleBody body={lesson.body} images={NO_IMAGES} />
+          </LessonReader>
+        </section>
+      ) : lesson.syllabusTopic && !video && !lesson.pdfAssetId ? (
+        <p className={styles.locked}>A teoria deste assunto está em preparação. Enquanto isso, treine com as questões abaixo.</p>
+      ) : null}
+
+      {practiceHref ? (
+        <section className={styles.card}>
+          <div className={styles.row}>
+            <h2>Questões deste assunto</h2>
+            <Link href={practiceHref} className={styles.primary}>
+              Treinar agora
+            </Link>
           </div>
+          <p className={styles.muted}>Questões de provas anteriores filtradas pela matéria do edital — estudou, treina na hora.</p>
         </section>
       ) : null}
 

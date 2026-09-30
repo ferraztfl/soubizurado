@@ -6,6 +6,7 @@ import { CONTEST_TABS } from "@/modules/contests/domain/contest";
 import { loadContestShowcase } from "@/modules/contests/infrastructure/contest-queries";
 import { loadHomeHighlights } from "@/modules/question-bank/infrastructure/queries/home-highlights";
 import { FREE_DAILY_ANSWERS } from "@/modules/study/domain/access";
+import { withEffectivePrice } from "@/modules/store/domain/offer-price";
 import { formatBRL } from "@/modules/store/domain/store";
 import { DEFAULT_SUBSCRIPTION_PLAN, SUBSCRIPTION_PLANS } from "@/modules/store/domain/subscription";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
@@ -71,10 +72,11 @@ export default async function Home() {
         headline: true,
         priceCents: true,
         compareAtCents: true,
+        promoEndsAt: true,
         isFeatured: true,
         grants: { select: { kind: true, durationDays: true } },
       },
-    }),
+    }).then((rows) => rows.map((row) => withEffectivePrice(row, now))),
     listPosts({}, 1, now),
     loadContestShowcase(),
   ]);
