@@ -91,6 +91,32 @@ function assertPdf(bytes: Uint8Array, label: string): void {
   }
 }
 
+export function isPdf(bytes: Uint8Array): boolean {
+  return Buffer.from(bytes.subarray(0, 5)).toString("latin1") === "%PDF-";
+}
+
+const MAX_ANSWER_KEY_TEXT_BYTES = 64 * 1024;
+
+/**
+ * The answer key may be the board's PDF or its plain text as published on the
+ * official results page ("1 A 2 X 3 C…"): at least 10 number/letter pairs.
+ */
+export function assertAnswerKey(bytes: Uint8Array): void {
+  if (isPdf(bytes)) {
+    assertPdf(bytes, "Gabarito");
+    return;
+  }
+
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_ANSWER_KEY_TEXT_BYTES) {
+    throw new Error("Gabarito: envie o PDF oficial ou o texto do gabarito (até 64 KB).");
+  }
+
+  const pairs = Buffer.from(bytes).toString("utf8").match(/\b\d{1,3}\s+[A-EX]\b/gi) ?? [];
+  if (pairs.length < 10) {
+    throw new Error("Gabarito: o texto não tem pares “número letra” suficientes (ex.: 1 A 2 C 3 X).");
+  }
+}
+
 export function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
@@ -102,7 +128,7 @@ export async function createUpload(
   }>,
 ): Promise<string> {
   assertPdf(input.booklet, "Prova");
-  assertPdf(input.answerKey, "Gabarito");
+  assertAnswerKey(input.answerKey);
 
   const uploadId = randomUUID();
   const paths = uploadPaths(uploadId);

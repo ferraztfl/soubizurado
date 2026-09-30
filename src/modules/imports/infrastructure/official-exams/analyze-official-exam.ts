@@ -33,6 +33,7 @@ import {
 } from "../providers/aocp-true-false-parser";
 
 import {
+  isPdf,
   sha256,
   uploadPaths,
 } from "./official-exam-upload-store";
@@ -294,7 +295,8 @@ export async function analyzeOfficialExam(
   );
 
   const xml = stripWatermarks(await readFile(join(paths.workspace, "document.xml"), "utf8"));
-  const answerText = await pdfToText(paths.answerKey);
+  // The answer key is the board's PDF or its plain text from the official results page.
+  const answerText = isPdf(answerKeyBytes) ? await pdfToText(paths.answerKey) : Buffer.from(answerKeyBytes).toString("utf8");
 
   if (board === "AOCP_VF") {
     const coverOnly = await pdfToText(paths.booklet, 1);
