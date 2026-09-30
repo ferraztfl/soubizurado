@@ -55,20 +55,20 @@ export function ComboCarousel({ slides }: Readonly<{ slides: readonly ComboSlide
         aria-roledescription="slide"
         aria-label={`${index + 1} de ${count}: ${slide.name}`}
       >
-        {slide.bannerUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- media route (private bucket)
-          <img src={slide.bannerUrl} alt={slide.name} className={styles.banner} />
-        ) : (
-          <div className={styles.generated}>
-            <span className={styles.generatedKicker}>Combo</span>
-            <strong>{slide.name}</strong>
-            {slide.headline ? <p>{slide.headline}</p> : null}
-            <span className={styles.generatedPrice}>
-              {slide.compareAt ? <s>{slide.compareAt}</s> : null} {slide.price}
-            </span>
-            <span className={styles.generatedCta}>Conheça o combo</span>
-          </div>
-        )}
+        {/* The offer banner is the background; the offer text always stays on top (readable, indexable). */}
+        <div className={slide.bannerUrl ? styles.generatedWithBanner : styles.generated}>
+          {slide.bannerUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- media route (private bucket)
+            <img src={slide.bannerUrl} alt="" aria-hidden="true" className={styles.background} />
+          ) : null}
+          <span className={styles.generatedKicker}>Combo</span>
+          <strong>{slide.name}</strong>
+          {slide.headline ? <p>{slide.headline}</p> : null}
+          <span className={styles.generatedPrice}>
+            {slide.compareAt ? <s>{slide.compareAt}</s> : null} {slide.price}
+          </span>
+          <span className={styles.generatedCta}>Conheça o combo</span>
+        </div>
       </Link>
 
       <div className={styles.controls}>
