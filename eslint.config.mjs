@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Private working files (PDFs, staging, one-off helpers); not in Git.
+    "data-private/**",
   ]),
 ]);
 

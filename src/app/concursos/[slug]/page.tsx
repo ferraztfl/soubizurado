@@ -16,6 +16,7 @@ import {
   vacanciesLabel,
   type EducationLevel,
 } from "@/modules/contests/domain/contest";
+import { totalQuestions } from "@/modules/contests/domain/syllabus";
 import { loadPublishedContest } from "@/modules/contests/infrastructure/contest-queries";
 import { siteUrl } from "@/modules/question-bank/infrastructure/queries/question-sitemap";
 import { formatBRL } from "@/modules/store/domain/store";
@@ -124,6 +125,7 @@ export default async function ContestPage({ params }: ContestPageProps) {
   const sections = [
     { id: "visao-geral", label: "Visão geral", show: Boolean(contest.summary) },
     { id: "cargos", label: "Cargos", show: positions.length > 0 || Boolean(contest.positions) },
+    { id: "o-que-estudar", label: "O que estudar", show: contest.syllabi.length > 0 },
     { id: "cronograma", label: "Cronograma", show: true },
     { id: "etapas", label: "Etapas", show: stages.length > 0 },
     { id: "questoes", label: "Questões", show: true },
@@ -287,6 +289,42 @@ export default async function ContestPage({ params }: ContestPageProps) {
               ) : (
                 <p className={styles.text}>{contest.positions}</p>
               )}
+            </section>
+          ) : null}
+
+          {contest.syllabi.length > 0 ? (
+            <section id="o-que-estudar" className={styles.section}>
+              <h2>O que estudar</h2>
+              <p className={styles.text}>
+                As matérias da prova objetiva de cada cargo, com o número de questões, conforme o edital. Abra o edital verticalizado
+                para ver todos os assuntos e marcar o que você já estudou.
+              </p>
+              <div className={styles.syllabi}>
+                {contest.syllabi.map((syllabus) => {
+                  const questions = totalQuestions(syllabus.subjects);
+                  const topics = syllabus.subjects.reduce((sum, subject) => sum + subject._count.topics, 0);
+                  return (
+                    <article key={syllabus.slug} className={styles.syllabusCard}>
+                      <h3>{syllabus.title}</h3>
+                      <p>
+                        {questions === null ? `${syllabus.subjects.length} matérias` : `${questions} questões`}
+                        {syllabus.essayPoints === null ? "" : ` + redação (${syllabus.essayPoints} pontos)`} · {topics} assuntos
+                      </p>
+                      <ul>
+                        {syllabus.subjects.map((subject) => (
+                          <li key={subject.name}>
+                            <span>{subject.name}</span>
+                            {subject.questionCount === null ? null : <b>{subject.questionCount}</b>}
+                          </li>
+                        ))}
+                      </ul>
+                      <Link href={`/concursos/${contest.slug}/o-que-estudar/${syllabus.slug}`} className={styles.inlineCta}>
+                        Edital verticalizado de {syllabus.title} →
+                      </Link>
+                    </article>
+                  );
+                })}
+              </div>
             </section>
           ) : null}
 

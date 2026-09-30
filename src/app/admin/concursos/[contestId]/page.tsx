@@ -49,7 +49,8 @@ export default async function EditContestPage(props: EditContestPageProps) {
           </>
         ) : (
           "Ainda não está no site (marque “Publicado no site”)."
-        )}
+        )}{" "}
+        · <Link href={`/admin/concursos/${contest.id}/edital`}>Edital verticalizado (matérias e assuntos por cargo)</Link>
       </p>
 
       <section className={styles.card}>

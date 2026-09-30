@@ -4,7 +4,7 @@ import { hasPremiumAccess } from "@/modules/study/infrastructure/queries/student
 import { findStudentProfileId } from "@/modules/study/infrastructure/queries/answered-question-status";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
-export type SiteViewer = Readonly<{ signedIn: boolean; premium: boolean }>;
+export type SiteViewer = Readonly<{ signedIn: boolean; premium: boolean; profileId: string | null }>;
 
 /** Who is looking at a public page (once per request): drives the header CTA and the Premium bar. */
 export const loadSiteViewer = cache(async (): Promise<SiteViewer> => {
@@ -13,8 +13,8 @@ export const loadSiteViewer = cache(async (): Promise<SiteViewer> => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return { signedIn: false, premium: false };
+  if (!user) return { signedIn: false, premium: false, profileId: null };
 
   const profileId = await findStudentProfileId(user.id);
-  return { signedIn: true, premium: profileId ? await hasPremiumAccess(profileId) : false };
+  return { signedIn: true, premium: profileId ? await hasPremiumAccess(profileId) : false, profileId };
 });

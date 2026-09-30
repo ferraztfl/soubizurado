@@ -94,6 +94,16 @@ export async function loadPublishedContest(slug: string, now: Date) {
       careerCategory: { select: { slug: true, name: true } },
       relatedOffer: { select: { slug: true, name: true, priceCents: true, compareAtCents: true, isActive: true } },
       contestPositions: { orderBy: { sortOrder: "asc" } },
+      syllabi: {
+        where: { isPublished: true },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        select: {
+          slug: true,
+          title: true,
+          essayPoints: true,
+          subjects: { orderBy: { sortOrder: "asc" }, select: { name: true, questionCount: true, _count: { select: { topics: true } } } },
+        },
+      },
     },
   });
 

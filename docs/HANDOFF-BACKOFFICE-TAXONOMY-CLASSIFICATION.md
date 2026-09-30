@@ -954,3 +954,19 @@ Vale sobre §1/§12 onde divergir.
   (`data-private/editorial/seed-2026-09-30-editais-pe.json`).
 - Limitação: o leitor por regras não entende o layout do Diário Oficial (várias colunas e tabelas) — devolveu datas de
   leis como data de prova. Pendente: suporte a DOE no importador.
+
+### 13.36 Edital verticalizado (30/09/2026)
+
+- Base da estrutura de conteúdo por edital (teoria, simulados e cronograma virão dela). Migration aditiva
+  `20260930120000_contest_syllabi`: `contest_syllabi` (um por cargo, slug único no concurso), `contest_syllabus_subjects`
+  (matéria, nº de questões, bloco, `discipline_id` quando o nome casa com a taxonomia — nada é criado nela),
+  `contest_syllabus_topics` e `study_syllabus_progress` (checklist do aluno). RLS habilitada, CHECKs no banco.
+- Domínio `src/modules/contests/domain/syllabus.ts` (texto "# Matéria | nº | bloco" + um assunto por linha);
+  gravação em `infrastructure/syllabus-store.ts` preserva as linhas que não mudaram (o checklist sobrevive a edições).
+- Admin: `/admin/concursos/[id]/edital`. Público: seção "O que estudar" na página do concurso e
+  `/concursos/[slug]/o-que-estudar/[cargo]` (checklist para logados, links "Resolver questões" por banca + matéria).
+- Carga: 7 cargos (PMPE Soldado, QOPM, QOM Clínica Geral, QOM Cirurgia Geral, QOD; CBMPE Soldado, QOC) montados do
+  Anexo II por `data-private/editorial/editais/build-syllabi.cjs`; log em `data-private/logs/syllabi-pmpe-cbmpe-*.json`.
+  Sem matéria correspondente na taxonomia: História de Pernambuco, Direitos Humanos e Legislação Extravagante, Gestão de
+  Saúde, Conhecimentos Específicos, Legislações pertinentes aos militares de PE (decisão do usuário criar/aliasar).
+- `data-private/**` passou a ser ignorado pelo ESLint.

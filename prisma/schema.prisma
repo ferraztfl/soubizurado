@@ -114,6 +114,7 @@ model Profile {
   lessonProgress         CourseLessonProgress[]
   blogPosts              BlogPost[]
   subscriptions          Subscription[]
+  syllabusProgress       StudySyllabusProgress[]
 
   @@map("profiles")
 }
@@ -170,6 +171,7 @@ model Discipline {
   aliases   DisciplineAlias[]
 
   classificationSuggestions QuestionClassificationTask[]
+  contestSyllabusSubjects   ContestSyllabusSubject[]
 
   @@index([isActive, sortOrder])
   @@index([knowledgeAreaId, isActive, sortOrder])
@@ -1383,6 +1385,7 @@ model Contest {
   logo             MediaAsset?         @relation(fields: [logoAssetId], references: [id], onDelete: SetNull)
   posts            BlogPost[]
   contestPositions ContestPosition[]
+  syllabi          ContestSyllabus[]
 
   @@index([isPublished, status])
   @@index([isPublished, isFeatured])
@@ -1455,4 +1458,77 @@ model ContestPosition {
 
   @@index([contestId, sortOrder])
   @@map("contest_positions")
+}
+
+/// "Edital verticalizado" of one position of a contest: subjects, number of
+/// questions and the numbered topics of the official syllabus. Kept apart from
+/// ContestPosition (positions are replaced as a whole on every contest save).
+model ContestSyllabus {
+  id              String   @id @default(uuid()) @db.Uuid
+  contestId       String   @map("contest_id") @db.Uuid
+  /// Position name as in the notice ("Soldado (Praça QPMG)").
+  title           String   @db.VarChar(160)
+  /// Unique within the contest; used in the public URL.
+  slug            String   @db.VarChar(80)
+  essayPoints     Int?     @map("essay_points")
+  durationMinutes Int?     @map("duration_minutes")
+  notes           String   @default("") @db.VarChar(2000)
+  isPublished     Boolean  @default(false) @map("is_published")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  contest  Contest                  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  subjects ContestSyllabusSubject[]
+
+  @@unique([contestId, slug])
+  @@index([contestId, sortOrder])
+  @@map("contest_syllabi")
+}
+
+model ContestSyllabusSubject {
+  id            String  @id @default(uuid()) @db.Uuid
+  syllabusId    String  @map("syllabus_id") @db.Uuid
+  name          String  @db.VarChar(160)
+  questionCount Int?    @map("question_count")
+  block         String? @db.VarChar(40)
+  /// Matching discipline of the controlled taxonomy (never created from here).
+  disciplineId  String? @map("discipline_id") @db.Uuid
+  sortOrder     Int     @default(0) @map("sort_order")
+
+  syllabus   ContestSyllabus        @relation(fields: [syllabusId], references: [id], onDelete: Cascade)
+  discipline Discipline?            @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  topics     ContestSyllabusTopic[]
+
+  @@index([syllabusId, sortOrder])
+  @@index([disciplineId])
+  @@map("contest_syllabus_subjects")
+}
+
+model ContestSyllabusTopic {
+  id        String  @id @default(uuid()) @db.Uuid
+  subjectId String  @map("subject_id") @db.Uuid
+  code      String? @db.VarChar(20)
+  text      String  @db.VarChar(600)
+  sortOrder Int     @default(0) @map("sort_order")
+
+  subject  ContestSyllabusSubject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  progress StudySyllabusProgress[]
+
+  @@index([subjectId, sortOrder])
+  @@map("contest_syllabus_topics")
+}
+
+/// A topic of an "edital verticalizado" the student marked as studied.
+model StudySyllabusProgress {
+  profileId String   @map("profile_id") @db.Uuid
+  topicId   String   @map("topic_id") @db.Uuid
+  studiedAt DateTime @default(now()) @map("studied_at") @db.Timestamptz(6)
+
+  profile Profile              @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  topic   ContestSyllabusTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, topicId])
+  @@index([topicId])
+  @@map("study_syllabus_progress")
 }
