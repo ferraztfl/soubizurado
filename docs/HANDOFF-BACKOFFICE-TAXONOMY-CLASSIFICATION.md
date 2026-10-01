@@ -1170,3 +1170,23 @@ Vale sobre §1/§12 onde divergir.
   Largura recolhida 76 px (`--sb-sidebar-width` via `data-sidebar`).
 - Painel: bloco do topo compacto (sem parágrafo, título menor). "Meus cursos": capa 16:9 e barra de progresso +
   botão alinhados na base.
+
+### 13.49 Importação de provas AOCP de 2016 a 2020 (01/10/2026)
+
+- Pasta `data-private/imports/provas-instituto-aocp` (88 PDFs = 42 provas com gabarito). Fluxo usado:
+  1. `npm run import:analyze-folder -- <pasta>`: pareia prova e gabarito (nomes `-prova`/`-gabarito`, `(1)` idênticos
+     ignorados), analisa tudo **sem gravar no banco** e gera um CSV em `data-private/logs/analise-pasta-*.csv`.
+  2. Escrever um manifesto (`data-private/imports/manifesto-aocp-*.json`: órgão, cargo, ano, mapeamento das seções,
+     `ranges` para recortar seções, `skip` para questões que o leitor não consegue ler).
+  3. `npm run import:manifest -- <manifesto>` (dry-run) e depois `--apply`: importa uma prova por vez, idempotente.
+     As questões entram **em revisão**. Para uma prova avulsa: `npm run import:confirm-analysis`.
+- Leitor AOCP ampliado (`aocp-pdf-parser.ts`, `analyze-official-exam.ts`, `aocp-grid-answer-key.ts`): número da
+  questão na mesma linha do enunciado ("3. Assinale..."); gabarito em grade por cargo e por "Prova N" (letras de A a E
+  e X = anulada); PDF com 4 versões da prova (lê só a da capa); cadernos Certo/Errado (PM-CE 2016, leitor V/F com
+  C/E); órgão e cargo lidos da capa de 2019-2020; conferência do total anunciado na capa ("01 a 50").
+- A transação de importação de cada questão passou de 5 s para 60 s (questões lentas falhavam sozinhas).
+- Resultado da análise: 29 provas importáveis; **ficaram de fora** (leitor ainda não cobre): Novo Hamburgo ×4
+  (número da questão sem negrito), UFOB TI ×2 (leitor V/F lê só metade), IBGE Web Design (cargo não casa no
+  gabarito), Emprel (alternativas ausentes), Prodeb ×3 (seções ilegíveis).
+- Questões fora das provas importadas por alternativas que são fórmulas/imagens vetoriais: Câmara de Cabo Advogado
+  Q16 e Q18, PC-ES Investigador Q14 (cadastrar à mão se quiser).

@@ -18,6 +18,7 @@ import {
 } from "../../application/official-exams/official-exam";
 import { findGridKeyBlock, parseAocpGridAnswerKey } from "../providers/aocp-grid-answer-key";
 import {
+  type AocpLine,
   answerFor,
   type AocpAnswerKey,
   parseAocpAnswerKey,
@@ -265,6 +266,27 @@ function coverPositionHints(coverText: string): Readonly<{ candidates: string[];
   return { candidates: lines, exam: exam ? Number(exam[1]) : null };
 }
 
+/**
+ * Some PDFs bind several versions of the same exam ("Prova 1..4"), each with its
+ * own cover page (a huge "PROVA" label). Only the lines of the version on the
+ * first cover are read: headings and numbering restart in every version.
+ */
+function selectBoundVersion(lines: readonly AocpLine[], version: number): readonly AocpLine[] {
+  const covers = [...new Set(lines.filter((line) => line.bold && line.size >= 30 && /^prova$/i.test(line.text)).map((line) => line.page))].sort(
+    (left, right) => left - right,
+  );
+
+  if (covers.length < 2) {
+    return lines;
+  }
+
+  // Version 0 runs up to the second cover; version k starts after cover k.
+  const from = version === 0 ? 2 : (covers[version - 1] ?? 2) + 1;
+  const to = covers[version] ?? Number.POSITIVE_INFINITY;
+
+  return lines.filter((line) => line.page >= from && line.page < to);
+}
+
 /** Grid-style keys (2016-2020 AOCP) list every position; the booklet's one is found by its cover. */
 function gridKeyFor(answerText: string, coverText: string): Readonly<{ key: AocpAnswerKey; issue: string | null }> | null {
   const blocks = parseAocpGridAnswerKey(answerText);
@@ -295,7 +317,8 @@ function analyzeAocp(xml: string, answerText: string, coverText: string): Readon
   // content right at the top of the page, so the header zone must be smaller.
   const inlineNumbers = /<b>\d{1,3}\.\s*<\/b>/.test(xml);
   const grid = gridKeyFor(answerText, coverText);
-  const parsedExam = parseAocpExam(readAocpLines(xml, inlineNumbers ? { headerMaxTop: 30 } : {}));
+  const allLines = readAocpLines(xml, inlineNumbers ? { headerMaxTop: 30 } : {});
+  const parsedExam = parseAocpExam(selectBoundVersion(allLines, (coverPositionHints(coverText).exam ?? 1) - 1));
   // Some booklets bind several "Prova 1..4" versions of the same exam (same
   // questions in another order). Only the version on the cover is imported.
   const versions = Math.max(0, ...parsedExam.questions.map((question) => question.variant)) + 1;
