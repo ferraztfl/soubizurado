@@ -305,3 +305,14 @@
   border-top: 1px solid currentColor;
   border-top-color: var(--sb-border);
 }
+
+/* Commented answer: the blog article renderer, sized for the feedback box. */
+.explanation {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.explanation > div {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}

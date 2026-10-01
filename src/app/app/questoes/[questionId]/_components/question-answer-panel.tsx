@@ -17,6 +17,7 @@ import {
   submitStudyAnswerAction,
 } from "@/modules/study/presentation/actions/study-answer-actions";
 
+import { ArticleBody } from "@/app/blog/article-body";
 import { RichText } from "@/shared/ui/rich-text";
 
 import { QuestionMedia } from "../../_components/question-media";
@@ -90,6 +91,7 @@ function optionShare(
 }
 
 const countFormatter = new Intl.NumberFormat("pt-BR");
+const NO_IMAGES: ReadonlyMap<number, string> = new Map();
 
 function trueFalseLabel(
   value: boolean,
@@ -469,7 +471,9 @@ export function QuestionAnswerPanel({
           </strong>
 
           {result.data.explanation ? (
-            <p>{result.data.explanation}</p>
+            <div className={styles.explanation}>
+              <ArticleBody body={result.data.explanation} images={NO_IMAGES} />
+            </div>
           ) : (
             <p>
               Esta questão ainda não possui uma

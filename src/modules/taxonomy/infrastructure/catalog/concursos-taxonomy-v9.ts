@@ -27,10 +27,17 @@ export const V9_AREAS_FOR_EXISTING: Readonly<Record<string, readonly CatalogArea
 };
 
 /** Topics ("Subtópico" in the UI) added to existing areas: discipline → area → topics. */
-export const V9_TOPICS_FOR_EXISTING: Readonly<Record<string, Readonly<Record<string, readonly CatalogTopic[]>>>> = {};
+export const V9_TOPICS_FOR_EXISTING: Readonly<Record<string, Readonly<Record<string, readonly CatalogTopic[]>>>> = {
+  "Direito Penal Militar": {
+    "Parte Geral do Direito Penal Militar": [topic("Extinção da Punibilidade", ["Prescrição"])],
+  },
+};
 
 /** Subtopics ("Detalhe" in the UI) added to existing topics: discipline → topic → subtopics. */
 export const V9_SUBTOPICS_FOR_EXISTING: Readonly<Record<string, Readonly<Record<string, readonly CatalogSubtopic[]>>>> = {
+  "Direito Penal Militar": {
+    "Aplicação da Lei Penal Militar": [{ name: "Lei penal no tempo", aliases: ["Abolitio criminis"] }],
+  },
   História: {
     "Brasil Colônia": [{ name: "Invasões holandesas", aliases: ["Brasil holandês", "Domínio holandês"] }],
   },
