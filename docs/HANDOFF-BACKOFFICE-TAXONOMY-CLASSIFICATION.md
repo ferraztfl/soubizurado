@@ -1044,3 +1044,24 @@ Vale sobre §1/§12 onde divergir.
   texto e título das aulas corrigidos (log `data-private/logs/syllabus-topic-fix-*`), montador `build-syllabi.cjs` ajustado.
 - Situação da Teoria Completa do Soldado PMPE: 24 de 60 aulas em rascunho (Português 18, Direito Constitucional 6);
   faltam História de PE (8), Raciocínio Lógico (4), Informática (7) e Direitos Humanos e Legislação Extravagante (17).
+
+### 13.42 Conteúdo: Soldado PMPE com todas as aulas em rascunho (01/10/2026)
+
+- Rascunhos carregados com `theory:drafts` (arquivos em `data-private/editorial/teoria/`): História de Pernambuco
+  (8 assuntos → 40 aulas com as gêmeas dos outros cursos), Raciocínio Lógico (4 → 12), Informática (7 → 28) e
+  Direitos Humanos e Legislação Extravagante (18, só Soldado PMPE; `direitos-humanos-legislacao-{01-09,10-18}.json`).
+- **Soldado PMPE: 61 de 61 aulas em RASCUNHO.** Nenhuma está REVISADA — o aluno ainda não vê texto. Falta a revisão
+  humana em `/admin/cursos` (aula por aula, mudar para "Revisado").
+- Correção de carga: 5 assuntos vinham colados no edital ("…2025.).18. Súmulas"); separados em assuntos próprios, com
+  aulas geradas e reordenadas (log `data-private/logs/syllabus-topic-split-*`; título da aula 17 corrigido depois,
+  log `lesson-title-fix-*`). `build-syllabi.cjs` ganhou a regra de "descolar". Direitos Humanos passou de 17 para 18.
+- Pontos para o revisor conferir com cuidado em Direitos Humanos e Legislação:
+  - Aula 14 (Lei Estadual 6.783/1974): escrita a partir do texto em legis.alepe.pe.gov.br; conferir a redação atual
+    (círculos, estabilidade com 10 anos, limite de 30 dias) e o que o Código Disciplinar (Lei 11.817/2000) mudou.
+    O art. 5º, § 2º, da lei ainda fala em carreira de Oficial privativa de brasileiro nato — não entrou na aula.
+  - Aulas 9 e 17 tratam da mesma lei (o edital lista a Maria da Penha duas vezes): a 9 traz conceitos, a 17 o
+    atendimento policial e as medidas protetivas.
+  - Aula 12: rol de hediondos e frações de progressão; aula 13: tese do STF sobre maconha (RE 635.659);
+    aulas 10 e 17: penas alteradas em 2023 e 2024. Conferir se houve mudança legislativa depois.
+- Próximo: matérias que faltam nos outros cursos (CBMPE Soldado: Matemática, Física, Biologia, Atualidades e o resto de
+  Direito Constitucional; Oficiais; saúde). Compromisso público: todas as matérias até 31/12/2026.
