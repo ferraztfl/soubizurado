@@ -232,3 +232,67 @@ export async function saveQuestionContentAction(
 }
 
 class ConcurrentEditError extends Error {}
+
+const EXPLANATION_MAX_LENGTH = 20_000;
+
+/** Saves the commented answer ("gabarito comentado"); an empty text removes it. Recorded in the question history. */
+export async function saveQuestionExplanationAction(formData: FormData): Promise<void> {
+  const admin = await requireAdminUser();
+
+  const questionId = readString(formData, "questionId");
+  const content = readString(formData, "explanation").replace(/\r\n/g, "\n").trim();
+
+  if (!UUID_PATTERN.test(questionId)) {
+    redirect("/admin/questoes/revisao");
+  }
+
+  const editUrl = `/admin/questoes/${questionId}/editar`;
+
+  if (content.length > EXPLANATION_MAX_LENGTH) {
+    redirect(`${editUrl}?explanation=long`);
+  }
+
+  const prisma = getPrismaClient();
+  const question = await prisma.question.findUnique({
+    where: { id: questionId },
+    select: { id: true, status: true, explanation: { select: { content: true } } },
+  });
+
+  if (!question || question.status === "ARCHIVED") {
+    redirect("/admin/questoes/revisao");
+  }
+
+  const previous = question.explanation?.content ?? "";
+
+  if (previous !== content) {
+    await prisma.$transaction(async (transaction) => {
+      if (content) {
+        await transaction.questionExplanation.upsert({
+          where: { questionId: question.id },
+          create: { questionId: question.id, content },
+          update: { content },
+        });
+      } else {
+        await transaction.questionExplanation.deleteMany({ where: { questionId: question.id } });
+      }
+
+      await transaction.questionRevision.create({
+        data: {
+          questionId: question.id,
+          editorProfileId: admin.profileId,
+          reason: previous ? "Gabarito comentado alterado" : "Gabarito comentado incluído",
+          changedFields: ["explanation"],
+          answerKeyChanged: false,
+          questionStatus: question.status,
+          before: { explanation: previous },
+          after: { explanation: content },
+        },
+      });
+    });
+
+    revalidatePath(editUrl);
+    revalidatePath(`/app/questoes/${question.id}`);
+  }
+
+  redirect(`${editUrl}?saved=1`);
+}

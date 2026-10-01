@@ -20,6 +20,9 @@ export const V9_AREAS_FOR_EXISTING: Readonly<Record<string, readonly CatalogArea
         ["Excludentes de ilicitude", "Exclusão de crime"],
       ),
     ]),
+    area("Crimes Militares em Tempo de Guerra", [
+      topic("Favorecimento ao Inimigo", ["Traição", "Covardia", "Espionagem"]),
+    ]),
   ],
 };
 

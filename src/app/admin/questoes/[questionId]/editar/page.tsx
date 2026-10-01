@@ -8,19 +8,22 @@ import {
   QUESTION_TYPE_LABELS,
   labelFor,
 } from "@/modules/question-bank/presentation/question-labels";
+import { SubmitButton } from "@/app/admin/_components/submit-button";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
+import { saveQuestionExplanationAction } from "./actions";
 import { QuestionEditForm } from "./question-edit-form";
 import styles from "./editar.module.css";
 
 type PageProps = Readonly<{
   params: Promise<{ questionId: string }>;
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; explanation?: string }>;
 }>;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const FIELD_LABELS: Readonly<Record<string, string>> = {
+  explanation: "Gabarito comentado",
   statement: "Enunciado",
   alternatives: "Alternativas",
   answerKey: "Gabarito",
@@ -58,6 +61,7 @@ export default async function EditQuestionPage(props: PageProps) {
       statement: true,
       correctTrueFalse: true,
       updatedAt: true,
+      explanation: { select: { content: true } },
       discipline: { select: { name: true } },
       area: { select: { name: true } },
       topic: { select: { name: true } },
@@ -143,6 +147,12 @@ export default async function EditQuestionPage(props: PageProps) {
         </div>
       </header>
 
+      {searchParams.explanation === "long" ? (
+        <div className={styles.noticeWarning} role="alert">
+          O comentário passou de 20.000 caracteres e não foi salvo.
+        </div>
+      ) : null}
+
       {searchParams.saved === "1" ? (
         <div className={styles.noticeSuccess} role="status">
           Alterações salvas e registradas no histórico.
@@ -156,6 +166,7 @@ export default async function EditQuestionPage(props: PageProps) {
       ) : null}
 
       <div className={styles.layout}>
+        <div className={styles.form}>
         <QuestionEditForm
           questionId={question.id}
           updatedAt={question.updatedAt.toISOString()}
@@ -175,6 +186,29 @@ export default async function EditQuestionPage(props: PageProps) {
             })),
           }))}
         />
+
+        <form action={saveQuestionExplanationAction} className={styles.card}>
+          <input type="hidden" name="questionId" value={question.id} />
+          <label className={styles.cardTitle} htmlFor="explanation">
+            Gabarito comentado
+          </label>
+          <p className={styles.hint}>
+            Aparece para o aluno depois que ele responde. Salvo separadamente do enunciado; deixe em branco para
+            remover.
+          </p>
+          <textarea
+            id="explanation"
+            name="explanation"
+            className={styles.textarea}
+            rows={8}
+            maxLength={20000}
+            defaultValue={question.explanation?.content ?? ""}
+          />
+          <SubmitButton pendingLabel="Salvando..." className={styles.primaryButton}>
+            Salvar comentário
+          </SubmitButton>
+        </form>
+        </div>
 
         <aside className={styles.sidePanel}>
           <section className={styles.card}>
