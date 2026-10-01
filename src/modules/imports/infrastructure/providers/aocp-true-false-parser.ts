@@ -38,7 +38,7 @@ export type SectionRange = Readonly<{ name: string; from: number; to: number }>;
 
 export type TrueFalseAnswer = "V" | "F" | "ANNULLED";
 
-export const TRUE_FALSE_FORMAT = /julgue[\s\S]{0,60}verdadeiro\s+ou\s+falso/i;
+export const TRUE_FALSE_FORMAT = /julgue[\s\S]{0,80}(?:verdadeiro\s+ou\s+falso|certo\s*(?:\(c\))?\s+ou\s+errado)/i;
 
 const ITEM_START = /^(\d{1,3})\.\s+(.*)$/;
 /**

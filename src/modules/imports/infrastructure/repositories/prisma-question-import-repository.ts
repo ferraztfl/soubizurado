@@ -849,6 +849,9 @@ export class PrismaQuestionImportRepository
             question.id,
         };
       },
+      // The default 5 s is too short for a question with many statements and
+      // alternatives over a remote database; a slow one used to fail on its own.
+      { maxWait: 10_000, timeout: 60_000 },
     );
   }
 

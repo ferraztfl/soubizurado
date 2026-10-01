@@ -91,6 +91,12 @@ const FOOTER_MIN_RATIO = 0.93;
 const SAME_LINE_TOLERANCE = 4;
 const ALTERNATIVE_LABEL = /^\(([A-E])\)\s*(.*)$/;
 const QUESTION_NUMBER = /^\d{1,3}$/;
+/**
+ * 2019-2020 booklets print the number inline with the first statement line
+ * ("3. Considerando a norma-padrão..."), in a larger bold font, instead of a
+ * number alone on its line.
+ */
+const INLINE_QUESTION_START = /^(\d{1,3})\.\s+(\S.*)$/;
 const END_OF_OBJECTIVE_PART = /reda[cç][aã]o/i;
 const BLOCK_HEADING = /^bloco\b/i;
 const HIGHLIGHT_REFERENCE =
@@ -328,9 +334,10 @@ export function parseAocpExam(
 ): AocpExam {
   // Question markers use one dominant font size; bold digits in tables
   // and charts use other sizes and must not start questions.
+  const isMarkerText = (text: string) => QUESTION_NUMBER.test(text) || INLINE_QUESTION_START.test(text);
   const markerSize = mostFrequent(
     lines
-      .filter((line) => line.bold && QUESTION_NUMBER.test(line.text))
+      .filter((line) => line.bold && isMarkerText(line.text))
       .map((line) => line.size),
   );
 
@@ -342,7 +349,7 @@ export function parseAocpExam(
       .filter(
         (line) =>
           line.bold &&
-          !QUESTION_NUMBER.test(line.text) &&
+          !isMarkerText(line.text) &&
           !BLOCK_HEADING.test(line.text),
       )
       .map((line) => line.size),
@@ -419,7 +426,7 @@ export function parseAocpExam(
       continue;
     }
 
-    if (line.bold && line.size === headingSize && !QUESTION_NUMBER.test(line.text)) {
+    if (line.bold && line.size === headingSize && !isMarkerText(line.text)) {
       closeSupport();
 
       if (END_OF_OBJECTIVE_PART.test(line.text)) {
@@ -435,9 +442,11 @@ export function parseAocpExam(
       continue;
     }
 
-    if (line.bold && line.size === markerSize && QUESTION_NUMBER.test(line.text)) {
+    const inlineStart = line.bold && line.size === markerSize ? INLINE_QUESTION_START.exec(line.text) : null;
+
+    if (line.bold && line.size === markerSize && (QUESTION_NUMBER.test(line.text) || inlineStart)) {
       closeSupport();
-      const number = Number(line.text);
+      const number = Number(inlineStart ? inlineStart[1] : line.text);
       const variant = seenNumbers.get(number) ?? 0;
       seenNumbers.set(number, variant + 1);
       question = {
@@ -445,7 +454,7 @@ export function parseAocpExam(
         variant,
         block,
         section,
-        statement: "",
+        statement: inlineStart ? inlineStart[2]! : "",
         images: [],
         alternatives: [],
         supportText,

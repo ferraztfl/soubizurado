@@ -16,8 +16,10 @@ import {
   type OfficialExamQuestion,
   questionKey,
 } from "../../application/official-exams/official-exam";
+import { findGridKeyBlock, parseAocpGridAnswerKey } from "../providers/aocp-grid-answer-key";
 import {
   answerFor,
+  type AocpAnswerKey,
   parseAocpAnswerKey,
   parseAocpExam,
   readAocpLines,
@@ -110,6 +112,37 @@ export function detectMetadata(coverText: string): DetectedExamMetadata {
     roleLines.unshift(line);
   }
 
+  // 2019-2020 covers have no "Nível" line: the organization is the line right
+  // above "EDITAL ..." and the position(s) the uppercase lines right below it.
+  const editalIndex = lines.findIndex((line) => /^edital\b/i.test(line));
+  const layout2019 = levelIndex <= 0 && editalIndex > 0;
+  const coverNoise = /^(nome do candidato|inscri[cç][aã]o|composi[cç][aã]o do caderno)$/i;
+
+  if (layout2019) {
+    const above = lines
+      .slice(Math.max(0, editalIndex - 2), editalIndex)
+      .reverse()
+      .find((line) => !coverNoise.test(line));
+
+    for (let index = editalIndex + 1; index < lines.length && roleLines.length < 2; index += 1) {
+      const line = lines[index]!;
+
+      if (coverNoise.test(line) || line !== line.toLocaleUpperCase("pt-BR") || line.length > 90) {
+        break;
+      }
+
+      roleLines.push(line);
+    }
+
+    return {
+      organization: above ? above.replace(/\s+ESTADO D[EOA]\s.+$/, "").replace(/\s+CONCURSO P[ÚU]BLICO.*$/, "").trim() : null,
+      careerPosition: roleLines.length > 0 ? roleLines.join(" ") : null,
+      year: year ? Number(year) : null,
+      level: level ? level[0]!.toUpperCase() + level.slice(1).toLowerCase() : null,
+      notice: noticeLine,
+    };
+  }
+
   return {
     organization: organizationLine,
     careerPosition: levelIndex > 0 && roleLines.length > 0 ? roleLines.join(" ") : null,
@@ -127,13 +160,17 @@ function analyzeAocpTrueFalse(
   xml: string,
   coverText: string,
   answerText: string,
+  layoutCoverText: string,
 ): Readonly<{
   sections: readonly string[];
   questions: OfficialExamQuestion[];
   issues: string[];
   role: string | null;
 }> {
-  const ranges = parseSectionRanges(coverText);
+  // The composition table is read line by line; in some covers the plain text
+  // lists the names and the ranges apart, the layout text keeps them together.
+  const plainRanges = parseSectionRanges(coverText);
+  const ranges = plainRanges.length >= 2 ? plainRanges : parseSectionRanges(layoutCoverText);
   const exam = parseAocpTrueFalseExam(readAocpLines(xml, { headerMaxTop: 30 }), ranges);
   const issues = validateTrueFalseExam(exam, ranges.at(-1)?.to ?? null);
   const blocks = parseTrueFalseAnswerKeyBlocks(answerText);
@@ -148,9 +185,25 @@ function analyzeAocpTrueFalse(
   ];
 
   const role = roles.length === 1 ? roles[0]! : null;
-  const answers = role ? findRoleAnswers(blocks, role).answers : null;
+  let answers = role ? findRoleAnswers(blocks, role).answers : null;
+  let byVersion = false;
 
-  if (!role) {
+  // 2016-style Certo/Errado keys list "Prova 01..04" only, with C/E letters.
+  if (!role && roles.length === 0) {
+    const gridBlocks = parseAocpGridAnswerKey(answerText);
+
+    if (gridBlocks.length > 0) {
+      const hints = coverPositionHints(coverText);
+      const match = findGridKeyBlock(gridBlocks, hints.candidates, hints.exam);
+
+      if (match.ok) {
+        answers = new Map([...match.answers].map(([number, letter]) => [number, letter === "X" ? "ANNULLED" : letter === "C" ? "V" : "F"] as const));
+        byVersion = true;
+      }
+    }
+  }
+
+  if (!role && !byVersion) {
     issues.push(
       roles.length > 1
         ? `Cargo ambíguo no gabarito: ${roles.join("; ")}.`
@@ -191,8 +244,8 @@ function analyzeAocpTrueFalse(
   return { sections: exam.sections, questions, issues, role };
 }
 
-async function pdfToText(path: string, lastPage?: number): Promise<string> {
-  const args = ["-enc", "UTF-8", ...(lastPage ? ["-l", String(lastPage)] : []), path, "-"];
+async function pdfToText(path: string, lastPage?: number, layout = false): Promise<string> {
+  const args = ["-enc", "UTF-8", ...(layout ? ["-layout"] : []), ...(lastPage ? ["-l", String(lastPage)] : []), path, "-"];
   const { stdout } = await execFileAsync("pdftotext", args, {
     windowsHide: true,
     maxBuffer: 1024 * 1024 * 32,
@@ -201,20 +254,74 @@ async function pdfToText(path: string, lastPage?: number): Promise<string> {
   return stripWatermarks(stdout);
 }
 
-function analyzeAocp(xml: string, answerText: string): Readonly<{
+/** Cover lines that may name the position, and the "Prova N" variant printed on the cover. */
+function coverPositionHints(coverText: string): Readonly<{ candidates: string[]; exam: number | null }> {
+  const lines = coverText
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter((line) => line.length >= 4 && line.length <= 90);
+  const exam = /\bprova\s*0?(\d)\b/i.exec(coverText.replace(/\s+/g, " "));
+
+  return { candidates: lines, exam: exam ? Number(exam[1]) : null };
+}
+
+/** Grid-style keys (2016-2020 AOCP) list every position; the booklet's one is found by its cover. */
+function gridKeyFor(answerText: string, coverText: string): Readonly<{ key: AocpAnswerKey; issue: string | null }> | null {
+  const blocks = parseAocpGridAnswerKey(answerText);
+
+  if (blocks.length === 0) {
+    return null;
+  }
+
+  const hints = coverPositionHints(coverText);
+  const match = findGridKeyBlock(blocks, hints.candidates, hints.exam);
+
+  if (!match.ok) {
+    return { key: new Map(), issue: match.reason };
+  }
+
+  return {
+    key: new Map([...match.answers].map(([number, letter]) => [number, [letter === "X" ? "ANNULLED" : letter]] as const)),
+    issue: null,
+  };
+}
+
+function analyzeAocp(xml: string, answerText: string, coverText: string): Readonly<{
   sections: readonly string[];
   questions: OfficialExamQuestion[];
   issues: string[];
 }> {
-  const exam = parseAocpExam(readAocpLines(xml));
-  const key = parseAocpAnswerKey(answerText);
+  // 2019-2020 booklets print the number inline ("<b>3. </b>") and start the
+  // content right at the top of the page, so the header zone must be smaller.
+  const inlineNumbers = /<b>\d{1,3}\.\s*<\/b>/.test(xml);
+  const grid = gridKeyFor(answerText, coverText);
+  const parsedExam = parseAocpExam(readAocpLines(xml, inlineNumbers ? { headerMaxTop: 30 } : {}));
+  // Some booklets bind several "Prova 1..4" versions of the same exam (same
+  // questions in another order). Only the version on the cover is imported.
+  const versions = Math.max(0, ...parsedExam.questions.map((question) => question.variant)) + 1;
+  const coverVersion = (coverPositionHints(coverText).exam ?? 1) - 1;
+  const exam =
+    grid && versions >= 3
+      ? {
+          ...parsedExam,
+          questions: parsedExam.questions.filter((question) => question.variant === coverVersion).map((question) => ({ ...question, variant: 0 })),
+        }
+      : parsedExam;
+  const key = grid ? grid.key : parseAocpAnswerKey(answerText);
   const issues = validateAocpExam(exam);
+
+  if (grid?.issue) {
+    issues.push(grid.issue);
+  }
 
   const questions = exam.questions.map((question): OfficialExamQuestion => {
     const answer = answerFor(key, question);
 
     if (answer === null) {
-      issues.push(`Questão ${questionKey(question.number, question.variant)}: sem resposta no gabarito.`);
+      // With no position in the key every question would repeat the same message.
+      if (!grid?.issue) {
+        issues.push(`Questão ${questionKey(question.number, question.variant)}: sem resposta no gabarito.`);
+      }
     }
 
     return {
@@ -237,6 +344,18 @@ function analyzeAocp(xml: string, answerText: string): Readonly<{
 
   if (questions.length === 0) {
     issues.push("Nenhuma questão encontrada no caderno.");
+  }
+
+  // The cover announces the composition ("01 a 10", "11 a 15"...): the last
+  // number is the size of the exam. Booklets with optional-language blocks
+  // reuse numbers, so only single-version ones are checked.
+  const announced = Math.max(
+    0,
+    ...[...coverText.matchAll(/\b(\d{1,3})\s+a\s+(\d{1,3})\b/g)].filter((range) => Number(range[1]) < Number(range[2])).map((range) => Number(range[2])),
+  );
+
+  if (announced >= 5 && questions.length > 0 && !questions.some((question) => question.variant > 0) && questions.length !== announced) {
+    issues.push(`O caderno anuncia ${announced} questões, mas foram lidas ${questions.length}.`);
   }
 
   return { sections: exam.sections, questions, issues };
@@ -300,7 +419,7 @@ export async function analyzeOfficialExam(
 
   if (board === "AOCP_VF") {
     const coverOnly = await pdfToText(paths.booklet, 1);
-    const parsed = analyzeAocpTrueFalse(xml, coverOnly, answerText);
+    const parsed = analyzeAocpTrueFalse(xml, coverOnly, answerText, await pdfToText(paths.booklet, 1, true));
 
     return {
       ...base,
@@ -311,7 +430,7 @@ export async function analyzeOfficialExam(
     };
   }
 
-  const parsed = analyzeAocp(xml, answerText);
+  const parsed = analyzeAocp(xml, answerText, coverText);
 
   return {
     ...base,
