@@ -1019,3 +1019,18 @@ Vale sobre §1/§12 onde divergir.
   combos de Soldado ligados às páginas dos concursos. Log: `data-private/logs/combos-teoria-*.json`.
 - Pendente: escrever/revisar as aulas até 31/12/2026 (compromisso da pré-venda); módulo de redação (1 correção/mês no
   combo ainda **não** é prometida na oferta); Mercado Pago real.
+
+### 13.40 Leads: edital verticalizado em PDF mediante cadastro (01/10/2026)
+
+- Decisão: a página do edital verticalizado continua pública (SEO); o **PDF** exige nome, e-mail e WhatsApp.
+  Consentimento de divulgação é separado, opcional e desmarcado (LGPD); o PDF é liberado de qualquer forma.
+- Módulo `src/modules/leads`: `planLead`/`normalizeWhatsapp` (celular BR com DDD), `saveSyllabusLead` (uma linha por
+  e-mail + cargo; IP só como HMAC; limite de 8 pedidos/hora por rede; honeypot no formulário), `buildSyllabusPdf`
+  (pdf-lib 1.17.1, fontes padrão: capa com a marca, resumo da prova, tabela por matéria com caixas Teoria / Questões /
+  Rev. 1 / Rev. 2, página final com o site). Migration aditiva `20261001100000_leads` (RLS, CHECKs).
+- Rotas: formulário em `/concursos/[slug]/o-que-estudar/[cargo]#pdf` (link também nos cards da página do concurso);
+  download em `/api/edital-verticalizado/[leadId]` (id não adivinhável, até 30 downloads por link, `noindex`).
+- Admin: `/admin/leads` (filtro por origem e por consentimento) e `/admin/leads/exportar` (CSV `;` com BOM, células
+  protegidas contra fórmulas). Política de privacidade atualizada (item "Materiais gratuitos").
+- Pendente: descadastro por link (hoje `unsubscribed_at` só pelo banco); envio do PDF por e-mail; mesma captura para
+  outros materiais (o campo `source` já existe).

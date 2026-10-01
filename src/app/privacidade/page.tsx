@@ -16,7 +16,7 @@ export default function PrivacyPage() {
         ← Sou Bizurado
       </Link>
       <h1>Política de privacidade</h1>
-      <p className={styles.meta}>Versão inicial — última atualização: 28/09/2026. Em conformidade com a LGPD (Lei 13.709/2018).</p>
+      <p className={styles.meta}>Última atualização: 01/10/2026. Em conformidade com a LGPD (Lei 13.709/2018).</p>
 
       <h2>1. Dados que coletamos</h2>
       <ul>
@@ -35,6 +35,12 @@ export default function PrivacyPage() {
         <li>
           <strong>Visitantes sem conta:</strong> para o limite de 1 questão por dia, guardamos apenas códigos
           irreversíveis (hash) de um cookie aleatório e do endereço IP — nunca o IP em si.
+        </li>
+        <li>
+          <strong>Materiais gratuitos (edital verticalizado em PDF):</strong> nome, e-mail e WhatsApp informados no
+          pedido, o material solicitado e um código irreversível (hash) do endereço IP, para evitar abusos. Usamos esses
+          dados para liberar o material. Só enviamos novidades e ofertas por e-mail ou WhatsApp a quem marcar essa opção,
+          que é separada e não é exigida para baixar; você pode pedir para sair da lista a qualquer momento.
         </li>
       </ul>
 

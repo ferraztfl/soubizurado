@@ -1538,6 +1538,7 @@ model ContestSyllabus {
   contest  Contest                  @relation(fields: [contestId], references: [id], onDelete: Cascade)
   subjects ContestSyllabusSubject[]
   courses  Course[]
+  leads    Lead[]
 
   @@unique([contestId, slug])
   @@index([contestId, sortOrder])
@@ -1595,4 +1596,34 @@ model StudySyllabusProgress {
   @@id([profileId, topicId])
   @@index([topicId])
   @@map("study_syllabus_progress")
+}
+
+/// A person who asked for a free material (e.g. the edital verticalizado PDF) and
+/// left name, e-mail and WhatsApp. Marketing messages only with explicit consent.
+model Lead {
+  id                 String    @id @default(uuid()) @db.Uuid
+  name               String    @db.VarChar(120)
+  email              String    @db.VarChar(254)
+  /// Digits only, with area code (DDD), e.g. 81999990000.
+  whatsapp           String    @db.VarChar(20)
+  source             String    @default("SYLLABUS_PDF") @db.VarChar(40)
+  syllabusId         String?   @map("syllabus_id") @db.Uuid
+  /// What was requested, kept even if the syllabus is deleted ("Concurso PMPE 2026 – Soldado").
+  sourceLabel        String    @map("source_label") @db.VarChar(240)
+  marketingConsent   Boolean   @default(false) @map("marketing_consent")
+  marketingConsentAt DateTime? @map("marketing_consent_at") @db.Timestamptz(6)
+  unsubscribedAt     DateTime? @map("unsubscribed_at") @db.Timestamptz(6)
+  /// HMAC of the requester IP (abuse limit); never the IP itself.
+  ipHash             String?   @map("ip_hash") @db.Char(64)
+  downloads          Int       @default(0)
+  lastDownloadAt     DateTime? @map("last_download_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  syllabus ContestSyllabus? @relation(fields: [syllabusId], references: [id], onDelete: SetNull)
+
+  @@unique([email, syllabusId])
+  @@index([createdAt])
+  @@index([ipHash, createdAt])
+  @@map("leads")
 }

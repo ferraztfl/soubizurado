@@ -11,6 +11,7 @@ import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 import { loadSiteViewer } from "../../../../_components/site-viewer";
 import { SyllabusChecklist } from "./syllabus-checklist";
+import { SyllabusPdfForm } from "./syllabus-pdf-form";
 import styles from "./syllabus-page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -179,6 +180,8 @@ export default async function ContestSyllabusPage({ params }: SyllabusPageProps)
       </header>
 
       {syllabus.notes ? <p className={styles.notes}>{syllabus.notes}</p> : null}
+
+      <SyllabusPdfForm syllabusId={syllabus.id} title={syllabus.title} />
 
       <SyllabusChecklist
         subjects={syllabus.subjects.map((subject) => ({

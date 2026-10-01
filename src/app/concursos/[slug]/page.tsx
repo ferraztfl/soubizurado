@@ -322,6 +322,9 @@ export default async function ContestPage({ params }: ContestPageProps) {
                       <Link href={`/concursos/${contest.slug}/o-que-estudar/${syllabus.slug}`} className={styles.inlineCta}>
                         Edital verticalizado de {syllabus.title} →
                       </Link>
+                      <Link href={`/concursos/${contest.slug}/o-que-estudar/${syllabus.slug}#pdf`} className={styles.inlineCta}>
+                        Baixar em PDF (grátis) →
+                      </Link>
                     </article>
                   );
                 })}

@@ -304,3 +304,122 @@
     padding: 0 14px 6px;
   }
 }
+
+/* ------------------------------------------------------------ PDF card */
+
+.pdfCard {
+  display: grid;
+  gap: 10px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #15161c 0%, #2a1212 100%);
+  color: #ffffff;
+  scroll-margin-top: 90px;
+}
+
+.pdfCard h2 {
+  margin: 0;
+  font-family: var(--font-heading), system-ui, sans-serif;
+  font-size: clamp(18px, 3vw, 22px);
+}
+
+.pdfCard p {
+  margin: 0;
+  color: #d8d9e0;
+  font-size: 14.5px;
+}
+
+.pdfForm {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin-top: 4px;
+}
+
+.pdfForm label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: #d8d9e0;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.pdfForm input[type="text"],
+.pdfForm input[type="email"],
+.pdfForm input[type="tel"],
+.pdfForm input:not([type]) {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #3a3b46;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 15px;
+}
+
+.pdfCheck {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: flex-start;
+  gap: 8px !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+}
+
+.pdfCheck input {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  accent-color: #ffc83d;
+}
+
+.pdfCheck a {
+  color: #ffc83d;
+}
+
+.pdfButton {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 12px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd35c, #f5b31b);
+  color: #3b2600;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pdfButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.pdfError {
+  grid-column: 1 / -1;
+  color: #fecaca !important;
+  font-weight: 700;
+}
+
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+@media (max-width: 760px) {
+  .pdfCard {
+    padding: 18px 16px;
+  }
+
+  .pdfForm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

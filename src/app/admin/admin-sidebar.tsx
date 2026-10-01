@@ -100,6 +100,10 @@ const navigationGroups: readonly NavigationGroup[] = [
         label: "Usuários",
         href: "/admin/usuarios",
       },
+      {
+        label: "Leads",
+        href: "/admin/leads",
+      },
     ],
   },
 ] as const;
