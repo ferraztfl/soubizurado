@@ -61,7 +61,7 @@ coautoria usada no histórico.
 
 ## Armadilhas conhecidas
 
-- Reinicie o `npm run dev` após `npm run db:generate`, após mudar `next.config.ts` e após mudar o `.env`.
+- Reinicie o `npm run dev` após `npm run db:generate`, após mudar `next.config.mjs` e após mudar o `.env`.
 - Não edite TS/TSX por heredoc Python/shell com barras invertidas (`\n`, `\b`, `\s` viram caracteres
   de controle). Use Edit/Write ou um script em arquivo que recuse caracteres de controle.
 - CSS modules sem BOM UTF-8 no início (o bundler descarta a primeira regra).

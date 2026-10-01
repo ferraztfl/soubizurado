@@ -77,3 +77,13 @@ de publicar código que dependa delas.
 - E-mails do Supabase (confirmação, redefinição de senha) saem pelo remetente padrão, com limite baixo de
   envios por hora; para volume real, configurar SMTP próprio no Supabase.
 - Descadastro de leads por link ainda não existe.
+
+## 7. Hostinger (Web App Node.js) — particularidades
+
+- O servidor de build da Hostinger tem uma glibc antiga e não carrega o compilador nativo do Next
+  (`@next/swc-linux-x64-gnu` exige GLIBC 2.29). Por isso o projeto: (a) compila com `next build --webpack`
+  (o Turbopack exige o binário nativo), (b) traz `@next/swc-wasm-nodejs` como dependência (compilador em
+  WebAssembly, usado automaticamente quando o nativo falha) e (c) usa `next.config.mjs` em JavaScript puro
+  (um `next.config.ts` precisaria ser compilado antes). No computador local, `npm run dev` continua com Turbopack.
+- Não usar o botão "Corrigir e reimplantar" do painel: a correção sugerida por ele (`swcMinify: false`,
+  apagar arquivo temporário) não se aplica ao Next 16.

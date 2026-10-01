@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import("next").NextConfig} */
+const nextConfig = {
   // Dev only: open the site at 127.0.0.1 to test as a signed-out visitor
   // (cookies are per host) without leaving the localhost session.
   allowedDevOrigins: ["127.0.0.1"],
