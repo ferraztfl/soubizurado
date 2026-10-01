@@ -53,7 +53,7 @@ export default async function MyCoursesPage() {
             description="Os cursos vêm nos combos da Loja, preparados para cada concurso."
           />
           <div className={styles.center}>
-            <Link href="/loja" className={styles.primary}>
+            <Link href="/app/loja" className={styles.primary}>
               Ver a Loja
             </Link>
           </div>

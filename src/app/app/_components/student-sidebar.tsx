@@ -55,7 +55,7 @@ const navigationGroups: readonly NavigationGroup[] = [
     items: [
       { label: "Comunidade", href: null },
       { label: "Assinatura", href: "/app/assinatura" },
-      { label: "Loja", href: "/loja" },
+      { label: "Loja", href: "/app/loja" },
       { label: "Minhas compras", href: "/app/compras" },
       { label: "Perfil", href: "/app/perfil" },
       { label: "Configurações", href: "/app/configuracoes" },
