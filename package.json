@@ -39,6 +39,7 @@
     "import:analyze-folder": "npx --yes tsx scripts/batch-analyze-folder.ts",
     "import:confirm-analysis": "npx --yes tsx scripts/import-official-analysis.ts",
     "import:manifest": "npx --yes tsx scripts/import-manifest.ts",
+    "classification:calibrate-similar": "npx --yes tsx scripts/classification-calibrate-similar.ts",
     "taxonomy:seed": "npx --yes tsx scripts/seed-taxonomy.ts",
     "taxonomy:backfill-legacy": "npx --yes tsx scripts/backfill-legacy-taxonomy.ts",
     "questions:publish": "npx --yes tsx scripts/publish-questions.ts",

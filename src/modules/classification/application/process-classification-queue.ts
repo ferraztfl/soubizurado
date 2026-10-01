@@ -56,6 +56,8 @@ export type ProcessClassificationQueueOutput = Readonly<{
   applied: number;
   /** Answers produced by the rules layer, without a remote call. */
   answeredByRules: number;
+  /** Answers learned from already classified questions (no model, no network). */
+  answeredBySimilar: number;
   /** Answers produced by the local AI layer (e.g. Ollama). */
   answeredByLocalAi: number;
   /** Remote (billed) AI answers and the tokens they reported. */
@@ -67,7 +69,7 @@ export type ProcessClassificationQueueOutput = Readonly<{
 type Outcome = Readonly<{
   status: "COMPLETED" | "REVIEW_REQUIRED" | "RETRIED" | "FAILED";
   applied: boolean;
-  layer: "RULES" | "LOCAL_AI" | "AI" | null;
+  layer: "RULES" | "SIMILAR" | "LOCAL_AI" | "AI" | null;
   /** Billed tokens; null when the answer did not come from a remote AI. */
   usage: Readonly<{ inputTokens: number; outputTokens: number }> | null;
 }>;
@@ -172,7 +174,7 @@ async function processOne(
     layer = providerResult.layer ?? null;
     // Rules and local answers are free even if they report tokens.
     usage =
-      layer === "RULES" || layer === "LOCAL_AI"
+      layer === "RULES" || layer === "SIMILAR" || layer === "LOCAL_AI"
         ? null
         : providerResult.usage ?? { inputTokens: 0, outputTokens: 0 };
 
@@ -313,6 +315,7 @@ export async function processClassificationQueue(
     failed: count("FAILED"),
     applied: outcomes.filter((outcome) => outcome.applied).length,
     answeredByRules: outcomes.filter((outcome) => outcome.layer === "RULES").length,
+    answeredBySimilar: outcomes.filter((outcome) => outcome.layer === "SIMILAR").length,
     answeredByLocalAi: outcomes.filter((outcome) => outcome.layer === "LOCAL_AI").length,
     remoteAiCalls: outcomes.filter((outcome) => outcome.usage !== null).length,
     inputTokens: outcomes.reduce((sum, outcome) => sum + (outcome.usage?.inputTokens ?? 0), 0),

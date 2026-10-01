@@ -1,8 +1,9 @@
-import type { QuestionClassifier } from "../domain/question-classifier";
+import type { ProviderClassification, QuestionClassifier } from "../domain/question-classifier";
 
 import { type LocalAiLayer, LayeredQuestionClassifier } from "./layered/layered-question-classifier";
 import { OpenAiCompatibleQuestionClassifier } from "./openai-compatible/openai-compatible-question-classifier";
 import { RuleBasedQuestionClassifier } from "./rule-based/rule-based-question-classifier";
+import { LazySimilarQuestionClassifier } from "./similar/lazy-similar-question-classifier";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -61,7 +62,7 @@ export function createQuestionClassifier(
       throw new Error('CLASSIFIER_PROMPT_STYLE must be "labelled", "labelled-short" or "compact".');
     }
 
-    const ai = new OpenAiCompatibleQuestionClassifier({
+    const remote = new OpenAiCompatibleQuestionClassifier({
       baseUrl,
       apiKey: env.CLASSIFIER_API_KEY?.trim() || null,
       model,
@@ -69,6 +70,12 @@ export function createQuestionClassifier(
       timeoutMs,
       promptStyle,
     });
+
+    // CLASSIFIER_REMOTE_AI=false: only the free layers answer (no billed call);
+    // what they cannot answer is left for review. A different version, so the
+    // questions are enqueued again once the remote AI is back.
+    const ai: QuestionClassifier =
+      env.CLASSIFIER_REMOTE_AI?.trim().toLowerCase() === "false" ? new RemoteAiDisabledClassifier(remote) : remote;
 
     if (env.CLASSIFIER_LAYERED?.trim().toLowerCase() === "false") {
       return ai;
@@ -79,10 +86,45 @@ export function createQuestionClassifier(
       ai,
       readRulesThreshold(env),
       createLocalAiLayer(env),
+      createSimilarLayer(env),
     );
   }
 
   throw new Error(`Unknown CLASSIFIER_PROVIDER "${provider}".`);
+}
+
+/**
+ * Learned layer (on by default; CLASSIFIER_SIMILAR=false turns it off).
+ * CLASSIFIER_SIMILAR_THRESHOLD defaults to 0.95: on leave-one-out runs over the
+ * published questions, answers at or above it were right about 93% of the time.
+ */
+function createSimilarLayer(env: Environment): LocalAiLayer | null {
+  if (env.CLASSIFIER_SIMILAR?.trim().toLowerCase() === "false") {
+    return null;
+  }
+
+  const threshold = Number(env.CLASSIFIER_SIMILAR_THRESHOLD ?? "0.95");
+
+  if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) {
+    throw new Error("CLASSIFIER_SIMILAR_THRESHOLD must be between 0 and 1.");
+  }
+
+  return { classifier: new LazySimilarQuestionClassifier(), threshold };
+}
+
+class RemoteAiDisabledClassifier implements QuestionClassifier {
+  public readonly provider: string;
+  public readonly model: string | null;
+  public readonly version = "no-remote";
+
+  public constructor(remote: QuestionClassifier) {
+    this.provider = remote.provider;
+    this.model = remote.model;
+  }
+
+  public async classify(): Promise<ProviderClassification> {
+    return { discipline: null, area: null, topic: null, subtopic: null, tags: [], confidence: 0, rationale: "IA externa desligada." };
+  }
 }
 
 function createLocalAiLayer(env: Environment): LocalAiLayer | null {

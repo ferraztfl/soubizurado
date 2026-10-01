@@ -1190,3 +1190,24 @@ Vale sobre §1/§12 onde divergir.
   gabarito), Emprel (alternativas ausentes), Prodeb ×3 (seções ilegíveis).
 - Questões fora das provas importadas por alternativas que são fórmulas/imagens vetoriais: Câmara de Cabo Advogado
   Q16 e Q18, PC-ES Investigador Q14 (cadastrar à mão se quiser).
+
+### 13.50 Camada de classificação aprendida (01/10/2026)
+
+- Contexto: a IA remota (Gemini) respondeu **HTTP 402** (sem crédito) e o modelo local (Ollama `qwen2.5:3b`) levou
+  ~40 s por questão (1.366 pendentes = ~15 h). Em vez de depender de IA, o pipeline ganhou uma camada que **aprende
+  com as questões já classificadas e publicadas**: `src/modules/classification/infrastructure/similar/`.
+- Como funciona (`SimilarQuestionClassifier`): vetores TF-IDF (palavras e pares) de enunciado + alternativas;
+  dentro da Matéria da questão combina (1) vizinhas mais parecidas e (2) "centróide" de cada Subtópico (vocabulário
+  médio). Confiança calibrada em leave-one-out: **≥ 0,95 ≈ 93% de acerto, ~7% de cobertura** sobre as publicadas;
+  nas pendentes de hoje responderia ~9% (122 de 1.366). Medir de novo: `npm run classification:calibrate-similar`.
+- Só questões **publicadas** servem de exemplo (as em revisão podem ter sugestão de máquina não conferida). Logo,
+  **cada lote que você classifica e publica melhora a camada** (e a cobertura cresce).
+- Pipeline agora: metadados → regras → **aprendida** → IA local (opcional) → IA remota. Versões `lay3`/`lay4`
+  (nova versão = tarefas novas). Variáveis: `CLASSIFIER_SIMILAR` (padrão ligado), `CLASSIFIER_SIMILAR_THRESHOLD` (0,95),
+  `CLASSIFIER_REMOTE_AI=false` (só camadas gratuitas; o que não responde fica sem sugestão para revisão manual).
+- Rodada de hoje (`CLASSIFIER_REMOTE_AI=false`, versão `lay3:no-remote`): 1.366 tarefas → **147 classificadas**
+  (51 por regras, 96 pela camada aprendida) e **1.219 sem sugestão**. Painel `/admin/classificacao` mostra também
+  "Aprendidas de questões já classificadas".
+- Limite honesto: a base publicada tem ruído (mesma questão em Subtópicos diferentes) e muitos Subtópicos com poucos
+  exemplos; a precisão não passa de ~93%. Para ampliar a cobertura: classificar e publicar mais, e recarregar crédito
+  da IA externa (`CLASSIFIER_REMOTE_AI` volta ao normal).

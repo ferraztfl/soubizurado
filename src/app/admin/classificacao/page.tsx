@@ -198,6 +198,10 @@ export default async function ClassificationPage(props: PageProps) {
               <dd>{numberFormatter.format(run.answeredByLocalAi)}</dd>
             </div>
             <div>
+              <dt>Aprendidas de questões já classificadas</dt>
+              <dd>{numberFormatter.format(run.answeredBySimilar)}</dd>
+            </div>
+            <div>
               <dt>Para revisão</dt>
               <dd>{numberFormatter.format(run.reviewRequired)}</dd>
             </div>

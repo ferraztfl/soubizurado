@@ -23,7 +23,7 @@ describe("createQuestionClassifier", () => {
     expect(classifier).toMatchObject({
       provider: "layered:gemini",
       model: "some-model",
-      version: "lay1:oa-v2:some-model",
+      version: "lay3:oa-v2:some-model",
     });
   });
 
@@ -40,7 +40,7 @@ describe("createQuestionClassifier", () => {
         CLASSIFIER_LOCAL_API_BASE_URL: "http://localhost:11434/v1",
         CLASSIFIER_LOCAL_MODEL: "qwen2.5:3b",
       }).version,
-    ).toBe("lay2:qwen2.5:3b>gemini-x");
+    ).toBe("lay4:qwen2.5:3b>gemini-x");
 
     expect(() =>
       createQuestionClassifier({
@@ -107,5 +107,16 @@ describe("readMinimumConfidence", () => {
     expect(readMinimumConfidence({})).toBe(0.8);
     expect(readMinimumConfidence({ CLASSIFIER_MIN_CONFIDENCE: "0.65" })).toBe(0.65);
     expect(() => readMinimumConfidence({ CLASSIFIER_MIN_CONFIDENCE: "2" })).toThrow();
+  });
+
+  it("keeps the previous versions when the similar-questions layer is turned off", () => {
+    const env = {
+      CLASSIFIER_PROVIDER: "openai-compatible",
+      CLASSIFIER_API_BASE_URL: "https://example.com/v1",
+      CLASSIFIER_MODEL: "some-model",
+      CLASSIFIER_SIMILAR: "false",
+    };
+
+    expect(createQuestionClassifier(env).version).toBe("lay1:oa-v2:some-model");
   });
 });

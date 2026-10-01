@@ -25,6 +25,7 @@ export type ClassificationRunState = Readonly<{
   processed: number;
   applied: number;
   answeredByRules: number;
+  answeredBySimilar: number;
   answeredByLocalAi: number;
   reviewRequired: number;
   failed: number;
@@ -51,6 +52,7 @@ const IDLE: MutableState = {
   processed: 0,
   applied: 0,
   answeredByRules: 0,
+  answeredBySimilar: 0,
   answeredByLocalAi: 0,
   reviewRequired: 0,
   failed: 0,
@@ -155,6 +157,7 @@ async function loop(current: MutableState): Promise<void> {
       current.processed += batch.completed + batch.reviewRequired + batch.failed;
       current.applied += batch.applied;
       current.answeredByRules += batch.answeredByRules;
+      current.answeredBySimilar += batch.answeredBySimilar;
       current.answeredByLocalAi += batch.answeredByLocalAi;
       current.reviewRequired += batch.reviewRequired;
       current.failed += batch.failed;
