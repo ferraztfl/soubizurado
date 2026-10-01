@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { signOutAction } from "@/modules/identity/presentation/actions/auth-actions";
 
+import { NavIcon } from "./nav-icons";
 import { planUsageText, type StudentPlan } from "./student-plan";
 import styles from "./student-sidebar.module.css";
 
@@ -15,6 +16,9 @@ type StudentSidebarProps = Readonly<{
   firstName: string;
   plan: StudentPlan;
   onNavigate?: () => void;
+  /** Desktop only: icons-only mode and its toggle (the mobile drawer never passes them). */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }>;
 
 type NavigationItem = Readonly<{
@@ -65,12 +69,31 @@ export function StudentSidebar({
   firstName,
   plan,
   onNavigate,
+  collapsed = false,
+  onToggleCollapse,
 }: StudentSidebarProps) {
   const pathname = usePathname();
 
   return (
-    <div className={styles.sidebar}>
+    <div className={styles.sidebar} data-collapsed={collapsed ? "true" : undefined}>
       <div>
+        {onToggleCollapse ? (
+          <button
+            type="button"
+            className={styles.collapseButton}
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expandir o menu" : "Recolher o menu"}
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expandir o menu" : "Recolher o menu"}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+              <path d="M9 4.5v15" />
+              <path d={collapsed ? "m13 10 2 2-2 2" : "m15 10-2 2 2 2"} />
+            </svg>
+          </button>
+        ) : null}
+
         <Link
           href="/app"
           className={styles.brand}
@@ -79,10 +102,10 @@ export function StudentSidebar({
         >
           <span className={styles.brandCard}>
             <Image
-              src="/brand/logo-horizontal.png"
+              src={collapsed ? "/brand/logo-mark.png" : "/brand/logo-horizontal.png"}
               alt="Sou Bizurado Concursos"
-              width={900}
-              height={420}
+              width={collapsed ? 500 : 900}
+              height={collapsed ? 500 : 420}
               priority
               className={styles.logo}
             />
@@ -98,7 +121,7 @@ export function StudentSidebar({
               key={group.label}
               className={styles.navigationGroup}
             >
-              <span className={styles.groupLabel}>
+              <span className={styles.groupLabel} aria-hidden={collapsed ? "true" : undefined}>
                 {group.label}
               </span>
 
@@ -113,11 +136,10 @@ export function StudentSidebar({
                         aria-label={`${item.label}, disponível em breve`}
                         title="Disponível em breve"
                       >
-                        <span
-                          className={styles.navMarker}
-                          aria-hidden="true"
-                        />
-                        <span>{item.label}</span>
+                        <span className={styles.navIcon}>
+                          <NavIcon label={item.label} />
+                        </span>
+                        <span className={styles.navText}>{item.label}</span>
                       </div>
                     );
                   }
@@ -142,12 +164,12 @@ export function StudentSidebar({
                         active ? "page" : undefined
                       }
                       onClick={onNavigate}
+                      title={collapsed ? item.label : undefined}
                     >
-                      <span
-                        className={styles.navMarker}
-                        aria-hidden="true"
-                      />
-                      <span>{item.label}</span>
+                      <span className={styles.navIcon}>
+                        <NavIcon label={item.label} />
+                      </span>
+                      <span className={styles.navText}>{item.label}</span>
                     </Link>
                   );
                 })}

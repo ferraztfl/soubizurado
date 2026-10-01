@@ -5,6 +5,12 @@
 
 export const THEME_COOKIE = "sb_tema";
 export const FONT_SCALE_COOKIE = "sb_fonte";
+export const SIDEBAR_COOKIE = "sb_menu";
+
+/** Desktop sidebar: "recolhido" shows only the icons. */
+export function parseSidebarCollapsed(value: string | undefined): boolean {
+  return value === "recolhido";
+}
 
 export type StudentTheme = "light" | "dark";
 

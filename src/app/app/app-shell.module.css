@@ -53,3 +53,21 @@
       calc(36px + env(safe-area-inset-bottom));
   }
 }
+
+/* Collapsed sidebar: icons only (desktop). */
+.shell[data-sidebar="collapsed"] {
+  --sb-sidebar-width: 76px;
+}
+
+.desktopSidebar,
+.workspace {
+  transition:
+    width var(--sb-motion-fast, 0.15s) ease,
+    margin-left var(--sb-motion-fast, 0.15s) ease;
+}
+
+@media (max-width: 1099px) {
+  .shell[data-sidebar="collapsed"] {
+    --sb-sidebar-width: 252px;
+  }
+}

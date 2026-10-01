@@ -296,3 +296,96 @@
   border: 1px solid var(--sb-border-strong);
   color: var(--sb-text);
 }
+
+/* Menu icons. */
+.navIcon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  display: grid;
+  place-items: center;
+  color: var(--sb-text-subtle);
+}
+
+.navItem:not(.disabled):hover .navIcon,
+.active .navIcon {
+  color: currentColor;
+}
+
+.active .navIcon {
+  color: var(--sb-brand);
+}
+
+.collapseButton {
+  display: none;
+}
+
+/* Collapsed (desktop only; the drawer never sets data-collapsed). */
+@media (min-width: 1100px) {
+  .collapseButton {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    margin: 0 0 8px auto;
+    padding: 0;
+    border: 1px solid var(--sb-border);
+    border-radius: 9px;
+    background: var(--sb-surface);
+    color: var(--sb-text-muted);
+    cursor: pointer;
+  }
+
+  .collapseButton:hover {
+    background: var(--sb-surface-muted);
+    color: var(--sb-brand-strong);
+  }
+
+  .sidebar[data-collapsed="true"] .collapseButton {
+    margin: 0 auto 8px;
+  }
+
+  .sidebar[data-collapsed="true"] .brandCard {
+    justify-content: center;
+    padding: 4px 0;
+  }
+
+  .sidebar[data-collapsed="true"] .logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
+
+  .sidebar[data-collapsed="true"] .groupLabel,
+  .sidebar[data-collapsed="true"] .navText,
+  .sidebar[data-collapsed="true"] .planCard,
+  .sidebar[data-collapsed="true"] .userData,
+  .sidebar[data-collapsed="true"] .logout {
+    display: none;
+  }
+
+  .sidebar[data-collapsed="true"] .navigation {
+    gap: 8px;
+  }
+
+  .sidebar[data-collapsed="true"] .navigationGroup {
+    gap: 2px;
+    padding-top: 8px;
+    border-top: 1px solid var(--sb-border);
+  }
+
+  .sidebar[data-collapsed="true"] .navigationGroup:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .sidebar[data-collapsed="true"] .navItem {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .sidebar[data-collapsed="true"] .user {
+    justify-content: center;
+    padding-top: 10px;
+  }
+}

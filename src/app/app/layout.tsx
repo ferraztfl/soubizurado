@@ -12,7 +12,9 @@ import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/ser
 import {
   FONT_SCALE_COOKIE,
   parseFontScale,
+  parseSidebarCollapsed,
   parseTheme,
+  SIDEBAR_COOKIE,
   THEME_COOKIE,
 } from "./_components/reading-preferences";
 import { StudentAppShell } from "./_components/student-app-shell";
@@ -38,6 +40,7 @@ export default async function StudentAppLayout({
   const cookieStore = await cookies();
   const theme = parseTheme(cookieStore.get(THEME_COOKIE)?.value);
   const fontScale = parseFontScale(cookieStore.get(FONT_SCALE_COOKIE)?.value);
+  const sidebarCollapsed = parseSidebarCollapsed(cookieStore.get(SIDEBAR_COOKIE)?.value);
 
   // Signed out: only the public question bank gets here (the proxy sends the
   // rest of /app to the login), shown in visitor mode.
@@ -87,6 +90,7 @@ export default async function StudentAppLayout({
       firstName={firstName}
       initialTheme={theme}
       initialFontScale={fontScale}
+      initialSidebarCollapsed={sidebarCollapsed}
       plan={{ premium: allowance.plan === "premium", remaining: allowance.remaining, limit: allowance.limit }}
     >
       {children}

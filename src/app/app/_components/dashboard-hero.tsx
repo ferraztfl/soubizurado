@@ -25,12 +25,6 @@ export function DashboardHero({ attempts, today }: Readonly<{ attempts: number; 
           Sua aprovação começa com uma questão.
         </h1>
 
-        <p>
-          Acompanhe sua evolução, resolva questões
-          e concentre seus estudos nos assuntos
-          que mais precisam de atenção.
-        </p>
-
         <div className={styles.actions}>
           <Link
             href="/app/questoes"

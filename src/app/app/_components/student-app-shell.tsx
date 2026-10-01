@@ -12,6 +12,7 @@ import { ReadingPreferencesContext } from "./reading-preferences-context";
 import {
   FONT_SCALE_COOKIE,
   savePreferenceCookie,
+  SIDEBAR_COOKIE,
   THEME_COOKIE,
   themeCookieValue,
   type FontScale,
@@ -30,6 +31,7 @@ type StudentAppShellProps = Readonly<{
   firstName: string;
   initialTheme: StudentTheme;
   initialFontScale: FontScale;
+  initialSidebarCollapsed: boolean;
   plan: StudentPlan;
 }>;
 
@@ -40,12 +42,22 @@ export function StudentAppShell({
   firstName,
   initialTheme,
   initialFontScale,
+  initialSidebarCollapsed,
   plan,
 }: StudentAppShellProps) {
   const [navigationOpen, setNavigationOpen] =
     useState(false);
   const [theme, setTheme] = useState(initialTheme);
   const [fontScale, setFontScale] = useState(initialFontScale);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(initialSidebarCollapsed);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((current) => {
+      savePreferenceCookie(SIDEBAR_COOKIE, current ? "expandido" : "recolhido");
+
+      return !current;
+    });
+  }, []);
 
   const openNavigation = useCallback(() => {
     setNavigationOpen(true);
@@ -74,6 +86,7 @@ export function StudentAppShell({
     <div
       className={styles.shell}
       data-theme={theme}
+      data-sidebar={sidebarCollapsed ? "collapsed" : "expanded"}
       // Question text sizes multiply by this (A− / A+).
       style={{ "--sb-reading-scale": fontScale / 100 } as CSSProperties}
     >
@@ -83,6 +96,8 @@ export function StudentAppShell({
           email={email}
           firstName={firstName}
           plan={plan}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
         />
       </div>
 
