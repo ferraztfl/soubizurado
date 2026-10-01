@@ -1,7 +1,7 @@
 # Handoff — Backoffice, Taxonomia Canônica e Classificação Automática
 
-**Atualizado em:** 26/09/2026, fim da sessão (estado conferido no banco — ver §1 e §12)
-**Branch:** `feature/enem-pdf-ingestion` (contém todas as outras branches, ver §2)
+**Atualizado em:** 01/10/2026 (§1 e §12 refletem o estado atual; §13.43–13.48 são as mudanças mais recentes)
+**Branch:** `feature/enem-pdf-ingestion` = `main` em `ferraztfl/soubizurado`; produção lê o repositório `deploy` (ver `docs/DEPLOY.md`)
 **Documento anterior:** `docs/HANDOFF-ADMIN-QUESTION-BANK.md` (21/09/2026) — continua válido
 para ingestão, mídia e regras gerais; este documento registra tudo o que veio depois.
 
@@ -12,20 +12,23 @@ para ingestão, mídia e regras gerais; este documento registra tudo o que veio 
 
 ---
 
-## 1. Estado atual em uma página (conferido em 26/09/2026)
+## 1. Estado atual em uma página (conferido em 01/10/2026)
 
 | Área | Estado |
 |---|---|
-| Backoffice `/admin` | Shell protegido (`requireAdminUser`), sidebar com rota ativa, menu móvel, dashboard operacional (KPIs, progresso por disciplina, próximas ações) |
-| Revisão editorial | `/admin/questoes/revisao`: fila com filtros (disciplina, classificação, mídia, sugestão, busca) e paginação; detalhe em 2 colunas com sugestão automática, seletor Assunto › Tópico › Subtópico, checklist de publicação. Questões sem disciplina canônica (área apenas ou ENEM legado) oferecem todas as disciplinas da área |
-| Central de Importações | `/admin/importacoes` → upload de prova + gabarito PDF → prévia → confirmar. **Leitor suportado: Instituto AOCP** (imagens, anuladas, variantes de idioma, blocos). Fundatec/Cebraspe detectados, sem leitor ainda (§10) |
-| Taxonomia | Catálogo **v2** aplicado: 6 áreas do conhecimento, 34 disciplinas no banco (14 ENEM + 12 concursos + 8 legadas/Quest API), 111 assuntos, 446 tópicos, 475 subtópicos; revisões 1 e 2 |
-| Questões | **3.093 `IN_REVIEW`, 0 publicadas**, 1 com tópico. Inclui 58 da SEJUSP-MG 2025 e 72 da PMPE 2023 2º Tenente (importadas pela Central) |
-| Imagens | **1.963 MediaAssets em `SUPABASE_STORAGE`** (bucket privado `question-media`, 86 MB), 0 em `LOCAL_FS`. `.env`: `MEDIA_STORAGE_DRIVER=supabase` + `SUPABASE_SECRET_KEY`. Fila de mídia: 0 pendentes, 2 FAILED históricos (ENEM 2018 q136, LaTeX — manter) |
-| Acesso a mídia | `/api/media/[id]`: publicada = pública/cache imutável; não publicada = só ADMIN (`private, no-store`), demais 404; CSP `sandbox` |
-| Classificação | Provedor `openai-compatible` (Gemini) com **`CLASSIFIER_MODEL=gemini-3.5-flash-lite`**. **130 tarefas `oa-v2:gemini-3.5-flash-lite` PENDENTES** (58 SEJUSP + 72 PMPE Tenente) — rodar `classification:process`. Rodadas antigas: `rule-based-v1` (2.928), `oa-v1`/`oa-v2:gemini-flash-latest` (encerradas, FAILED "superseded") |
-| Cota Gemini | `gemini-flash-latest` = 20 req/dia no plano grátis (inviável). `gemini-3.5-flash-lite` tem cota separada (limite diário exato desconhecido; usar `--rpm=4`) |
-| Git | Tudo commitado e enviado até `e7f921e` + docs desta atualização. PR `main ← feature/enem-pdf-ingestion` ainda não aberto (usuário abre no GitHub; `gh` não instalado) |
+| **Produção** | **No ar em `https://www.soubizurado.com.br`** (Hostinger Web App Node.js; DNS no registro.br; código via repositório `atelie33/soubizurado33`). Ver `docs/DEPLOY.md`. Banco, login e mídia no Supabase (o mesmo projeto do desenvolvimento) |
+| Pagamentos | Mercado Pago com **credenciais de produção** nas variáveis da Hostinger; webhook `https://www.soubizurado.com.br/api/webhooks/mercadopago` (eventos Pagamentos e Planos e assinaturas). **Nenhuma compra real testada ainda; 0 pedidos** |
+| Usuários | 1 perfil (o administrador). Ainda sem alunos reais |
+| Questões | **4.101 publicadas, 131 `IN_REVIEW`** (conferido no banco). 10 já têm gabarito comentado (`question_explanations`) |
+| Taxonomia | Catálogo **v9** aplicado (revisão 9): 10 áreas do conhecimento, 70 matérias, 206 tópicos, 785 subtópicos, 584 detalhes ativos. Administradores criam itens abaixo da matéria pela tela de revisão (§13.45); criações ficam no log de auditoria |
+| Concursos e editais | 11 concursos, 7 editais verticalizados (PMPE e CBMPE, Soldado e Oficiais), 11 posts do blog; PDF do edital por cadastro de lead (2 leads) |
+| Teoria Completa | **7 cursos publicados (pré-venda), 639 aulas: 186 em RASCUNHO (IA), 453 vazias, 0 revisadas**. O aluno só vê aulas REVISADAS. O dono vai fornecer o conteúdo (listas em `data-private/editorial/teoria/listas/`) |
+| Loja | 8 ofertas ativas (7 combos R$ 29,90 de R$ 59,90 até 31/12/2026 + Premium anual R$ 118,80), assinatura mensal R$ 14,90 (recorrente). Loja pública `/loja` e **loja dentro da conta `/app/loja`** (quem já tem o combo vê "você já tem", sem botão de compra) |
+| Área do aluno | Menu lateral com ícones e **recolhível** (cookie `sb_menu`); painel com topo compacto; "Meus cursos" com imagem de capa |
+| Backoffice | `/admin`: revisão editorial (agora com busca na lista de classificação e criação de classificação), Central de Importações, loja, cursos, concursos/editais, leads, blog, usuários |
+| Imagens | Mídia das questões no Supabase Storage privado. Imagens de ofertas (banner, card) e de cursos (capa) usam `/api/loja/banners/[id]`; tamanho ideal do card/capa **1200×675 (16:9)** |
+| Classificação por IA | Provedor `openai-compatible` (Gemini). O dono revisa e classifica manualmente as questões em revisão; `questions:annotate` aplica lotes revisados |
+| Git | `feature/enem-pdf-ingestion` e `main` em `ferraztfl/soubizurado`; o repositório `deploy` (`atelie33/soubizurado33`) recebe o código por commit de junção (ver `docs/DEPLOY.md` §8). Cada envio ao `deploy` dispara uma implantação |
 
 ---
 
@@ -316,7 +319,46 @@ de "termo destacado" vindo do `rawPayload`; configurar IA com cota adequada para
 
 ---
 
-## 12. Fim da sessão de 26/09/2026 — de onde continuar
+## 12. De onde continuar (atualizado em 01/10/2026)
+
+O histórico da sessão de 26/09/2026 que ocupava esta seção está em §12.1 (abaixo) e nas seções 3–11.
+
+### Em andamento / próximos passos (ordem sugerida)
+1. **Conferir a área logada no site publicado:** login, cadastro e redefinição de senha em
+   `www.soubizurado.com.br` (Supabase → Authentication → URL Configuration já aponta para o domínio e
+   também deve ter `https://soubizurado.com.br/**`); menu recolhível, Loja interna, "Meus cursos".
+2. **Testar o checkout do Mercado Pago** (compra real de R$ 29,90 com estorno depois, ou até a tela de
+   pagamento) e confirmar que o webhook libera o acesso (`orders`, `entitlements`). Pedir ao dono antes.
+3. **Conteúdo da Teoria Completa:** o dono fornece os textos; carregar com `theory:drafts` (formato em
+   §13.33–13.42). Compromisso público: todas as matérias até 31/12/2026. Os 186 rascunhos escritos pela IA
+   precisam de revisão humana (`/admin/cursos` → aula → "Revisado").
+4. **Classificação manual das 131 questões em revisão**: o dono envia lotes (classificação + gabarito
+   comentado + análise das alternativas); aplicar com `npm run questions:annotate -- <lote>.json` (dry-run,
+   depois `--apply`; log de reversão em `data-private/logs/`). Um único `git push` ao fim do lote.
+5. **Imagens dos cards:** o dono sobe a imagem de cada um dos 7 cursos em `/admin/cursos` (aparece em
+   "Meus cursos" e, como padrão, nos cards da Loja); ofertas podem ter imagem própria em `/admin/loja`.
+6. **Redação** (1 correção por mês nos combos): ainda não prometida nas ofertas nem construída.
+7. **Pendências técnicas:** descadastro de leads por link e envio do PDF por e-mail; SMTP próprio no Supabase;
+   10 alertas de dependências de desenvolvimento no painel da Hostinger (não corrigir com `npm audit fix`);
+   endereço sem `www` redirecionando para `www`; Google Search Console com o sitemap.
+8. Leitores Fundatec e Cebraspe, tela de `POSSIBLE_DUPLICATE` e demais itens de §9 continuam abertos.
+
+### Armadilhas desta etapa (evitar repetir)
+- **Hostinger:** o servidor de build tem glibc antiga. Por isso o projeto compila com `next build --webpack`,
+  traz `@next/swc-wasm-nodejs` (mesma versão do Next) e usa `next.config.mjs` (JS puro). Não usar o botão
+  "Corrigir e reimplantar" do painel. Ao atualizar o Next, atualizar `@next/swc-wasm-nodejs` e
+  `eslint-config-next` para a mesma versão.
+- **Conexões com o banco:** em produção o cliente Prisma é um só por processo (`globalThis`); um cliente por
+  chamada esgotava o pooler do Supabase (HTTP 500 sob carga).
+- **Dois repositórios:** `origin` = `ferraztfl/soubizurado` (trabalho). `deploy` = `atelie33/soubizurado33`
+  (a Hostinger lê). O remoto `deploy` usa `https://ferraztfl@github.com/...` para não pedir conta.
+- **DNS:** o domínio usa os servidores do registro.br; registros A/CNAME ficam em "Configurar
+  endereçamento" no registro.br, não no hPanel. O IP do Web App aparece em hPanel → Web App → Domínios.
+- Windows: heredoc/`node -e` perdem barras invertidas; usar Edit/Write ou script em arquivo (já no CLAUDE.md).
+- Migrations só aditivas; `db:migrate:deploy` roda a partir do computador local antes de publicar código
+  que dependa delas.
+
+### 12.1 Histórico: fim da sessão de 26/09/2026
 
 ### Feito e verificado nesta sessão (em ordem)
 1. Backoffice: sidebar ativa, menu móvel, rótulos pt-BR, dashboard operacional, formatação segura de
@@ -1065,3 +1107,66 @@ Vale sobre §1/§12 onde divergir.
     aulas 10 e 17: penas alteradas em 2023 e 2024. Conferir se houve mudança legislativa depois.
 - Próximo: matérias que faltam nos outros cursos (CBMPE Soldado: Matemática, Física, Biologia, Atualidades e o resto de
   Direito Constitucional; Oficiais; saúde). Compromisso público: todas as matérias até 31/12/2026.
+
+### 13.43 Taxonomia v9 e classificação manual (01/10/2026)
+
+- Catálogo v9 (`concursos-taxonomy-v9.ts`): áreas, subtópicos e detalhes pedidos durante a revisão manual
+  (Direito Penal Militar: Teoria do Crime › Exclusão do Crime, Extinção da Punibilidade › Prescrição,
+  Crimes Militares em Tempo de Guerra › Favorecimento ao Inimigo › Traição, Lei penal no tempo;
+  História › Brasil Colônia › Invasões holandesas). Só acrescenta, dentro de pais já existentes
+  (`withV9Additions` falha se o pai não existe). `taxonomy:seed` (dry-run, depois `--apply`).
+- **Gabarito comentado:** campo na tela `/admin/questoes/[id]/editar` (salvo à parte, entra no histórico da
+  questão); o aluno o vê com negrito e tabelas (renderizador do blog) depois de responder.
+- **`npm run questions:annotate -- <lote>.json [--apply]`** (JSON por questão: `number`, `discipline`,
+  `topic`, `subtopic`, `correct`, `explanation`, `changeKnowledgeArea`): classifica por nomes existentes,
+  confere o gabarito informado, grava comentário e revisão, log de reversão em `data-private/logs/`.
+  Em lote, um único push ao fim.
+- Questão importada na área errada: `changeKnowledgeArea: true` no item (decisão explícita do revisor).
+
+### 13.44 Busca na classificação e no explorar (01/10/2026)
+
+- A lista de classificação da revisão (centenas de opções) ganhou um campo de busca (sem acento, sem
+  caixa). A busca do explorar (`/app/questoes?q=`) agora também acha pelo nome do tópico, subtópico e detalhe
+  (via slug, sem acento). Só aparecem no filtro classificações com ao menos uma questão **publicada**.
+
+### 13.45 Criar classificação pela tela (01/10/2026)
+
+- Na revisão da questão: "Não achou? Criar nova classificação" (matéria + Tópico › Subtópico › Detalhe).
+  `classifyWithManualPath`: reaproveita o que existe (nome normalizado ou apelido), cria só o que falta,
+  classifica a questão e registra `taxonomy.create` em `admin_audit_logs`. Só administrador; matéria nova
+  continua só por catálogo. Subtópico já existente em outro tópico é barrado com indicação do lugar.
+- `npm run taxonomy:export-manual` lista as criações manuais para incorporar ao catálogo do código
+  (o banco já as tem; o catálogo só importa se o banco for recriado).
+
+### 13.46 Publicação em produção (01/10/2026)
+
+- Site em `www.soubizurado.com.br` (Hostinger Business, Web App Node.js, Node 22). Guia completo e
+  particularidades do host em `docs/DEPLOY.md`. Next.js 16.3.8 (corrige a CVE crítica de `next/og`).
+- Problemas resolvidos no caminho: build na glibc antiga (webpack + SWC wasm + `next.config.mjs`); HTTP 500 por
+  pool de conexões (cliente Prisma único por processo); conta GitHub ligada à Hostinger diferente da de
+  trabalho (dois repositórios, commit de junção); DNS (domínio no registro.br, registros A/CNAME lá).
+- Mercado Pago: app "SouBizurado" com Checkout Pro (API de Preferences). Variáveis na Hostinger:
+  `MERCADOPAGO_ACCESS_TOKEN` (Access Token de produção) e `MERCADOPAGO_WEBHOOK_SECRET` (assinatura secreta).
+  Public Key, Client ID e Client Secret não são usados. Valores nunca no Git nem no chat.
+
+### 13.47 Loja: imagens, alinhamento e loja interna (01/10/2026)
+
+- `offers.card_image_asset_id` (migration `20261001150000_offer_card_image`): imagem no topo do card da
+  Loja (16:9, 1200×675), enviada em `/admin/loja`. Sem imagem própria, o card usa a capa do primeiro curso
+  da oferta (`courses.cover_asset_id`, enviada em `/admin/cursos`). Imagens servidas por
+  `/api/loja/banners/[id]` (ofertas ativas e cursos publicados).
+- Cards alinhados: preço e botão na base de cada card (flex coluna, `margin-top:auto`); borda do card
+  destacado por `box-shadow` para não alterar a altura.
+- **Loja dentro da conta:** `/app/loja` e `/app/loja/[slug]` (componentes compartilhados em
+  `src/app/loja/_components/`). Usuário logado que abre `/loja` é redirecionado. `loadOfferOwnership`
+  (`offer-ownership.ts`): oferta "já adquirida" quando tudo que ela concede está ativo (Premium; curso próprio
+  ou `ALL_COURSES`); mostra "acesso até DD/MM/AAAA" e "Ir para meus cursos". Assinante Premium vê os combos
+  como já incluídos. O retorno do pagamento continua em `/loja/retorno` (público).
+
+### 13.48 Área do aluno: menu recolhível e painel (01/10/2026)
+
+- Menu lateral com ícones (`nav-icons.tsx`, SVG próprio) e botão de recolher (só desktop ≥ 1100 px; a gaveta
+  móvel não muda). Estado no cookie `sb_menu` (`recolhido`/`expandido`), lido no servidor (sem "piscar").
+  Largura recolhida 76 px (`--sb-sidebar-width` via `data-sidebar`).
+- Painel: bloco do topo compacto (sem parágrafo, título menor). "Meus cursos": capa 16:9 e barra de progresso +
+  botão alinhados na base.

@@ -1,8 +1,10 @@
 # Publicação do SouBizurado (www.soubizurado.com.br)
 
-Guia para colocar o sistema no ar. Estado em 01/10/2026: `npm run build` conclui sem erros; o banco, a
-autenticação e a mídia já estão no Supabase (o mesmo projeto usado no desenvolvimento), então publicar é
-hospedar a aplicação Next.js e apontar o domínio.
+**Estado em 01/10/2026: o sistema está no ar** em `https://www.soubizurado.com.br` (Hostinger Web App
+Node.js, Node 22, ligado ao repositório `atelie33/soubizurado33`). Domínio no registro.br com DNS próprio
+(registros A e CNAME `www` em "Configurar endereçamento"; o IP vem de hPanel → Web App → Domínios). O banco, a
+autenticação e a mídia ficam no Supabase (o mesmo projeto do desenvolvimento). Mercado Pago com credenciais de
+produção e webhook configurado (ver seção 3). Este guia serve para refazer ou mudar a publicação.
 
 ## 1. O que é preciso hospedar
 
@@ -72,7 +74,8 @@ de publicar código que dependa delas.
 
 ## 6. Pendências conhecidas antes de divulgar
 
-- Mercado Pago ainda não configurado: compras e assinaturas não concluem.
+- Mercado Pago configurado, mas **nenhuma compra real testada** (testar com uma compra de R$ 29,90 e estorno).
+- Supabase → URL Configuration: Site URL `https://www.soubizurado.com.br`; Redirect URLs com `https://www.soubizurado.com.br/**` e `https://soubizurado.com.br/**` (e `http://localhost:3000/auth/confirm` no desenvolvimento).
 - Teoria Completa em pré-venda: aulas sem texto revisado não aparecem para o aluno.
 - E-mails do Supabase (confirmação, redefinição de senha) saem pelo remetente padrão, com limite baixo de
   envios por hora; para volume real, configurar SMTP próprio no Supabase.
