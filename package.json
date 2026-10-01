@@ -62,13 +62,13 @@
     "theory:drafts": "npx --yes tsx scripts/theory-drafts.ts"
   },
   "dependencies": {
-    "@next/swc-wasm-nodejs": "16.3.4",
+    "@next/swc-wasm-nodejs": "16.3.8",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.116.0",
     "dotenv": "^17.4.2",
-    "next": "16.3.4",
+    "next": "16.3.8",
     "pdf-lib": "^1.17.1",
     "pg": "^8.23.0",
     "qrcode": "^1.5.4",
@@ -84,7 +84,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.4",
+    "eslint-config-next": "16.3.8",
     "prisma": "^7.10.0",
     "typescript": "^5",
     "vitest": "^5.0.0"
