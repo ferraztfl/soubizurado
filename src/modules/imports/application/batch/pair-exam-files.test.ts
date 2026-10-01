@@ -73,4 +73,24 @@ describe("pairExamFiles", () => {
       "Pasta sem caderno de questões.",
     ]);
   });
+
+  it("pairs the \"<nome>-prova.pdf\" + \"<nome>-gabarito.pdf\" naming and the \"-prova-gabarito\" one", () => {
+    expect(
+      pairExamFiles([
+        "pm-ce-soldado-prova.pdf",
+        "pm-ce-soldado-gabarito.pdf",
+        "biologo-prova.pdf",
+        "biologo-prova-gabarito.pdf",
+        "prova-escrivao-pc-es-2019.pdf",
+        "prova-escrivao-pc-es-2019-gabarito.pdf",
+      ]),
+    ).toEqual({
+      pairs: [
+        { label: "biologo-prova", booklet: "biologo-prova.pdf", answerKey: "biologo-prova-gabarito.pdf" },
+        { label: "pm-ce-soldado-prova", booklet: "pm-ce-soldado-prova.pdf", answerKey: "pm-ce-soldado-gabarito.pdf" },
+        { label: "prova-escrivao-pc-es-2019", booklet: "prova-escrivao-pc-es-2019.pdf", answerKey: "prova-escrivao-pc-es-2019-gabarito.pdf" },
+      ],
+      unpaired: [],
+    });
+  });
 });

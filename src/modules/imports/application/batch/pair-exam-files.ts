@@ -8,7 +8,9 @@
  *  - a subfolder without answer key uses the inbox root answer key when
  *    there is exactly one (e.g. a key PDF that lists every role);
  *  - loose files in the root: "<nome>.pdf" + "<nome>-gabarito.pdf"
- *    (also "_gabarito", " gabarito", "gabarito-<nome>").
+ *    (also "_gabarito", " gabarito", "gabarito-<nome>"), and the
+ *    "<nome>-prova.pdf" + "<nome>-gabarito.pdf" naming ("-prova" is ignored
+ *    when comparing names).
  */
 
 export type ExamFilePair = Readonly<{
@@ -38,6 +40,15 @@ function stem(path: string): string {
 function keyStem(path: string): string {
   return stem(path)
     .replace(/[\s_-]*gabaritos?(?:[\s_-]*(?:definitivo|preliminar|oficial|pos[\s_-]*recursos?))?[\s_-]*/gi, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** Name used to match a booklet with its key: no "(1)" copy marker and no "prova" label. */
+function pairingName(name: string): string {
+  return name
+    .replace(/\s*\(\d+\)\s*$/, "")
+    .replace(/(?:^|[\s_-]+)prova(?=[\s_-]*$)/i, "")
     .trim()
     .toLowerCase();
 }
@@ -96,11 +107,13 @@ export function pairExamFiles(files: readonly string[]): PairingResult {
   const keysByStem = new Map<string, string[]>();
 
   for (const key of rootKeys) {
-    keysByStem.set(keyStem(key), [...(keysByStem.get(keyStem(key)) ?? []), key]);
+    const name = pairingName(keyStem(key));
+
+    keysByStem.set(name, [...(keysByStem.get(name) ?? []), key]);
   }
 
   for (const booklet of rootBooklets) {
-    const matches = keysByStem.get(stem(booklet).toLowerCase()) ?? [];
+    const matches = keysByStem.get(pairingName(stem(booklet))) ?? [];
 
     if (matches.length === 1) {
       pairs.push({ label: stem(booklet), booklet, answerKey: matches[0]! });

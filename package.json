@@ -36,6 +36,7 @@
     "media:failures": "npx --yes tsx scripts/media-failures.ts",
     "questions:annotate": "npx --yes tsx scripts/annotate-questions.ts",
     "taxonomy:export-manual": "npx --yes tsx scripts/export-manual-taxonomy.ts",
+    "import:analyze-folder": "npx --yes tsx scripts/batch-analyze-folder.ts",
     "taxonomy:seed": "npx --yes tsx scripts/seed-taxonomy.ts",
     "taxonomy:backfill-legacy": "npx --yes tsx scripts/backfill-legacy-taxonomy.ts",
     "questions:publish": "npx --yes tsx scripts/publish-questions.ts",
