@@ -34,6 +34,7 @@ import {
 
 import {
   applyClassificationSuggestionAction,
+  classifyWithNewPathAction,
   publishQuestionAction,
   saveQuestionClassificationAction,
 } from "./actions";
@@ -83,6 +84,7 @@ type PageProps =
         Readonly<{
           error?: string;
           saved?: string;
+          detail?: string;
         }>
       >;
   }>;
@@ -148,6 +150,16 @@ const errorMessages:
 
     "question-unavailable":
       "A questão não está mais disponível para revisão.",
+    "path-discipline":
+      "Escolha uma matéria da área do conhecimento da questão.",
+    "path-required":
+      "Informe o tópico e o subtópico (o detalhe é opcional).",
+    "path-name":
+      "Um dos nomes é inválido: use de 2 a 160 caracteres, sem símbolos como < e >.",
+    "path-topic-elsewhere":
+      "Esse subtópico já existe nesta matéria, em outro tópico. Escolha-o na lista:",
+    "path-conflict":
+      "Já existe um item com esse nome (inativo ou criado agora por outra pessoa). Recarregue a página e confira:",
   };
 
 export default async function ReviewQuestionPage(
@@ -472,6 +484,17 @@ export default async function ReviewQuestionPage(
           "pt-BR",
         ),
     );
+
+  // Options of the "create new classification" form (typed path).
+  const manualDisciplines = [
+    ...new Map(taxonomyTopics.map((topic) => [topic.discipline.id, topic.discipline])).values(),
+  ].sort((left, right) => left.name.localeCompare(right.name, "pt-BR"));
+  const manualAreaNames = [
+    ...new Set(taxonomyTopics.flatMap((topic) => (topic.area ? [topic.area.name] : []))),
+  ].sort((left, right) => left.localeCompare(right, "pt-BR"));
+  const manualTopicNames = [...new Set(taxonomyTopics.map((topic) => topic.name))].sort((left, right) =>
+    left.localeCompare(right, "pt-BR"),
+  );
 
   const currentChoice =
     question.subtopicId
@@ -828,6 +851,15 @@ export default async function ReviewQuestionPage(
         </div>
       ) : null}
 
+      {searchParams.saved === "created" ? (
+        <div className={styles.noticeSuccess} role="status">
+          Classificação salva.{" "}
+          {searchParams.detail
+            ? `Criado na taxonomia: ${searchParams.detail.slice(0, 400)}.`
+            : "Todos os itens já existiam; nada novo foi criado."}
+        </div>
+      ) : null}
+
       {searchParams.saved === "suggestion" ? (
         <div
           className={styles.noticeSuccess}
@@ -844,6 +876,7 @@ export default async function ReviewQuestionPage(
           role="alert"
         >
           {errorMessage}
+          {searchParams.detail ? <strong> {searchParams.detail.slice(0, 400)}</strong> : null}
         </div>
       ) : null}
 
@@ -1227,6 +1260,59 @@ export default async function ReviewQuestionPage(
                 Salvar classificação
               </button>
             </form>
+
+            {manualDisciplines.length > 0 ? (
+              <details className={styles.manualPath}>
+                <summary>Não achou? Criar nova classificação</summary>
+                <form action={classifyWithNewPathAction} className={styles.classificationForm}>
+                  <input type="hidden" name="questionId" value={question.id} />
+                  <p className={styles.hint}>
+                    Digite o caminho completo. O que já existir é reaproveitado (a busca ignora acentos e
+                    maiúsculas); só o que faltar é criado, e a questão já fica classificada nele.
+                  </p>
+                  <label className={styles.manualField}>
+                    <span>Matéria</span>
+                    <select
+                      name="disciplineId"
+                      className={styles.select}
+                      defaultValue={currentDisciplineId ?? manualDisciplines[0]?.id}
+                      required
+                    >
+                      {manualDisciplines.map((discipline) => (
+                        <option key={discipline.id} value={discipline.id}>
+                          {discipline.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className={styles.manualField}>
+                    <span>Tópico</span>
+                    <input name="area" list="manual-areas" className={styles.select} maxLength={160} required />
+                  </label>
+                  <label className={styles.manualField}>
+                    <span>Subtópico</span>
+                    <input name="topic" list="manual-topics" className={styles.select} maxLength={180} required />
+                  </label>
+                  <label className={styles.manualField}>
+                    <span>Detalhe (opcional)</span>
+                    <input name="subtopic" className={styles.select} maxLength={180} />
+                  </label>
+                  <datalist id="manual-areas">
+                    {manualAreaNames.map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
+                  <datalist id="manual-topics">
+                    {manualTopicNames.map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
+                  <button type="submit" className={styles.secondaryButton}>
+                    Criar e classificar
+                  </button>
+                </form>
+              </details>
+            ) : null}
 
             {taxonomyTopics.length === 0 ? (
               <p className={styles.hint}>

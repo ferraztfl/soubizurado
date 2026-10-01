@@ -11,6 +11,9 @@ import {
   applyClassificationSuggestion,
 } from "@/modules/classification/infrastructure/apply-classification-suggestion";
 import {
+  classifyWithManualPath,
+} from "@/modules/taxonomy/infrastructure/classify-with-manual-path";
+import {
   requireAdminUser,
 } from "@/modules/identity/application/require-admin-user";
 import {
@@ -22,6 +25,9 @@ import {
 import {
   getPrismaClient,
 } from "@/shared/infrastructure/database/prisma";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function readRequiredString(
   formData: FormData,
@@ -301,6 +307,57 @@ export async function saveQuestionClassificationAction(
       "saved=1",
     ),
   );
+}
+
+/**
+ * Classifies by a typed path, creating the taxonomy levels that do not exist
+ * yet (administrators only; AI and importers never create taxonomy).
+ */
+export async function classifyWithNewPathAction(
+  formData: FormData,
+): Promise<void> {
+  const admin = await requireAdminUser();
+  const questionId = readRequiredString(formData, "questionId");
+
+  if (!questionId || !UUID_PATTERN.test(questionId)) {
+    redirect("/admin/questoes/revisao");
+  }
+
+  const text = (key: string) => {
+    const value = formData.get(key);
+    return typeof value === "string" ? value : "";
+  };
+  const disciplineId = text("disciplineId");
+
+  if (!UUID_PATTERN.test(disciplineId)) {
+    redirect(reviewUrl(questionId, "error=path-discipline"));
+  }
+
+  const result = await classifyWithManualPath(getPrismaClient(), {
+    questionId,
+    disciplineId,
+    area: text("area"),
+    topic: text("topic"),
+    subtopic: text("subtopic"),
+    actorProfileId: admin.profileId,
+  });
+
+  if (!result.ok) {
+    const query = new URLSearchParams({ error: result.error });
+
+    if (result.detail) query.set("detail", result.detail);
+    redirect(reviewUrl(questionId, query.toString()));
+  }
+
+  const query = new URLSearchParams({ saved: "created" });
+
+  if (result.created.length > 0) {
+    query.set("detail", result.created.map((entry) => entry.name).join(" › "));
+  }
+
+  revalidatePath(reviewUrl(questionId));
+  revalidatePath("/admin/questoes/revisao");
+  redirect(reviewUrl(questionId, query.toString()));
 }
 
 export async function applyClassificationSuggestionAction(

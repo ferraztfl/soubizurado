@@ -532,3 +532,27 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* Create a new classification by typing its path. */
+.manualPath {
+  padding-top: 10px;
+  border-top: 1px solid var(--sb-border-strong);
+}
+
+.manualPath summary {
+  cursor: pointer;
+  color: var(--sb-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.manualPath form {
+  margin-top: 10px;
+}
+
+.manualField {
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
