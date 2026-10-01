@@ -40,9 +40,9 @@ export function getPrismaClient(): PrismaClient {
     adapter,
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = prisma;
-  }
+  // One client (one small pool) per process, in production too: a new client
+  // per call opens a new pool each time and exhausts the pooler in seconds.
+  globalForPrisma.prisma = prisma;
 
   return prisma;
 }
