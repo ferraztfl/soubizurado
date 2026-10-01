@@ -47,6 +47,17 @@ describe("planOffer", () => {
     expect(planOffer({ ...base, premiumDays: "0" })).toMatchObject({ ok: true, offer: { grants: [{ durationDays: null }] } });
   });
 
+  it("Premium offers can open every course for the same days", () => {
+    const result = planOffer({ ...base, premiumDays: "365", allCourses: true });
+    expect(result.ok && result.offer.grants).toEqual([
+      { kind: "QUESTION_BANK", durationDays: 365 },
+      { kind: "ALL_COURSES", durationDays: 365 },
+    ]);
+    // Without Premium days there is nothing to extend to all courses.
+    const courseOnly = planOffer({ ...base, premiumDays: "", allCourses: true, courseIds: ["c1"] });
+    expect(courseOnly.ok && courseOnly.offer.grants.map((grant) => grant.kind)).toEqual(["COURSE"]);
+  });
+
   it("ends the promotion at midnight after the last day (São Paulo)", () => {
     const result = planOffer({ ...base, price: "29,90", compareAt: "59,90", promoLastDay: "2026-12-31" });
     expect(result.ok && result.offer.promoEndsAt?.toISOString()).toBe("2027-01-01T03:00:00.000Z");

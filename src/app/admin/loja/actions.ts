@@ -72,6 +72,7 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
     price: readString(formData, "price"),
     compareAt: readString(formData, "compareAt"),
     premiumDays: readString(formData, "premiumDays"),
+    allCourses: formData.get("allCourses") === "on",
     courseIds: formData.getAll("courseIds").filter((value): value is string => typeof value === "string" && UUID.test(value)),
     courseDays: readString(formData, "courseDays"),
     promoLastDay: readString(formData, "promoLastDay"),

@@ -35,7 +35,7 @@ export default async function StorePage() {
       compareAtCents: true,
       promoEndsAt: true,
       isFeatured: true,
-      grants: { select: { kind: true, durationDays: true } },
+      grants: { select: { kind: true, durationDays: true, course: { select: { title: true } } } },
     },
   }).then((rows) => rows.map((row) => withEffectivePrice(row, new Date())));
 
@@ -65,7 +65,13 @@ export default async function StorePage() {
               <h2>{offer.name}</h2>
               {offer.headline ? <p className={styles.headline}>{offer.headline}</p> : null}
               <p className={styles.includes}>
-                {premiumLabel(offer.grants.find((grant) => grant.kind === "QUESTION_BANK")?.durationDays)}
+                {[
+                  ...offer.grants.flatMap((grant) => (grant.kind === "COURSE" && grant.course ? [grant.course.title] : [])),
+                  offer.grants.some((grant) => grant.kind === "ALL_COURSES") ? "Todos os cursos Teoria Completa" : "",
+                  premiumLabel(offer.grants.find((grant) => grant.kind === "QUESTION_BANK")?.durationDays),
+                ]
+                  .filter(Boolean)
+                  .join(" + ")}
               </p>
               <div className={styles.price}>
                 {offer.compareAtCents ? <s>{formatBRL(offer.compareAtCents)}</s> : null}

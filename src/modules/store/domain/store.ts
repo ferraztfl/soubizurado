@@ -26,7 +26,9 @@ export function parseBRL(value: string): number | null {
 
 export type OfferGrantInput =
   | Readonly<{ kind: "QUESTION_BANK"; durationDays: number | null }>
-  | Readonly<{ kind: "COURSE"; courseId: string; durationDays: number | null }>;
+  | Readonly<{ kind: "COURSE"; courseId: string; durationDays: number | null }>
+  /** Every published course (Premium subscription and yearly Premium; exam combos grant only their course). */
+  | Readonly<{ kind: "ALL_COURSES"; durationDays: number | null }>;
 
 export type OfferInput = Readonly<{
   name: string;
@@ -40,6 +42,8 @@ export type OfferInput = Readonly<{
   courseIds?: readonly string[];
   /** Course access in days; "0" or blank = no end date. */
   courseDays?: string;
+  /** Premium that also opens every course, for the same days as the Premium. */
+  allCourses?: boolean;
   /** Last day of the promotional price (AAAA-MM-DD, São Paulo); blank = no end. Needs the regular price (compareAt). */
   promoLastDay?: string;
 }>;
@@ -108,6 +112,7 @@ export function planOffer(input: OfferInput): { ok: true; offer: OfferPlan } | {
     const days = parseDays(premiumDays);
     if (days === undefined) return { ok: false, error: "GRANT_REQUIRED" };
     grants.push({ kind: "QUESTION_BANK", durationDays: days });
+    if (input.allCourses) grants.push({ kind: "ALL_COURSES", durationDays: days });
   }
 
   const courseIds = [...new Set(input.courseIds ?? [])];

@@ -3,9 +3,16 @@ import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 /*
  * Who may see what in the member area. Access = an active COURSE
- * entitlement (bought through an offer, or granted) or the ADMIN role;
+ * entitlement (bought through an offer, or granted), an active ALL_COURSES
+ * entitlement (Premium subscription / yearly Premium) or the ADMIN role;
  * free-preview lessons open to any signed-in student.
  */
+
+const activeWindow = (now: Date) => ({
+  revokedAt: null,
+  startsAt: { lte: now },
+  OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+});
 
 const activeEntitlement = (now: Date) => ({
   kind: "COURSE",
@@ -22,12 +29,24 @@ export async function isAdminProfile(profileId: string): Promise<boolean> {
   return role !== null;
 }
 
+/** End of the active "all courses" access (Premium), null = no end; undefined = none. */
+export async function allCoursesAccessEnd(profileId: string, now = new Date()): Promise<Date | null | undefined> {
+  const rows = await getPrismaClient().entitlement.findMany({
+    where: { profileId, kind: "ALL_COURSES", ...activeWindow(now) },
+    select: { endsAt: true },
+  });
+  if (rows.length === 0) return undefined;
+  if (rows.some((row) => row.endsAt === null)) return null;
+  return rows.reduce<Date>((latest, row) => (row.endsAt! > latest ? row.endsAt! : latest), rows[0]!.endsAt!);
+}
+
 export async function hasCourseAccess(profileId: string, courseId: string, now = new Date()): Promise<boolean> {
-  const [entitlement, admin] = await Promise.all([
+  const [entitlement, allCourses, admin] = await Promise.all([
     getPrismaClient().entitlement.findFirst({ where: { profileId, courseId, ...activeEntitlement(now) }, select: { id: true } }),
+    allCoursesAccessEnd(profileId, now),
     isAdminProfile(profileId),
   ]);
-  return entitlement !== null || admin;
+  return entitlement !== null || allCourses !== undefined || admin;
 }
 
 export type MyCourse = Readonly<{
@@ -43,9 +62,10 @@ export type MyCourse = Readonly<{
 /** Published courses the student can open, with progress. */
 export async function listMyCourses(profileId: string, now = new Date()): Promise<MyCourse[]> {
   const prisma = getPrismaClient();
-  const [entitlements, admin] = await Promise.all([
+  const [entitlements, admin, allCourses] = await Promise.all([
     prisma.entitlement.findMany({ where: { profileId, ...activeEntitlement(now) }, select: { courseId: true, endsAt: true } }),
     isAdminProfile(profileId),
+    allCoursesAccessEnd(profileId, now),
   ]);
 
   const ends = new Map<string, Date | null>();
@@ -56,7 +76,8 @@ export async function listMyCourses(profileId: string, now = new Date()): Promis
   }
 
   const courses = await prisma.course.findMany({
-    where: { isPublished: true, ...(admin ? {} : { id: { in: [...ends.keys()] } }) },
+    // Premium ("all courses") and admins see every published course.
+    where: { isPublished: true, ...(admin || allCourses !== undefined ? {} : { id: { in: [...ends.keys()] } }) },
     orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
     select: {
       id: true,
@@ -84,7 +105,7 @@ export async function listMyCourses(profileId: string, now = new Date()): Promis
       totalLessons: ids.length,
       completedLessons: done,
       percent: progressPercent(ids.length, done),
-      accessEndsAt: ends.get(course.id) ?? null,
+      accessEndsAt: ends.has(course.id) ? ends.get(course.id)! : allCourses ?? null,
     };
   });
 }

@@ -57,6 +57,7 @@ export default async function EditOfferPage(props: EditOfferPageProps) {
             compareAtCents: offer.compareAtCents,
             promoEndsAt: offer.promoEndsAt,
             premiumDays: premium ? premium.durationDays : "none",
+            allCourses: offer.grants.some((grant) => grant.kind === "ALL_COURSES"),
             isActive: offer.isActive,
             isFeatured: offer.isFeatured,
             sortOrder: offer.sortOrder,

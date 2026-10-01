@@ -13,6 +13,7 @@ export type OfferFormValues = Readonly<{
   compareAtCents: number | null;
   promoEndsAt: Date | null;
   premiumDays: number | null | "none";
+  allCourses: boolean;
   isActive: boolean;
   isFeatured: boolean;
   sortOrder: number;
@@ -65,6 +66,12 @@ export function OfferForm({ values, courses }: Readonly<{ values: OfferFormValue
         <span>Dias de Premium (0 = sem prazo; vazio = sem Premium)</span>
         <input name="premiumDays" type="number" min={0} max={3660} defaultValue={premiumDays} placeholder="180" />
       </label>
+      <div className={`${styles.checks} ${styles.full}`}>
+        <label>
+          <input type="checkbox" name="allCourses" defaultChecked={values.allCourses} /> O Premium desta oferta inclui <strong>todos os cursos</strong> (assinatura
+          Premium/anual) pelo mesmo prazo — combos de cargo não marcam
+        </label>
+      </div>
       <fieldset className={`${styles.full} ${styles.courses}`}>
         <legend>Cursos incluídos (área de membros)</legend>
         {courses.length === 0 ? (

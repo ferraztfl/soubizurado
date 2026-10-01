@@ -56,6 +56,7 @@ const ERRORS: Readonly<Record<string, string>> = {
 };
 
 const PREMIUM_FEATURES = [
+  "Todos os cursos Teoria Completa (PMPE, CBMPE e próximos editais)",
   "Questões ilimitadas, todos os dias",
   "Simulados ilimitados no tempo da prova",
   "Revisão espaçada dos seus erros",
@@ -64,6 +65,7 @@ const PREMIUM_FEATURES = [
 ] as const;
 
 const COMPARISON = [
+  { label: "Cursos Teoria Completa (todos os editais)", free: "Aulas de amostra", premium: "Todos incluídos" },
   { label: "Questões com gabarito oficial", free: `${FREE_DAILY_ANSWERS.free} por dia`, premium: "Ilimitadas" },
   { label: "Simulados", free: "Dentro do limite diário", premium: "Ilimitados" },
   { label: "Revisão dos erros", free: "Sim", premium: "Sim, sem limite" },
@@ -116,7 +118,7 @@ export default async function SubscriptionPage({ searchParams }: SubscriptionPag
             </>
           )}
         </h1>
-        <p>Questões e simulados ilimitados, revisão dos seus erros e desempenho completo. Cancele quando quiser.</p>
+        <p>Todos os cursos Teoria Completa, questões e simulados ilimitados, revisão dos seus erros e desempenho completo. Cancele quando quiser.</p>
       </section>
 
       <section className={yearly ? styles.plansThree : styles.plans} aria-label="Planos">

@@ -43,7 +43,7 @@ const loadOffer = cache(async (slug: string) =>
           priceCents: true,
           compareAtCents: true,
           promoEndsAt: true,
-          grants: { select: { kind: true, durationDays: true } },
+          grants: { select: { kind: true, durationDays: true, course: { select: { title: true } } } },
         },
       }).then((offer) => (offer ? withEffectivePrice(offer, new Date()) : null))
     : null,
@@ -75,6 +75,8 @@ export default async function OfferPage(props: OfferPageProps) {
     data: { user },
   } = await supabase.auth.getUser();
   const premium = offer.grants.find((grant) => grant.kind === "QUESTION_BANK");
+  const allCourses = offer.grants.some((grant) => grant.kind === "ALL_COURSES");
+  const courses = offer.grants.flatMap((grant) => (grant.kind === "COURSE" && grant.course ? [grant.course.title] : []));
 
   const terms = (
     <label className={styles.terms}>
@@ -95,13 +97,21 @@ export default async function OfferPage(props: OfferPageProps) {
         <h1>{offer.name}</h1>
         {offer.headline ? <p className={styles.headline}>{offer.headline}</p> : null}
         <ul className={styles.benefits}>
-          <li>
-            {premium?.durationDays === null
-              ? "Premium sem prazo de validade"
-              : `Premium por ${premium?.durationDays ?? 0} dias (soma ao tempo que você já tiver)`}
-          </li>
-          <li>Questões e simulados ilimitados</li>
-          <li>Revisão espaçada dos seus erros, missões e ranking</li>
+          {courses.map((title) => (
+            <li key={title}>{title}: todas as matérias do edital, com grifo, anotações, áudio e questões por assunto</li>
+          ))}
+          {allCourses ? <li>Todos os cursos Teoria Completa do site (PMPE, CBMPE e os próximos editais), pelo mesmo prazo do Premium</li> : null}
+          {premium ? (
+            <>
+              <li>
+                {premium.durationDays === null
+                  ? "Premium sem prazo de validade"
+                  : `Premium por ${premium.durationDays} dias (soma ao tempo que você já tiver)`}
+              </li>
+              <li>Questões e simulados ilimitados</li>
+              <li>Revisão espaçada dos seus erros, missões e ranking</li>
+            </>
+          ) : null}
         </ul>
         {offer.description ? (
           <div className={styles.descriptionText}>

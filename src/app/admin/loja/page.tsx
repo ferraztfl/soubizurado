@@ -112,7 +112,7 @@ export default async function AdminStorePage(props: StorePageProps) {
                     <strong>{offer.name}</strong>
                     <span>
                       {formatBRL(offer.priceCents)} · {premium ? `Premium ${days === null || days === undefined ? "sem prazo" : `${days} dias`}` : "sem Premium"}
-                      {courseCount > 0 ? ` + ${courseCount} curso(s)` : ""} ·{" "}
+                      {offer.grants.some((grant) => grant.kind === "ALL_COURSES") ? " + todos os cursos" : courseCount > 0 ? ` + ${courseCount} curso(s)` : ""} ·{" "}
                       {offer._count.orders} vendidas · /loja/{offer.slug}
                     </span>
                   </div>
@@ -141,6 +141,7 @@ export default async function AdminStorePage(props: StorePageProps) {
             compareAtCents: null,
             promoEndsAt: null,
             premiumDays: "none",
+            allCourses: false,
             isActive: false,
             isFeatured: false,
             sortOrder: 0,

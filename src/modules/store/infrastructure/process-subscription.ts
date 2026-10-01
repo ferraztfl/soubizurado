@@ -126,16 +126,17 @@ async function applyCharge(charge: AuthorizedPayment): Promise<ChargeResult> {
       if (moved.count !== 1) return false; // already applied (webhook retries, return page)
 
       const period = subscriptionPeriod(planKey, paidAt);
-      await transaction.entitlement.create({
-        data: {
+      // Premium subscription = unlimited questions + every course, for the paid period.
+      await transaction.entitlement.createMany({
+        data: (["QUESTION_BANK", "ALL_COURSES"] as const).map((kind) => ({
           profileId: subscription.profileId,
-          kind: "QUESTION_BANK",
+          kind,
           startsAt: period.startsAt,
           endsAt: period.endsAt,
           source: "SUBSCRIPTION",
           sourceId: row.id,
           note: "Assinatura mensal",
-        },
+        })),
       });
       await transaction.subscription.updateMany({
         where: { id: subscription.id, status: "PENDING" },

@@ -21,11 +21,12 @@ async function currentPremiumEnd(
   transaction: Prisma.TransactionClient,
   profileId: string,
   now: Date,
+  kind: "QUESTION_BANK" | "ALL_COURSES" = "QUESTION_BANK",
 ): Promise<Date | null | "unlimited"> {
   const active = await transaction.entitlement.findMany({
     where: {
       profileId,
-      kind: "QUESTION_BANK",
+      kind,
       revokedAt: null,
       startsAt: { lte: now },
       OR: [{ endsAt: null }, { endsAt: { gt: now } }],
@@ -95,13 +96,14 @@ export async function processMercadoPagoPayment(paymentId: string): Promise<Proc
           continue;
         }
 
-        if (grant.kind !== "QUESTION_BANK") continue;
+        if (grant.kind !== "QUESTION_BANK" && grant.kind !== "ALL_COURSES") continue;
 
-        const period = grantPeriod(grant.durationDays, paidAt, await currentPremiumEnd(transaction, order.profileId, now));
+        // Premium and "all courses" stack on their own current periods.
+        const period = grantPeriod(grant.durationDays, paidAt, await currentPremiumEnd(transaction, order.profileId, now, grant.kind));
         await transaction.entitlement.create({
           data: {
             profileId: order.profileId,
-            kind: "QUESTION_BANK",
+            kind: grant.kind,
             startsAt: period.startsAt,
             endsAt: period.endsAt,
             source: "ORDER",

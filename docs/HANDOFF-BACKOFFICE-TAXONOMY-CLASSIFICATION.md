@@ -1005,3 +1005,17 @@ Vale sobre §1/§12 onde divergir.
   preço "de" automaticamente. Admin da loja tem "Promoção até".
 - Pendente (decisão do usuário 30/09): combos por cargo "de R$ 59,90 por R$ 29,90 até 31/12/2026" com Teoria +
   Premium 6 meses + 1 correção de redação/mês — criar junto com o **módulo de redação** (ainda não existe).
+
+### 13.39 Premium inclui todos os cursos; combos por cargo (01/10/2026)
+
+- Decisão do usuário: assinatura Premium (mensal R$ 14,90 e anual R$ 118,80) dá acesso a **todos os cursos**; os combos
+  de cargo dão Premium (questões) por 6 meses + **só o curso do cargo**. Novo tipo de acesso `ALL_COURSES` (migration
+  `20260930200000_all_courses_access`, só amplia os CHECKs): concedido pela assinatura a cada cobrança aprovada e por
+  ofertas com "Premium inclui todos os cursos" (admin da loja). `hasCourseAccess`/`listMyCourses` consideram.
+- Gravado: `premium-anual` + `ALL_COURSES` 365 dias; 7 combos ativos (`combo-pmpe-2026-soldado`, `-oficial-qopm`,
+  `-oficial-medico-clinica-geral`, `-oficial-medico-cirurgia-geral`, `-oficial-dentista`, `combo-cbmpe-2026-soldado`,
+  `-oficial-qoc`): de R$ 59,90 por R$ 29,90 até 31/12/2026, Teoria Completa sem prazo + Premium 180 dias, texto de
+  **pré-venda** (aulas liberadas progressivamente, todas as matérias até 31/12/2026). Os 7 cursos foram publicados;
+  combos de Soldado ligados às páginas dos concursos. Log: `data-private/logs/combos-teoria-*.json`.
+- Pendente: escrever/revisar as aulas até 31/12/2026 (compromisso da pré-venda); módulo de redação (1 correção/mês no
+  combo ainda **não** é prometida na oferta); Mercado Pago real.
