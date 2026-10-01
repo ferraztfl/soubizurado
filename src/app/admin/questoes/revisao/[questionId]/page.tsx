@@ -39,6 +39,7 @@ import {
   saveQuestionClassificationAction,
 } from "./actions";
 
+import { ClassificationSelect } from "./classification-select";
 import styles from "./page.module.css";
 
 export const dynamic =
@@ -65,10 +66,6 @@ function readRationale(
     ? provider.rationale.slice(0, 400)
     : null;
 }
-
-// Indents subtopics under their topic inside a native <select>.
-const SUBTOPIC_PREFIX =
-  "\u00a0\u00a0\u21b3 ";
 
 type PageProps =
   Readonly<{
@@ -1194,64 +1191,20 @@ export default async function ReviewQuestionPage(
                 value={question.id}
               />
 
-              <label
-                className={styles.field}
-                htmlFor="classification"
-              >
-                <span className={styles.srOnly}>
-                  Subtópico ou detalhe
-                </span>
-
-                <select
-                  id="classification"
-                  name="classification"
-                  defaultValue={
-                    currentChoice
-                  }
-                  className={styles.select}
-                  required
-                >
-                  <option value="">
-                    Selecione um subtópico ou detalhe
-                  </option>
-
-                  {topicGroups.map(
-                    (group) => (
-                      <optgroup
-                        key={group.name}
-                        label={group.name}
-                      >
-                        {group.topics.flatMap(
-                          (topic) => [
-                            <option
-                              key={topic.id}
-                              value={encodeTopicChoice(
-                                topic.id,
-                              )}
-                            >
-                              {topic.name}
-                            </option>,
-
-                            ...topic.subtopics.map(
-                              (subtopic) => (
-                                <option
-                                  key={subtopic.id}
-                                  value={encodeSubtopicChoice(
-                                    subtopic.id,
-                                  )}
-                                >
-                                  {SUBTOPIC_PREFIX}
-                                  {subtopic.name}
-                                </option>
-                              ),
-                            ),
-                          ],
-                        )}
-                      </optgroup>
-                    ),
-                  )}
-                </select>
-              </label>
+              <ClassificationSelect
+                defaultValue={currentChoice}
+                groups={topicGroups.map((group) => ({
+                  label: group.name,
+                  options: group.topics.flatMap((topic) => [
+                    { value: encodeTopicChoice(topic.id), label: topic.name, indent: false },
+                    ...topic.subtopics.map((subtopic) => ({
+                      value: encodeSubtopicChoice(subtopic.id),
+                      label: subtopic.name,
+                      indent: true,
+                    })),
+                  ]),
+                }))}
+              />
 
               <button
                 type="submit"

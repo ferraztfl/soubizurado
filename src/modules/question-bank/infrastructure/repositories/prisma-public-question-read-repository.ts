@@ -1,3 +1,4 @@
+import { toTaxonomySlug } from "@/modules/taxonomy/domain/taxonomy-term";
 import type {
   Prisma,
   PrismaClient,
@@ -169,10 +170,18 @@ function buildPublicQuestionWhere(
       ? parseQuestionCode(filters.search) !== null
         ? { publicNumber: parseQuestionCode(filters.search)! }
         : {
-            statement: {
-              contains: filters.search,
-              mode: "insensitive",
-            },
+            // The text or the classification (Tópico, Subtópico, Detalhe) by name.
+            OR: [
+              { statement: { contains: filters.search, mode: "insensitive" as const } },
+              // Slugs carry no accents, so "codigo disciplinar" finds "Código Disciplinar".
+              ...(toTaxonomySlug(filters.search)
+                ? [
+                    { area: { slug: { contains: toTaxonomySlug(filters.search) } } },
+                    { topic: { slug: { contains: toTaxonomySlug(filters.search) } } },
+                    { subtopic: { slug: { contains: toTaxonomySlug(filters.search) } } },
+                  ]
+                : []),
+            ],
           }
       : {}),
     ...(filters.disciplineId

@@ -202,10 +202,12 @@ describe("PrismaPublicQuestionReadRepository", () => {
 
     const expectedWhere = {
       status: "PUBLISHED",
-      statement: {
-        contains: "constitucional",
-        mode: "insensitive",
-      },
+      OR: [
+        { statement: { contains: "constitucional", mode: "insensitive" } },
+        { area: { slug: { contains: "constitucional" } } },
+        { topic: { slug: { contains: "constitucional" } } },
+        { subtopic: { slug: { contains: "constitucional" } } },
+      ],
       disciplineId: "discipline-1",
       type: "MULTIPLE_CHOICE",
       examination: {
