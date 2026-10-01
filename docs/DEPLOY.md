@@ -87,3 +87,17 @@ de publicar código que dependa delas.
   (um `next.config.ts` precisaria ser compilado antes). No computador local, `npm run dev` continua com Turbopack.
 - Não usar o botão "Corrigir e reimplantar" do painel: a correção sugerida por ele (`swcMinify: false`,
   apagar arquivo temporário) não se aplica ao Next 16.
+
+## 8. Dois repositórios no GitHub
+
+- `origin` = `ferraztfl/soubizurado` (repositório de trabalho, com todo o histórico).
+- `deploy` = `atelie33/soubizurado33` (o que a Hostinger lê; a conta atelie33 é a que está ligada ao hPanel).
+  Ele nasceu de uma cópia sem histórico, então recebe o código por um commit de junção, sem `--force`:
+
+  ```
+  git fetch deploy
+  git push deploy $(git commit-tree "HEAD^{tree}" -p deploy/main -p HEAD -m "deploy: $(git log -1 --format=%h)"):refs/heads/main
+  ```
+
+  Cada envio ao `deploy` dispara uma nova implantação na Hostinger. Enviar só quando lint, typecheck e testes
+  passarem e as migrations necessárias já estiverem aplicadas.
