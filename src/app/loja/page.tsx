@@ -35,6 +35,7 @@ export default async function StorePage() {
       compareAtCents: true,
       promoEndsAt: true,
       isFeatured: true,
+      cardImageAssetId: true,
       grants: { select: { kind: true, durationDays: true, course: { select: { title: true } } } },
     },
   }).then((rows) => rows.map((row) => withEffectivePrice(row, new Date())));
@@ -62,6 +63,17 @@ export default async function StorePage() {
           {offers.map((offer) => (
             <li key={offer.slug} className={offer.isFeatured ? styles.offerFeatured : styles.offer}>
               {offer.isFeatured ? <span className={styles.ribbon}>Mais vendido</span> : null}
+              {offer.cardImageAssetId ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  className={styles.cardImage}
+                  src={`/api/loja/banners/${offer.cardImageAssetId}`}
+                  alt=""
+                  width={1200}
+                  height={675}
+                  loading="lazy"
+                />
+              ) : null}
               <h2>{offer.name}</h2>
               {offer.headline ? <p className={styles.headline}>{offer.headline}</p> : null}
               <p className={styles.includes}>

@@ -774,13 +774,14 @@ model MediaAsset {
   questionLinks            QuestionMediaLink[]
   questionAlternativeLinks QuestionAlternativeMediaLink[]
 
-  ingestionTasks ImportMediaTask[]
-  courseCovers   Course[]
-  lessonPdfs     CourseLesson[]
-  blogCovers     BlogPost[]
-  blogImages     BlogPostImage[]
-  offerBanners   Offer[]
-  contestLogos   Contest[]
+  ingestionTasks  ImportMediaTask[]
+  courseCovers    Course[]
+  lessonPdfs      CourseLesson[]
+  blogCovers      BlogPost[]
+  blogImages      BlogPostImage[]
+  offerBanners    Offer[]           @relation("OfferBanner")
+  offerCardImages Offer[]           @relation("OfferCardImage")
+  contestLogos    Contest[]
 
   @@index([storageProvider, bucket])
   @@index([mimeType])
@@ -1107,25 +1108,28 @@ model VisitorAnswerUsage {
 
 /// Something sold in the store (a plan, an exam combo). Grants entitlements when paid.
 model Offer {
-  id             String   @id @default(uuid()) @db.Uuid
-  slug           String   @unique @db.VarChar(120)
-  name           String   @db.VarChar(160)
-  headline       String?  @db.VarChar(240)
-  description    String   @default("") @db.Text
-  priceCents     Int      @map("price_cents")
-  compareAtCents Int?     @map("compare_at_cents")
-  isActive       Boolean  @default(false) @map("is_active")
-  isFeatured     Boolean  @default(false) @map("is_featured")
-  sortOrder      Int      @default(0) @map("sort_order")
+  id               String    @id @default(uuid()) @db.Uuid
+  slug             String    @unique @db.VarChar(120)
+  name             String    @db.VarChar(160)
+  headline         String?   @db.VarChar(240)
+  description      String    @default("") @db.Text
+  priceCents       Int       @map("price_cents")
+  compareAtCents   Int?      @map("compare_at_cents")
+  isActive         Boolean   @default(false) @map("is_active")
+  isFeatured       Boolean   @default(false) @map("is_featured")
+  sortOrder        Int       @default(0) @map("sort_order")
   /// Wide banner for the home page carousel (optional).
-  bannerAssetId  String?  @map("banner_asset_id") @db.Uuid
+  bannerAssetId    String?   @map("banner_asset_id") @db.Uuid
+  /// Image on top of the store card (optional; 16:9, e.g. 1200x675).
+  cardImageAssetId String?   @map("card_image_asset_id") @db.Uuid
   /// Promotional price (price_cents) ends at this moment; afterwards the offer
   /// sells at compare_at_cents (the regular price) automatically.
-  promoEndsAt    DateTime? @map("promo_ends_at") @db.Timestamptz(6)
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  promoEndsAt      DateTime? @map("promo_ends_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  banner    MediaAsset?  @relation(fields: [bannerAssetId], references: [id], onDelete: SetNull)
+  banner    MediaAsset?  @relation("OfferBanner", fields: [bannerAssetId], references: [id], onDelete: SetNull)
+  cardImage MediaAsset?  @relation("OfferCardImage", fields: [cardImageAssetId], references: [id], onDelete: SetNull)
   grants    OfferGrant[]
   orders    Order[]
   blogPosts BlogPost[]
@@ -1234,9 +1238,9 @@ model CourseLesson {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  module        CourseModule            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  pdf           MediaAsset?             @relation(fields: [pdfAssetId], references: [id], onDelete: SetNull)
-  syllabusTopic ContestSyllabusTopic?   @relation(fields: [syllabusTopicId], references: [id], onDelete: SetNull)
+  module        CourseModule             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  pdf           MediaAsset?              @relation(fields: [pdfAssetId], references: [id], onDelete: SetNull)
+  syllabusTopic ContestSyllabusTopic?    @relation(fields: [syllabusTopicId], references: [id], onDelete: SetNull)
   questions     CourseLessonQuestion[]
   progress      CourseLessonProgress[]
   annotations   CourseLessonAnnotation[]

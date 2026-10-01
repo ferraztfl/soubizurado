@@ -64,6 +64,7 @@ export default async function EditOfferPage(props: EditOfferPageProps) {
             courseIds: courseGrants.map((grant) => grant.courseId!),
             courseDays: courseGrants[0]?.durationDays ?? null,
             hasBanner: offer.bannerAssetId !== null,
+            cardImageUrl: offer.cardImageAssetId ? `/api/loja/banners/${offer.cardImageAssetId}` : null,
           }}
           courses={courses}
         />

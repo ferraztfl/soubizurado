@@ -130,10 +130,11 @@
 .offer,
 .offerFeatured {
   position: relative;
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   padding: 22px;
+  overflow: visible;
   border: 1px solid var(--sb-border);
   border-radius: 18px;
   background: var(--sb-surface);
@@ -141,7 +142,9 @@
 }
 
 .offerFeatured {
-  border: 2px solid var(--sb-brand);
+  /* 2px look without changing the box size, so buttons align with the other cards. */
+  border-color: var(--sb-brand);
+  box-shadow: 0 0 0 1px var(--sb-brand);
 }
 
 .ribbon {
@@ -177,7 +180,20 @@
   font-weight: 750;
 }
 
+/* Image on top of the card: bleeds to the card edges, fixed 16:9. */
+.cardImage {
+  display: block;
+  width: calc(100% + 44px);
+  max-width: none;
+  margin: -22px -22px 6px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 16px 16px 0 0;
+}
+
+/* Price and button sit at the bottom: every card in a row aligns them. */
 .price {
+  margin-top: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;

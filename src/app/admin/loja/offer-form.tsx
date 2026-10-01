@@ -20,6 +20,7 @@ export type OfferFormValues = Readonly<{
   courseIds: readonly string[];
   courseDays: number | null;
   hasBanner: boolean;
+  cardImageUrl: string | null;
 }>;
 
 export type OfferFormCourse = Readonly<{ id: string; title: string }>;
@@ -96,6 +97,24 @@ export function OfferForm({ values, courses }: Readonly<{ values: OfferFormValue
           <input type="checkbox" name="isFeatured" defaultChecked={values.isFeatured} /> Destaque
         </label>
       </div>
+      <fieldset className={`${styles.field} ${styles.full}`}>
+        <legend>Imagem do card na Loja</legend>
+        <p className={styles.hint}>
+          Aparece no topo do card da oferta. Use <strong>1200 × 675 px (proporção 16:9, horizontal)</strong>; PNG, JPG ou WebP
+          até 8 MB. Mantenha o assunto principal (brasão, texto) no centro: nas telas estreitas as bordas podem ser cortadas.
+          Sem imagem, o card fica só com o texto.
+        </p>
+        {values.cardImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={values.cardImageUrl} alt="Imagem atual do card" width={240} height={135} style={{ borderRadius: 10, objectFit: "cover" }} />
+        ) : null}
+        <input name="cardImage" type="file" accept="image/png,image/jpeg,image/webp" />
+        {values.cardImageUrl ? (
+          <label>
+            <input type="checkbox" name="removeCardImage" /> Remover a imagem
+          </label>
+        ) : null}
+      </fieldset>
       <label className={styles.field}>
         <span>
           Banner da página inicial (largo, ex.: 1600×530; PNG, JPG ou WebP até 8 MB)

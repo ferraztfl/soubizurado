@@ -105,6 +105,20 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
     throw error;
   }
 
+  const cardImage = formData.get("cardImage");
+  let cardImageAssetId: string | null | undefined;
+
+  try {
+    cardImageAssetId = isFilledFile(cardImage)
+      ? await storeBanner(cardImage, `Imagem do card: ${offer.name}`)
+      : formData.get("removeCardImage") === "on"
+        ? null
+        : undefined;
+  } catch (error) {
+    if (error instanceof InvalidImageError) redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+    throw error;
+  }
+
   const sortOrder = Number(readString(formData, "sortOrder")) || 0;
   const data = {
     name: offer.name,
@@ -118,6 +132,7 @@ export async function saveOfferAction(formData: FormData): Promise<void> {
     isFeatured: formData.get("isFeatured") === "on",
     sortOrder: Math.max(-1000, Math.min(1000, Math.trunc(sortOrder))),
     ...(bannerAssetId !== undefined ? { bannerAssetId } : {}),
+    ...(cardImageAssetId !== undefined ? { cardImageAssetId } : {}),
   };
 
   const saved = await prisma.$transaction(async (transaction) => {

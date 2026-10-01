@@ -15,7 +15,7 @@ function notFound(): Response {
   });
 }
 
-/** Banners of offers on sale (home page carousel); anything else stays private. */
+/** Banners and card images of offers on sale (home carousel, store); anything else stays private. */
 export async function GET(_request: Request, context: RouteContext): Promise<Response> {
   const { assetId } = await context.params;
   if (!UUID.test(assetId)) return notFound();
@@ -24,7 +24,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
     where: {
       id: assetId,
       mimeType: { startsWith: "image/" },
-      offerBanners: { some: { isActive: true } },
+      OR: [{ offerBanners: { some: { isActive: true } } }, { offerCardImages: { some: { isActive: true } } }],
     },
     select: { storageProvider: true, bucket: true, storageKey: true, mimeType: true },
   });

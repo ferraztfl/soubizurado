@@ -148,6 +148,7 @@ export default async function AdminStorePage(props: StorePageProps) {
             courseIds: [],
             courseDays: null,
             hasBanner: false,
+            cardImageUrl: null,
           }}
           courses={courses}
         />
