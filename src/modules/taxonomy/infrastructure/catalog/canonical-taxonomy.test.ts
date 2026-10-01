@@ -28,7 +28,22 @@ describe("CANONICAL_TAXONOMY", () => {
       );
 
       expect(current?.knowledgeAreaSlug).toBe(discipline.knowledgeAreaSlug);
-      expect(current?.areas.slice(0, discipline.areas.length)).toEqual(discipline.areas);
+
+      // Later versions may append topics and subtopics; what v1 had stays first and unchanged.
+      discipline.areas.forEach((area, areaIndex) => {
+        const currentArea = current?.areas[areaIndex];
+
+        expect(currentArea?.name).toBe(area.name);
+        area.topics.forEach((topic, topicIndex) => {
+          const currentTopic = currentArea?.topics[topicIndex];
+          const subtopics = topic.subtopics ?? [];
+
+          expect({ ...currentTopic, subtopics: currentTopic?.subtopics?.slice(0, subtopics.length) }).toEqual({
+            ...topic,
+            subtopics,
+          });
+        });
+      });
     }
   });
 
