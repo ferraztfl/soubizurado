@@ -74,8 +74,9 @@ async function main(): Promise<void> {
     }
     const key = lessonContentKey(target.syllabusTopic.subject.name, target.syllabusTopic.text);
     // The same subject + topic in other courses (other positions/contests) gets the same text.
+    // Compared by content key below (the notices vary in capitals and accents), so the query is only narrowed.
     const twins = await prisma.courseLesson.findMany({
-      where: { id: { not: target.id }, syllabusTopic: { text: target.syllabusTopic.text } },
+      where: { id: { not: target.id }, syllabusTopic: { text: { equals: target.syllabusTopic.text, mode: "insensitive" } } },
       select: { id: true, body: true, contentStatus: true, durationMinutes: true, module: { select: { course: { select: { slug: true } } } }, syllabusTopic: { select: { text: true, subject: { select: { name: true } } } } },
     });
     const candidates = [

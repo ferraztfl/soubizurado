@@ -1034,3 +1034,13 @@ Vale sobre §1/§12 onde divergir.
   protegidas contra fórmulas). Política de privacidade atualizada (item "Materiais gratuitos").
 - Pendente: descadastro por link (hoje `unsubscribed_at` só pelo banco); envio do PDF por e-mail; mesma captura para
   outros materiais (o campo `source` já existe).
+
+### 13.41 Conteúdo: Língua Portuguesa (01/10/2026)
+
+- Rascunhos das 18 aulas de Língua Portuguesa (escritos pelo Claude; `data-private/editorial/teoria/lingua-portuguesa-{01-09,10-18}.json`)
+  carregados com `theory:drafts` → 72 aulas em RASCUNHO (PMPE Soldado e QOPM, CBMPE Soldado e QOC). Falta revisão humana.
+- `theory:drafts` agora acha aulas gêmeas ignorando maiúsculas (os editais variam "Textuais"/"textuais").
+- Correção de carga: 4 assuntos dos cargos de Oficial terminavam com "Língua Estrangeira -" (sobra do rótulo seguinte);
+  texto e título das aulas corrigidos (log `data-private/logs/syllabus-topic-fix-*`), montador `build-syllabi.cjs` ajustado.
+- Situação da Teoria Completa do Soldado PMPE: 24 de 60 aulas em rascunho (Português 18, Direito Constitucional 6);
+  faltam História de PE (8), Raciocínio Lógico (4), Informática (7) e Direitos Humanos e Legislação Extravagante (17).
