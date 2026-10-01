@@ -1,4 +1,6 @@
-import type { CatalogDiscipline, CatalogSubtopic, CatalogTopic } from "../../domain/canonical-taxonomy-catalog";
+import type { CatalogArea, CatalogDiscipline, CatalogSubtopic, CatalogTopic } from "../../domain/canonical-taxonomy-catalog";
+
+import { area, topic } from "./concursos-taxonomy-additions";
 
 /*
  * v9: entries requested during the manual review of question
@@ -7,6 +9,19 @@ import type { CatalogDiscipline, CatalogSubtopic, CatalogTopic } from "../../dom
  * editing rules: names are stable, only additions (appended after the
  * existing entries), nothing is renamed or removed.
  */
+
+/** Areas ("Tópico" in the UI) added to existing disciplines, keyed by discipline name. */
+export const V9_AREAS_FOR_EXISTING: Readonly<Record<string, readonly CatalogArea[]>> = {
+  "Direito Penal Militar": [
+    area("Teoria do Crime", [
+      topic(
+        "Exclusão do Crime",
+        ["Estado de necessidade", "Legítima defesa", "Estrito cumprimento do dever legal", "Exercício regular de direito"],
+        ["Excludentes de ilicitude", "Exclusão de crime"],
+      ),
+    ]),
+  ],
+};
 
 /** Topics ("Subtópico" in the UI) added to existing areas: discipline → area → topics. */
 export const V9_TOPICS_FOR_EXISTING: Readonly<Record<string, Readonly<Record<string, readonly CatalogTopic[]>>>> = {};
