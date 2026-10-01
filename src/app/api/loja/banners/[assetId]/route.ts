@@ -24,7 +24,11 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
     where: {
       id: assetId,
       mimeType: { startsWith: "image/" },
-      OR: [{ offerBanners: { some: { isActive: true } } }, { offerCardImages: { some: { isActive: true } } }],
+      OR: [
+        { offerBanners: { some: { isActive: true } } },
+        { offerCardImages: { some: { isActive: true } } },
+        { courseCovers: { some: { isPublished: true } } },
+      ],
     },
     select: { storageProvider: true, bucket: true, storageKey: true, mimeType: true },
   });

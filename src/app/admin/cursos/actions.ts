@@ -13,6 +13,8 @@ import {
 import { isLessonContentStatus } from "@/modules/courses/domain/theory-course";
 import { InvalidPdfError, uploadLessonPdf } from "@/modules/courses/infrastructure/lesson-pdf-storage";
 import { requireAdminUser } from "@/modules/identity/application/require-admin-user";
+import { storeAdminImage } from "@/modules/question-bank/infrastructure/store-admin-image";
+import { InvalidImageError, isFilledFile } from "@/modules/question-bank/infrastructure/uploaded-question-image";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -58,7 +60,22 @@ export async function saveCourseAction(formData: FormData): Promise<void> {
   const taken = await prisma.course.findUnique({ where: { slug }, select: { id: true } });
   if (taken && taken.id !== courseId) fail(back, "Já existe outro curso com esse endereço (slug).");
 
+  const cover = formData.get("cover");
+  let coverAssetId: string | null | undefined;
+
+  try {
+    coverAssetId = isFilledFile(cover)
+      ? await storeAdminImage(cover, `Capa: ${title}`, "admin-course-cover")
+      : formData.get("removeCover") === "on"
+        ? null
+        : undefined;
+  } catch (error) {
+    if (error instanceof InvalidImageError) fail(back, error.message);
+    throw error;
+  }
+
   const data = {
+    ...(coverAssetId !== undefined ? { coverAssetId } : {}),
     title,
     slug,
     subtitle: subtitle || null,

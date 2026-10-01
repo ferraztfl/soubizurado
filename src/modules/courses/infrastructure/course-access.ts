@@ -53,6 +53,7 @@ export type MyCourse = Readonly<{
   slug: string;
   title: string;
   subtitle: string | null;
+  coverAssetId: string | null;
   totalLessons: number;
   completedLessons: number;
   percent: number;
@@ -84,6 +85,7 @@ export async function listMyCourses(profileId: string, now = new Date()): Promis
       slug: true,
       title: true,
       subtitle: true,
+      coverAssetId: true,
       modules: { select: { lessons: { select: { id: true } } } },
     },
   });
@@ -102,6 +104,7 @@ export async function listMyCourses(profileId: string, now = new Date()): Promis
       slug: course.slug,
       title: course.title,
       subtitle: course.subtitle,
+      coverAssetId: course.coverAssetId,
       totalLessons: ids.length,
       completedLessons: done,
       percent: progressPercent(ids.length, done),

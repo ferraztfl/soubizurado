@@ -71,13 +71,31 @@
 }
 
 .courseCard {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   padding: 20px;
   border: 1px solid var(--sb-border);
   border-radius: 16px;
   background: var(--sb-surface);
+}
+
+/* Image on top: bleeds to the card edges, fixed 16:9. */
+.cover {
+  display: block;
+  width: calc(100% + 40px);
+  max-width: none;
+  margin: -20px -20px 4px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 15px 15px 0 0;
+}
+
+/* Progress, status and button sit at the bottom: every card in a row aligns them. */
+.progressArea {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
 }
 
 .courseCard h2 {

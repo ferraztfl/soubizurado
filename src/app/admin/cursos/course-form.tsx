@@ -9,6 +9,7 @@ export type CourseFormValues = Readonly<{
   description: string;
   isPublished: boolean;
   sortOrder: number;
+  coverUrl: string | null;
 }>;
 
 export function CourseForm({ values }: Readonly<{ values: CourseFormValues }>) {
@@ -31,6 +32,24 @@ export function CourseForm({ values }: Readonly<{ values: CourseFormValues }>) {
         <span>Subtítulo</span>
         <input name="subtitle" defaultValue={values.subtitle} maxLength={240} placeholder="Teoria, PDFs e questões comentadas do edital" />
       </label>
+      <fieldset className={`${styles.field} ${styles.full}`}>
+        <legend>Imagem do curso</legend>
+        <p className={styles.hint}>
+          Aparece no topo do card em &quot;Meus cursos&quot; e, quando o combo não tem imagem própria, no card da Loja. Use{" "}
+          <strong>1200 × 675 px (proporção 16:9, horizontal)</strong>; PNG, JPG ou WebP até 8 MB. Mantenha o assunto principal
+          (brasão, texto) no centro: nas telas estreitas as bordas podem ser cortadas.
+        </p>
+        {values.coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={values.coverUrl} alt="Imagem atual do curso" width={240} height={135} style={{ borderRadius: 10, objectFit: "cover" }} />
+        ) : null}
+        <input name="cover" type="file" accept="image/png,image/jpeg,image/webp" />
+        {values.coverUrl ? (
+          <label>
+            <input type="checkbox" name="removeCover" /> Remover a imagem
+          </label>
+        ) : null}
+      </fieldset>
       <label className={`${styles.field} ${styles.full}`}>
         <span>Descrição (aceita **negrito** e quebras de linha)</span>
         <textarea name="description" defaultValue={values.description} rows={5} maxLength={20000} />

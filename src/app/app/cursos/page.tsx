@@ -62,8 +62,13 @@ export default async function MyCoursesPage() {
         <ul className={styles.grid}>
           {mine.map((course) => (
             <li key={course.slug} className={styles.courseCard}>
+              {course.coverAssetId ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className={styles.cover} src={`/api/loja/banners/${course.coverAssetId}`} alt="" width={1200} height={675} loading="lazy" />
+              ) : null}
               <h2>{course.title}</h2>
               {course.subtitle ? <p className={styles.muted}>{course.subtitle}</p> : null}
+              <div className={styles.progressArea}>
               <div className={styles.bar} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={course.percent} aria-label={`Progresso em ${course.title}`}>
                 <div className={styles.fill} style={{ width: `${course.percent}%` }} />
               </div>
@@ -74,6 +79,7 @@ export default async function MyCoursesPage() {
               <Link href={`/app/cursos/${course.slug}`} className={styles.primary}>
                 {course.completedLessons === 0 ? "Começar" : "Continuar"}
               </Link>
+              </div>
             </li>
           ))}
         </ul>

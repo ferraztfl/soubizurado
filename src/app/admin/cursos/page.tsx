@@ -72,7 +72,7 @@ export default async function AdminCoursesPage(props: CoursesPageProps) {
 
       <section className={styles.card}>
         <h2>Novo curso</h2>
-        <CourseForm values={{ id: null, title: "", slug: "", subtitle: "", description: "", isPublished: false, sortOrder: 0 }} />
+        <CourseForm values={{ id: null, title: "", slug: "", subtitle: "", description: "", isPublished: false, sortOrder: 0, coverUrl: null }} />
       </section>
     </main>
   );

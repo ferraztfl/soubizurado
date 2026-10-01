@@ -146,6 +146,7 @@ export default async function AdminCoursePage(props: CoursePageProps) {
             description: course.description,
             isPublished: course.isPublished,
             sortOrder: course.sortOrder,
+            coverUrl: course.coverAssetId ? `/api/loja/banners/${course.coverAssetId}` : null,
           }}
         />
         <p className={styles.hint}>

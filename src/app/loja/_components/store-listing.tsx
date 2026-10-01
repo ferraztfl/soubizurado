@@ -35,7 +35,7 @@ export async function StoreListing({ basePath, profileId }: Readonly<{ basePath:
       promoEndsAt: true,
       isFeatured: true,
       cardImageAssetId: true,
-      grants: { select: { kind: true, durationDays: true, courseId: true, course: { select: { title: true } } } },
+      grants: { select: { kind: true, durationDays: true, courseId: true, course: { select: { title: true, coverAssetId: true } } } },
     },
   }).then((rows) => rows.map((row) => withEffectivePrice(row, new Date())));
   const ownership = profileId ? await loadOfferOwnership(profileId, offers) : new Map();
@@ -63,11 +63,11 @@ export async function StoreListing({ basePath, profileId }: Readonly<{ basePath:
           {offers.map((offer) => (
             <li key={offer.slug} className={offer.isFeatured ? styles.offerFeatured : styles.offer}>
               {offer.isFeatured ? <span className={styles.ribbon}>Mais vendido</span> : null}
-              {offer.cardImageAssetId ? (
+              {(offer.cardImageAssetId ?? offer.grants.find((grant) => grant.course?.coverAssetId)?.course?.coverAssetId) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   className={styles.cardImage}
-                  src={`/api/loja/banners/${offer.cardImageAssetId}`}
+                  src={`/api/loja/banners/${offer.cardImageAssetId ?? offer.grants.find((grant) => grant.course?.coverAssetId)?.course?.coverAssetId}`}
                   alt=""
                   width={1200}
                   height={675}
