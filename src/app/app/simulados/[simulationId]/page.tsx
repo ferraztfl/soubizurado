@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 
 import type { PublicQuestionDto } from "@/modules/question-bank/application/dto/public-question";
 import { createListPublishedQuestionsUseCase } from "@/modules/question-bank/infrastructure/composition/question-bank-application";
+import { sectionOf } from "@/modules/study/domain/official-simulation";
 import { formatDuration, isSimulationExpired, remainingSeconds } from "@/modules/study/domain/simulation";
 import { findStudentProfileId } from "@/modules/study/infrastructure/queries/answered-question-status";
+import { sectionsFromFilters } from "@/modules/study/infrastructure/simulations/official-simulation-store";
 import {
   finishSimulation,
   loadAnswerKeys,
@@ -59,12 +61,15 @@ export default async function SimulationPage({ params }: SimulationPageProps) {
 
   const questions = await loadQuestions(simulation);
 
+  const sections = sectionsFromFilters(simulation.filters);
+
   if (simulation.status === "IN_PROGRESS") {
     return (
       <div className={styles.page}>
         <SimulationExam
           simulationId={simulation.id}
           title={simulation.title}
+          official={sections !== null}
           remainingSeconds={remainingSeconds(simulation.startedAt, simulation.timeLimitMinutes)}
           questions={simulation.questions.flatMap((item) => {
             const question = questions.get(item.questionId);
@@ -74,6 +79,7 @@ export default async function SimulationPage({ params }: SimulationPageProps) {
                   {
                     question,
                     position: item.position,
+                    section: sections ? (sectionOf(sections, item.position)?.name ?? null) : null,
                     selected: item.selectedAlternativeId
                       ? ({ type: "MULTIPLE_CHOICE", alternativeId: item.selectedAlternativeId } as const)
                       : item.selectedTrueFalse !== null
@@ -88,16 +94,20 @@ export default async function SimulationPage({ params }: SimulationPageProps) {
     );
   }
 
-  return <SimulationResult simulation={simulation} questions={questions} />;
+  return <SimulationResult simulation={simulation} questions={questions} sections={sections} />;
 }
 
 async function SimulationResult({
   simulation,
   questions,
-}: Readonly<{ simulation: LoadedSimulation; questions: Map<string, PublicQuestionDto> }>) {
+  sections,
+}: Readonly<{ simulation: LoadedSimulation; questions: Map<string, PublicQuestionDto>; sections: ReturnType<typeof sectionsFromFilters> }>) {
   const keys = await loadAnswerKeys(simulation.questions.map((item) => item.questionId));
   const correct = simulation.correctCount ?? simulation.questions.filter((item) => item.isCorrect).length;
   const total = simulation.questions.length;
+  const answeredTotal = simulation.questions.filter((item) => item.selectedAlternativeId !== null || item.selectedTrueFalse !== null).length;
+  const wrong = answeredTotal - correct;
+  const blank = total - answeredTotal;
   const score = total === 0 ? 0 : Math.round((correct / total) * 100);
   const spent = simulation.finishedAt
     ? (simulation.finishedAt.getTime() - simulation.startedAt.getTime()) / 1000
@@ -107,7 +117,8 @@ async function SimulationResult({
 
   for (const item of simulation.questions) {
     const question = questions.get(item.questionId);
-    const name = question?.classification.discipline.name ?? "Questão indisponível";
+    // Official exams are broken down by the subjects of the notice, in its order.
+    const name = (sections ? sectionOf(sections, item.position)?.name : null) ?? question?.classification.discipline.name ?? "Questão indisponível";
     const entry = byDiscipline.get(name) ?? { name, total: 0, correct: 0 };
     entry.total += 1;
     entry.correct += item.isCorrect ? 1 : 0;
@@ -130,7 +141,13 @@ async function SimulationResult({
           </strong>
         </div>
         <div>
-          <span>Tempo</span>
+          <span>Erros · Em branco</span>
+          <strong>
+            {wrong} · {blank}
+          </strong>
+        </div>
+        <div>
+          <span>Tempo{simulation.timeLimitMinutes ? ` (de ${formatDuration(simulation.timeLimitMinutes * 60)})` : ""}</span>
           <strong>{spent === null ? "—" : formatDuration(spent)}</strong>
         </div>
         <div className={styles.resultActions}>
@@ -142,11 +159,11 @@ async function SimulationResult({
 
       <section className={styles.card} aria-labelledby="by-discipline">
         <div className={styles.cardHead}>
-          <h2 id="by-discipline">Por matéria</h2>
+          <h2 id="by-discipline">{sections ? "Por matéria do edital" : "Por matéria"}</h2>
         </div>
         <ul className={styles.breakdown}>
           {[...byDiscipline.values()]
-            .sort((left, right) => right.total - left.total)
+            .sort((left, right) => (sections ? 0 : right.total - left.total))
             .map((entry) => {
               const value = Math.round((entry.correct / entry.total) * 100);
 

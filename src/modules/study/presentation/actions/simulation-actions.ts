@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { hasCourseAccess } from "@/modules/courses/infrastructure/course-access";
 import { ensureProfileForAuthUser } from "@/modules/identity/application/ensure-profile";
 import {
   parseQuestionExplorerSearchParams,
@@ -15,7 +16,8 @@ import {
   finishSimulation,
   saveSimulationAnswer,
 } from "@/modules/study/infrastructure/simulations/simulation-store";
-import { loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
+import { createOfficialSimulation, loadOfficialExam } from "@/modules/study/infrastructure/simulations/official-simulation-store";
+import { hasPremiumAccess, loadAnswerAllowance } from "@/modules/study/infrastructure/queries/student-access";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
 
 /*
@@ -174,4 +176,46 @@ export async function finishSimulationAction(simulationId: unknown): Promise<Sim
   revalidatePath("/app/simulados");
 
   return { ok: true };
+}
+
+export type OfficialSimulationResult = Readonly<{ ok: true; id: string }> | Readonly<{ ok: false; message: string }>;
+
+/**
+ * Starts the official exam of a course: same questions per subject and same time as the real exam.
+ * Allowed for administrators, Premium students and whoever has the course.
+ */
+export async function createOfficialSimulationAction(courseSlug: unknown): Promise<OfficialSimulationResult> {
+  const slug = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).max(120).safeParse(courseSlug);
+
+  if (!slug.success) {
+    return { ok: false, message: "Simulado inválido." };
+  }
+
+  const profileId = await requireProfileId();
+
+  if (!profileId) {
+    return { ok: false, message: "Sua sessão expirou. Entre novamente." };
+  }
+
+  const exam = await loadOfficialExam(slug.data);
+
+  if (!exam) {
+    return { ok: false, message: "Este simulado não está disponível." };
+  }
+
+  const allowed = (await hasPremiumAccess(profileId)) || (await hasCourseAccess(profileId, exam.courseId));
+
+  if (!allowed) {
+    return { ok: false, message: "O simulado oficial é do Premium e de quem tem o combo deste concurso." };
+  }
+
+  const created = await createOfficialSimulation(profileId, slug.data);
+
+  if (!created) {
+    return { ok: false, message: "O banco ainda não tem questões publicadas para montar este simulado." };
+  }
+
+  revalidatePath("/app/simulados");
+
+  return { ok: true, id: created.id };
 }

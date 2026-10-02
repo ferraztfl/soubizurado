@@ -1,0 +1,242 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.back {
+  justify-self: start;
+  color: var(--sb-text-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hero {
+  display: grid;
+  gap: 8px;
+  padding: 26px;
+  border: 1px solid var(--sb-border);
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--sb-brand-subtle), var(--sb-surface) 70%);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.eyebrow {
+  color: var(--sb-brand);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  color: var(--sb-text-strong);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  letter-spacing: -0.03em;
+}
+
+.hero p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--sb-text-muted);
+  line-height: 1.55;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 10px 0 0;
+}
+
+.facts > div {
+  min-width: 130px;
+  padding: 12px 18px;
+  border: 1px solid var(--sb-border);
+  border-radius: 14px;
+  background: var(--sb-surface);
+}
+
+.facts dt {
+  color: var(--sb-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  color: var(--sb-text-strong);
+  font-size: 26px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.card {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.card h2 {
+  margin: 0;
+  color: var(--sb-text-strong);
+  font-size: 18px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+
+.table th,
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--sb-border);
+  text-align: left;
+}
+
+.table thead th {
+  color: var(--sb-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.table tbody th {
+  color: var(--sb-text-strong);
+  font-weight: 700;
+}
+
+.table td {
+  color: var(--sb-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.short {
+  color: var(--sb-warning) !important;
+  font-weight: 700;
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--sb-warning);
+  border-radius: 12px;
+  background: var(--sb-warning-soft);
+  color: var(--sb-text);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.rules {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--sb-text);
+  line-height: 1.55;
+}
+
+.startBox {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding-top: 6px;
+}
+
+.start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--sb-brand);
+  color: #ffffff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.start:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.error {
+  margin: 0;
+  color: var(--sb-danger);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.locked {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 16px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 12px;
+  background: var(--sb-surface-muted);
+  color: var(--sb-text);
+}
+
+.attempts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attempts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--sb-border);
+  border-radius: 12px;
+  background: var(--sb-surface-muted);
+}
+
+.attempts li > div {
+  display: grid;
+  gap: 2px;
+}
+
+.attempts strong {
+  color: var(--sb-text-strong);
+}
+
+.attempts span {
+  color: var(--sb-text-muted);
+  font-size: 12.5px;
+}
+
+.attempts a {
+  color: var(--sb-brand-strong);
+  font-weight: 750;
+}
+
+@media (max-width: 640px) {
+  .hero,
+  .card {
+    padding: 18px;
+  }
+
+  .facts > div {
+    flex: 1 1 100px;
+  }
+}

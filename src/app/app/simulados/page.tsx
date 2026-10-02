@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createListQuestionExplorerFacetsUseCase } from "@/modules/question-bank/infrastructure/composition/question-bank-application";
 import { formatDuration, SIMULATION_QUESTION_COUNTS, SIMULATION_TIME_LIMITS } from "@/modules/study/domain/simulation";
 import { findStudentProfileId } from "@/modules/study/infrastructure/queries/answered-question-status";
+import { formatExamDuration } from "@/modules/study/domain/official-simulation";
+import { listOfficialExams } from "@/modules/study/infrastructure/simulations/official-simulation-store";
 import { listSimulations } from "@/modules/study/infrastructure/simulations/simulation-store";
 import { createSimulationAction } from "@/modules/study/presentation/actions/simulation-actions";
 import { createSupabaseServerClient } from "@/shared/infrastructure/supabase/server";
@@ -40,9 +42,10 @@ export default async function SimulationsPage({ searchParams }: SimulationsPageP
   } = await supabase.auth.getUser();
   const profileId = user ? await findStudentProfileId(user.id) : null;
 
-  const [facets, simulations] = await Promise.all([
+  const [facets, simulations, officialExams] = await Promise.all([
     createListQuestionExplorerFacetsUseCase().execute(),
     profileId ? listSimulations(profileId) : Promise.resolve([]),
+    listOfficialExams(),
   ]);
 
   return (
@@ -57,6 +60,32 @@ export default async function SimulationsPage({ searchParams }: SimulationsPageP
         <p className={styles.error} role="alert">
           {ERRORS[erro]}
         </p>
+      ) : null}
+
+      {officialExams.length > 0 ? (
+        <section className={styles.card} aria-labelledby="official-title">
+          <div className={styles.cardHead}>
+            <h2 id="official-title">Simulados oficiais</h2>
+            <p>A prova completa do edital: mesma quantidade de questões por matéria, cronômetro da prova e tela cheia.</p>
+          </div>
+
+          <ul className={styles.officialGrid}>
+            {officialExams.map((exam) => (
+              <li key={exam.courseId}>
+                <Link href={`/app/simulados/oficial/${exam.courseSlug}`} className={styles.officialCard}>
+                  {exam.coverAssetId ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={`/api/loja/banners/${exam.coverAssetId}`} alt="" width={1200} height={675} loading="lazy" />
+                  ) : null}
+                  <strong>{exam.name}</strong>
+                  <small>
+                    {exam.blueprint.totalWanted} questões · {formatExamDuration(exam.durationMinutes)}
+                  </small>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <section className={styles.card} aria-labelledby="create-title">

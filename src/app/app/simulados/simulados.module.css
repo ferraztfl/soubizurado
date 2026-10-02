@@ -395,7 +395,7 @@
 /* Result */
 .resultHero {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   align-items: center;
   gap: 14px;
   padding: 20px;
@@ -573,4 +573,48 @@
     grid-column: 2 / -1;
     grid-row: 2;
   }
+}
+
+.officialGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.officialCard {
+  display: grid;
+  gap: 4px;
+  padding: 10px 10px 14px;
+  overflow: hidden;
+  border: 1px solid var(--sb-border);
+  border-radius: 14px;
+  background: var(--sb-surface-muted);
+  color: var(--sb-text);
+  text-decoration: none;
+}
+
+.officialCard:hover {
+  border-color: var(--sb-brand);
+}
+
+.officialCard img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.officialCard strong {
+  color: var(--sb-text-strong);
+  padding: 0 4px;
+}
+
+.officialCard small {
+  color: var(--sb-text-muted);
+  padding: 0 4px;
 }
