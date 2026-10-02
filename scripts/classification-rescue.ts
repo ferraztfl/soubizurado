@@ -39,6 +39,13 @@ import { getPrismaClient } from "../src/shared/infrastructure/database/prisma";
  *
  *   npm run classification:rescue -- --quest --apply
  *
+ * --wide: public-service questions in review still without a Subtópico (not ENEM):
+ * candidates are the disciplines of every active area (public-service positions also
+ * ask Educação Física, Língua Portuguesa, Química…), including the ones
+ * a later catalog version created (e.g. v10 Topografia, Veterinária, Nutrição).
+ *
+ *   npm run classification:rescue -- --wide --apply
+ *
  * --quest --reset: also Quest questions in review whose discipline was
  * picked automatically in another area (e.g. before the catalog had the
  * right discipline). The discipline is cleared first (reversal log in
@@ -53,6 +60,8 @@ const NON_ENEM_AREAS = [
   "contabilidade-e-economia",
   "saude",
   "educacao",
+  "engenharia-obras-e-operacoes",
+  "ciencias-agrarias-e-veterinarias",
 ];
 
 async function main(): Promise<void> {
@@ -63,6 +72,7 @@ async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
   const enem = process.argv.includes("--enem");
   const quest = process.argv.includes("--quest");
+  const wide = process.argv.includes("--wide");
   const reset = quest && process.argv.includes("--reset");
   const prisma = getPrismaClient();
 
@@ -72,14 +82,14 @@ async function main(): Promise<void> {
       provider: base.provider,
       model: base.model,
       // Distinct version: tasks of the normal run already exist.
-      version: `${base.version}${enem ? "+enem" : quest ? (reset ? "+allr" : "+all") : "+ka"}`.slice(0, 40),
+      version: `${base.version}${enem ? "+enem" : wide ? "+wide2" : quest ? (reset ? "+allr" : "+all") : "+ka"}`.slice(0, 40),
       classify: (input, taxonomy, options) => base.classify(input, taxonomy, options),
     };
 
     const repository = new PrismaClassificationTaskRepository(prisma);
     const taxonomy = await repository.loadTaxonomyIndex();
 
-    const widenAreaIds = enem || quest
+    const widenAreaIds = enem || quest || wide
       ? (
           await prisma.knowledgeArea.findMany({
             where: { isActive: true, ...(enem ? { slug: { notIn: NON_ENEM_AREAS } } : {}) },
@@ -92,7 +102,9 @@ async function main(): Promise<void> {
       where: {
         status: "IN_REVIEW",
         topicId: null,
-        ...(enem
+        ...(wide
+          ? { NOT: { examination: { board: { slug: "inep" } } } }
+          : enem
           ? { examination: { board: { slug: "inep" } } }
           : quest
           ? { ...(reset ? {} : { disciplineId: null }), examination: { slug: { startsWith: "quest-api-" } } }
@@ -144,7 +156,7 @@ async function main(): Promise<void> {
         minimumConfidence: readMinimumConfidence(),
         requestsPerMinute: readRequestsPerMinute(),
         autoApply: true,
-        ...(enem || quest ? { widenToKnowledgeAreas: widenAreaIds } : { widenToKnowledgeArea: true }),
+        ...(enem || quest || wide ? { widenToKnowledgeAreas: widenAreaIds } : { widenToKnowledgeArea: true }),
       });
 
       totals.completed += output.completed;
