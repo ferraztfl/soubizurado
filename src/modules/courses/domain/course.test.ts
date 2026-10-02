@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { allowedVideoEmbedUrl, nextLessonId, parseQuestionCodes, planLesson, progressPercent } from "./course";
+import { allowedVideoEmbedUrl, nextLessonId, toVideoEmbedUrl, parseQuestionCodes, planLesson, progressPercent } from "./course";
 
 describe("allowedVideoEmbedUrl", () => {
   it("accepts known players", () => {
@@ -15,7 +15,23 @@ describe("allowedVideoEmbedUrl", () => {
     expect(allowedVideoEmbedUrl("https://evil.example/embed/x")).toBeNull();
     expect(allowedVideoEmbedUrl("https://player.vimeo.com.evil.example/video/1")).toBeNull();
     expect(allowedVideoEmbedUrl("javascript:alert(1)")).toBeNull();
-    expect(allowedVideoEmbedUrl("https://www.youtube.com/watch?v=abc")).toBeNull();
+    expect(allowedVideoEmbedUrl("https://www.youtube.com/watch?v=")).toBeNull();
+    expect(allowedVideoEmbedUrl("https://drive.google.com.evil.example/file/d/1234567890abc/view")).toBeNull();
+  });
+
+  it("converts links copied from the browser into the embed address", () => {
+    expect(allowedVideoEmbedUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
+    expect(allowedVideoEmbedUrl("https://youtu.be/dQw4w9WgXcQ?t=90")).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?start=90");
+    expect(allowedVideoEmbedUrl("https://www.youtube.com/shorts/dQw4w9WgXcQ")).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
+    expect(allowedVideoEmbedUrl("https://vimeo.com/76979871")).toBe("https://player.vimeo.com/video/76979871");
+    expect(allowedVideoEmbedUrl("https://vimeo.com/76979871/abcdef1234")).toBe("https://player.vimeo.com/video/76979871?h=abcdef1234");
+    expect(allowedVideoEmbedUrl("https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view?usp=sharing")).toBe("https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/preview");
+    expect(allowedVideoEmbedUrl("https://drive.google.com/open?id=1AbCdEfGhIjKlMnOp")).toBe("https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/preview");
+  });
+
+  it("leaves unknown links untouched", () => {
+    expect(toVideoEmbedUrl("https://example.com/video")).toBe("https://example.com/video");
+    expect(toVideoEmbedUrl("não é link")).toBe("não é link");
   });
 });
 

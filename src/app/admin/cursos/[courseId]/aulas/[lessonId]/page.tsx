@@ -96,8 +96,12 @@ export default async function AdminLessonPage(props: LessonPageProps) {
           </label>
 
           <label className={`${styles.field} ${styles.full}`}>
-            <span>Vídeo — link de incorporação (embed) do Panda Video, Bunny Stream, Vimeo ou YouTube</span>
-            <input name="videoEmbedUrl" defaultValue={lesson.videoEmbedUrl ?? ""} maxLength={500} placeholder="https://player.vimeo.com/video/…" />
+            <span>Vídeo — cole o link da aula (YouTube, Vimeo, Google Drive, Panda Video ou Bunny Stream)</span>
+            <input name="videoEmbedUrl" defaultValue={lesson.videoEmbedUrl ?? ""} maxLength={500} placeholder="https://www.youtube.com/watch?v=…  ·  https://vimeo.com/…  ·  https://drive.google.com/file/d/…/view" />
+            <small>
+              Pode colar o link normal do navegador: o sistema converte para o player. No Google Drive, deixe o arquivo como
+              &quot;Qualquer pessoa com o link pode ver&quot;. No YouTube, um vídeo &quot;não listado&quot; funciona.
+            </small>
           </label>
 
           <label className={`${styles.field} ${styles.full}`}>

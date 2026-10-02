@@ -92,7 +92,7 @@ export async function StoreListing({ basePath, profileId }: Readonly<{ basePath:
               {ownership.has(offer.slug) ? (
                 <>
                   <p className={styles.owned}>
-                    ✓ Você já tem este combo
+                    {ownership.get(offer.slug)?.admin ? "✓ Já incluído no seu acesso de administrador" : "✓ Você já tem este combo"}
                     {ownership.get(offer.slug)?.endsAt ? ` — acesso até ${ENDS.format(ownership.get(offer.slug)!.endsAt!)}` : ""}
                   </p>
                   <Link href="/app/cursos" className={styles.secondaryBuy}>

@@ -123,3 +123,133 @@
   font-weight: 750;
   text-decoration: none;
 }
+
+/* Daily answers (last 7 days). */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.summary > div {
+  padding: 10px 12px;
+  border: 1px solid var(--sb-border);
+  border-radius: 12px;
+  background: var(--sb-surface-muted);
+}
+
+.summary dt {
+  color: var(--sb-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.summary dd {
+  margin: 4px 0 0;
+  color: var(--sb-text-strong);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.dayChart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  height: 188px;
+}
+
+.dayColumn {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 16px minmax(0, 1fr) 16px;
+  justify-items: center;
+  gap: 4px;
+}
+
+.dayTotal,
+.dayLabel,
+.dayLabelToday {
+  color: var(--sb-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dayLabelToday {
+  color: var(--sb-brand);
+}
+
+.dayTrack {
+  width: 100%;
+  max-width: 44px;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 8px;
+  background: var(--sb-surface-muted);
+}
+
+.dayStack {
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.dayWrong {
+  flex-basis: 0;
+  background: #e0786f;
+}
+
+.dayRight {
+  flex-basis: 0;
+  background: var(--sb-success);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  color: var(--sb-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend .cta {
+  margin-left: auto;
+}
+
+.dotRight,
+.dotWrong {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.dotRight {
+  background: var(--sb-success);
+}
+
+.dotWrong {
+  background: #e0786f;
+}
+
+@media (max-width: 520px) {
+  .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .legend .cta {
+    margin-left: 0;
+  }
+}

@@ -17,8 +17,8 @@ export function isLessonKind(value: string): value is LessonKind {
 }
 
 /**
- * Video hosts we embed (the provider is chosen later; any of these works):
- * Panda Video, Bunny Stream, Vimeo and YouTube (privacy-enhanced).
+ * Video hosts we embed: Panda Video, Bunny Stream, Vimeo, YouTube
+ * (privacy-enhanced) and Google Drive previews.
  */
 const VIDEO_EMBED_PREFIXES = [
   "https://player.pandavideo.com.br/embed/",
@@ -26,11 +26,65 @@ const VIDEO_EMBED_PREFIXES = [
   "https://player.vimeo.com/video/",
   "https://www.youtube-nocookie.com/embed/",
   "https://www.youtube.com/embed/",
+  "https://drive.google.com/file/d/",
 ] as const;
 
-/** Normalized embed URL, or null when it is not an allowed player. */
-export function allowedVideoEmbedUrl(value: string): string | null {
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{6,20}$/;
+
+/**
+ * Turns a link copied from the browser (YouTube watch / youtu.be / shorts,
+ * Vimeo page, Google Drive share link) into the embed address of the player.
+ * Anything else is returned as it came.
+ */
+export function toVideoEmbedUrl(value: string): string {
   const trimmed = value.trim();
+  let url: URL;
+
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return trimmed;
+  }
+
+  const host = url.hostname.replace(/^(www|m)\./, "");
+  const startSeconds = Number.parseInt((url.searchParams.get("t") ?? url.searchParams.get("start") ?? "").replace(/s$/, ""), 10);
+  const start = Number.isFinite(startSeconds) && startSeconds > 0 ? `?start=${startSeconds}` : "";
+  const youtube = (id: string | null | undefined) =>
+    id && YOUTUBE_ID.test(id) ? `https://www.youtube-nocookie.com/embed/${id}${start}` : null;
+
+  if (host === "youtu.be") return youtube(url.pathname.split("/")[1]) ?? trimmed;
+
+  if (host === "youtube.com" || host === "youtube-nocookie.com") {
+    const [, kind, id] = url.pathname.split("/");
+
+    if (kind === "watch") return youtube(url.searchParams.get("v")) ?? trimmed;
+    if (kind === "shorts" || kind === "live" || kind === "embed") return youtube(id) ?? trimmed;
+
+    return trimmed;
+  }
+
+  if (host === "vimeo.com") {
+    const parts = url.pathname.split("/").filter(Boolean);
+    const id = parts.find((part) => /^[0-9]{6,12}$/.test(part));
+    const hash = parts[parts.indexOf(id ?? "") + 1];
+
+    if (id) return `https://player.vimeo.com/video/${id}${hash && /^[0-9a-f]{6,20}$/.test(hash) ? `?h=${hash}` : ""}`;
+
+    return trimmed;
+  }
+
+  if (host === "drive.google.com") {
+    const id = /^\/file\/d\/([A-Za-z0-9_-]{10,80})/.exec(url.pathname)?.[1] ?? url.searchParams.get("id");
+
+    if (id && /^[A-Za-z0-9_-]{10,80}$/.test(id)) return `https://drive.google.com/file/d/${id}/preview`;
+  }
+
+  return trimmed;
+}
+
+/** Normalized embed URL, or null when it is not an allowed player. */
+export function allowedVideoEmbedUrl(input: string): string | null {
+  const trimmed = toVideoEmbedUrl(input);
   if (!trimmed) return null;
 
   let url: URL;

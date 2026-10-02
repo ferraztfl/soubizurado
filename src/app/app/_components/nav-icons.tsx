@@ -41,9 +41,8 @@ const paths: Readonly<Record<string, ReactNode>> = {
       <path d="M3.5 19c.5-3 2.7-4.5 5.5-4.5s5 1.5 5.5 4.5M16 6.2a3 3 0 0 1 0 5.6M17.5 14.7c1.6.5 2.7 1.9 3 4.3" />
     </>
   ),
-  Assinatura: <path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8Z" />,
+  "Assinatura e compras": <path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8Z" />,
   Loja: <path d="M5 8h14l-1 12H6L5 8ZM9 8V7a3 3 0 0 1 6 0v1" />,
-  "Minhas compras": <path d="M6 3.5h12V21l-3-1.8-3 1.8-3-1.8L6 21V3.5ZM9.5 8h5M9.5 12h5" />,
   Perfil: (
     <>
       <circle cx="12" cy="8.5" r="3.5" />

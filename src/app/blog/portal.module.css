@@ -1523,3 +1523,62 @@
     padding: 18px 18px;
   }
 }
+
+/*
+ * Dark theme of the student area (lessons render the same article body): the
+ * rules above use fixed light colors, so the dark tokens take over here.
+ */
+:global([data-theme="dark"]) .article {
+  color: var(--sb-text);
+}
+
+:global([data-theme="dark"]) .article h2,
+:global([data-theme="dark"]) .article h3,
+:global([data-theme="dark"]) .calloutTitle,
+:global([data-theme="dark"]) .article strong {
+  color: var(--sb-text-strong);
+}
+
+:global([data-theme="dark"]) .article blockquote {
+  background: var(--sb-brand-soft);
+}
+
+:global([data-theme="dark"]) .article a {
+  color: var(--sb-brand-strong);
+}
+
+:global([data-theme="dark"]) .callout {
+  border-color: var(--sb-border);
+  border-left-color: var(--sb-info);
+  background: var(--sb-info-soft);
+  color: var(--sb-text);
+}
+
+:global([data-theme="dark"]) .callout_atencao {
+  border-left-color: var(--sb-warning);
+  background: var(--sb-warning-soft);
+}
+
+:global([data-theme="dark"]) .callout_dica {
+  border-left-color: var(--sb-success);
+  background: var(--sb-success-soft);
+}
+
+:global([data-theme="dark"]) .tableWrap {
+  border-color: var(--sb-border-strong);
+}
+
+:global([data-theme="dark"]) .tableWrap th,
+:global([data-theme="dark"]) .tableWrap td {
+  border-bottom-color: var(--sb-border);
+  color: var(--sb-text);
+}
+
+:global([data-theme="dark"]) .tableWrap thead th {
+  background: var(--sb-surface-raised);
+  color: var(--sb-text-strong);
+}
+
+:global([data-theme="dark"]) .tableWrap tbody tr:nth-child(even) {
+  background: var(--sb-surface-muted);
+}

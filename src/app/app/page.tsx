@@ -63,7 +63,7 @@ export default async function StudentHomePage() {
       <section className={styles.contentGrid}>
         <div className={styles.mainColumn}>
           <ContinueStudyingCard lastActivity={performance?.lastActivity ?? null} />
-          <PerformanceCard attempts={metrics.attempts} />
+          <PerformanceCard attempts={metrics.attempts} days={performance?.days ?? []} />
         </div>
 
         <aside className={styles.rightRail}>

@@ -1,0 +1,235 @@
+.hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 320px);
+  align-items: center;
+  gap: 22px;
+  padding: 26px;
+  border: 1px solid var(--sb-border);
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--sb-brand-subtle), var(--sb-surface) 65%);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.avatar {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sb-brand);
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 850;
+}
+
+.identity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.eyebrow {
+  color: var(--sb-brand);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.identity h1 {
+  margin: 0;
+  color: var(--sb-text-strong);
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.identity p {
+  margin: 0;
+  color: var(--sb-text-muted);
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+
+.plan {
+  justify-self: start;
+  margin-top: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--sb-border-strong);
+  border-radius: 999px;
+  background: var(--sb-surface);
+  color: var(--sb-text-muted);
+  font-size: 11.5px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.planOn {
+  border-color: rgba(22, 134, 92, 0.45);
+  background: var(--sb-success-soft);
+  color: var(--sb-success);
+}
+
+.target {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--sb-border);
+  border-radius: 14px;
+  background: var(--sb-surface);
+}
+
+.target > span {
+  color: var(--sb-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.target strong {
+  color: var(--sb-text-strong);
+  font-size: 16px;
+}
+
+.target p {
+  margin: 4px 0 0;
+  color: var(--sb-text);
+  font-size: 14px;
+}
+
+.target p b {
+  color: var(--sb-brand);
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.target small {
+  color: var(--sb-text-muted);
+  font-size: 12.5px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 16px;
+}
+
+.goalCard {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.goalCard h2 {
+  margin: 0 0 4px;
+  color: var(--sb-text-strong);
+  font-size: 17px;
+}
+
+.goalCard p {
+  margin: 0 0 12px;
+  color: var(--sb-text-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.ring {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  flex: 0 0 auto;
+}
+
+.ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ringTrack,
+.ringFill {
+  fill: none;
+  stroke-width: 9;
+}
+
+.ringTrack {
+  stroke: var(--sb-border);
+}
+
+.ringFill {
+  stroke: var(--sb-success);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+.ring strong {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--sb-text-strong);
+  font-size: 20px;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kpis > div {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--sb-radius-lg);
+  background: var(--sb-surface);
+}
+
+.kpis span {
+  color: var(--sb-text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.kpis strong {
+  color: var(--sb-text-strong);
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .target {
+    grid-column: 1 / -1;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    padding: 20px;
+  }
+
+  .goalCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

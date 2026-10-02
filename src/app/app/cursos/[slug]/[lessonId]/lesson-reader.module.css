@@ -204,3 +204,44 @@
   color: #64748b;
   font-size: 13px;
 }
+
+/* Dark theme: controls and notes follow the tokens instead of fixed light colors. */
+:global([data-theme="dark"]) .listen button,
+:global([data-theme="dark"]) .listen select {
+  border-color: var(--sb-border-strong);
+  background: var(--sb-surface-raised);
+  color: var(--sb-text-strong);
+}
+
+:global([data-theme="dark"]) .listen label,
+:global([data-theme="dark"]) .tip {
+  color: var(--sb-text-muted);
+}
+
+:global([data-theme="dark"]) .notes {
+  border-color: var(--sb-border);
+  background: var(--sb-surface);
+}
+
+:global([data-theme="dark"]) .notes li {
+  background: var(--sb-surface-muted);
+  color: var(--sb-text);
+}
+
+:global([data-theme="dark"]) .message {
+  color: var(--sb-danger);
+}
+
+:global([data-theme="dark"]) .notes h2 {
+  color: var(--sb-text-strong);
+}
+
+:global([data-theme="dark"]) .notes blockquote {
+  color: var(--sb-text-muted);
+}
+
+:global([data-theme="dark"]) .notes textarea {
+  border-color: var(--sb-border-strong);
+  background: var(--sb-surface-raised);
+  color: var(--sb-text);
+}

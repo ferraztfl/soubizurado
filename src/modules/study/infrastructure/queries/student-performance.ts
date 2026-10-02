@@ -26,6 +26,22 @@ export type TopicPerformance = PerformanceCounts &
 export type WeekPerformance = PerformanceCounts &
   Readonly<{ /** Monday of the week, YYYY-MM-DD. */ weekStart: string }>;
 
+export type DayPerformance = PerformanceCounts & Readonly<{ /** YYYY-MM-DD in São Paulo. */ day: string }>;
+
+/** Days shown in the dashboard chart. */
+export const PERFORMANCE_DAYS = 7;
+
+/** The last `count` days ending today, with zeros for days without answers. */
+export function buildDays(rows: readonly DayPerformance[], today: string, count = PERFORMANCE_DAYS): DayPerformance[] {
+  const byDay = new Map(rows.map((row) => [row.day, row]));
+
+  return Array.from({ length: count }, (_, index) => {
+    const day = shiftDay(today, index - (count - 1));
+
+    return byDay.get(day) ?? { day, attempts: 0, correct: 0 };
+  });
+}
+
 export type StudentPerformance = Readonly<{
   totals: PerformanceCounts &
     Readonly<{
@@ -39,6 +55,8 @@ export type StudentPerformance = Readonly<{
       streakDays: number;
     }>;
   weeks: readonly WeekPerformance[];
+  /** The last days, oldest first (dashboard chart). */
+  days: readonly DayPerformance[];
   disciplines: readonly DisciplinePerformance[];
   topics: readonly TopicPerformance[];
   /** Discipline of the latest answer, to "continue studying". */
@@ -93,7 +111,7 @@ export async function loadStudentPerformance(profileId: string, now = new Date()
   const today = localDay(now);
   const firstWeek = shiftDay(mondayOf(today), -7 * (PERFORMANCE_WEEKS - 1));
 
-  const [totalsRows, dayRows, weekRows, disciplineRows, topicRows, lastRows] = await Promise.all([
+  const [totalsRows, dayRows, weekRows, disciplineRows, topicRows, lastRows, recentDayRows] = await Promise.all([
     prisma.$queryRaw<Row[]>`
       SELECT count(*)::int AS attempts,
              count(*) FILTER (WHERE is_correct)::int AS correct,
@@ -144,6 +162,14 @@ export async function loadStudentPerformance(profileId: string, now = new Date()
       WHERE a.profile_id = ${profileId}::uuid
       ORDER BY a.answered_at DESC
       LIMIT 1`,
+    prisma.$queryRaw<Row[]>`
+      SELECT to_char((answered_at AT TIME ZONE ${TIME_ZONE})::date, 'YYYY-MM-DD') AS day,
+             count(*)::int AS attempts,
+             count(*) FILTER (WHERE is_correct)::int AS correct
+      FROM study_answer_attempts
+      WHERE profile_id = ${profileId}::uuid
+        AND (answered_at AT TIME ZONE ${TIME_ZONE})::date >= ${shiftDay(today, -(PERFORMANCE_DAYS - 1))}::date
+      GROUP BY 1`,
   ]);
 
   const totals = totalsRows[0] ?? {};
@@ -169,6 +195,10 @@ export async function loadStudentPerformance(profileId: string, now = new Date()
       streakDays: countStreak(new Set(dayRows.map((row) => String(row.day))), today),
     },
     weeks,
+    days: buildDays(
+      recentDayRows.map((row) => ({ day: String(row.day), attempts: toNumber(row.attempts), correct: toNumber(row.correct) })),
+      today,
+    ),
     disciplines: disciplineRows.map((row) => ({
       disciplineId: String(row.discipline_id),
       name: String(row.name),

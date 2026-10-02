@@ -84,7 +84,35 @@ export default async function ClassificationPage(props: PageProps) {
     }),
   ]);
 
-  const active = run.status !== "IDLE";
+  // Live view straight from the queue, so it also shows runs started elsewhere (terminal, another server).
+  const [byStatus, processing, recent] = classifierVersion
+    ? await Promise.all([
+        prisma.questionClassificationTask.groupBy({ by: ["status"], where: { classifierVersion }, _count: true }),
+        prisma.questionClassificationTask.findMany({
+          where: { classifierVersion, status: "PROCESSING" },
+          orderBy: { updatedAt: "asc" },
+          take: 8,
+          select: { id: true, question: { select: { publicNumber: true, statement: true, discipline: { select: { name: true } } } } },
+        }),
+        prisma.questionClassificationTask.findMany({
+          where: { classifierVersion, status: { in: ["COMPLETED", "REVIEW_REQUIRED"] } },
+          orderBy: { updatedAt: "desc" },
+          take: 8,
+          select: {
+            id: true,
+            status: true,
+            appliedAt: true,
+            rawResult: true,
+            question: { select: { publicNumber: true, discipline: { select: { name: true } }, topic: { select: { name: true } }, subtopic: { select: { name: true } } } },
+          },
+        }),
+      ])
+    : [[], [], []];
+  const queueCount = (status: string) => byStatus.find((row) => row.status === status)?._count ?? 0;
+  const queueTotal = byStatus.reduce((sum, row) => sum + row._count, 0);
+  const queueDone = queueCount("COMPLETED") + queueCount("REVIEW_REQUIRED") + queueCount("FAILED");
+  const queuePercent = queueTotal > 0 ? Math.round((queueDone / queueTotal) * 100) : 0;
+  const active = run.status !== "IDLE" || processing.length > 0;
 
   return (
     <main className={styles.page}>
@@ -227,6 +255,68 @@ export default async function ClassificationPage(props: PageProps) {
 
         {run.endReason && !active ? <p className={styles.endReason}>{run.endReason}</p> : null}
       </section>
+
+      {queueTotal > 0 ? (
+        <section className={styles.card} aria-live="polite">
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>Andamento da fila</h2>
+              <p className={styles.cardMeta}>
+                {numberFormatter.format(queueDone)} de {numberFormatter.format(queueTotal)} questões processadas ·{" "}
+                {numberFormatter.format(queueCount("PENDING"))} aguardando
+                {queueCount("FAILED") > 0 ? ` · ${numberFormatter.format(queueCount("FAILED"))} com falha` : ""}
+              </p>
+            </div>
+            <strong className={styles.percent}>{queuePercent}%</strong>
+          </div>
+
+          <div className={styles.progress} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={queuePercent} aria-label="Andamento da classificação">
+            <span style={{ width: `${queuePercent}%` }} />
+          </div>
+
+          {processing.length > 0 ? (
+            <>
+              <h3 className={styles.subTitle}>Processando agora</h3>
+              <ul className={styles.liveList}>
+                {processing.map((task) => (
+                  <li key={task.id}>
+                    <span className={styles.liveCode}>Q{task.question.publicNumber}</span>
+                    <span className={styles.liveText}>
+                      {task.question.discipline ? <em>{task.question.discipline.name} · </em> : null}
+                      {task.question.statement.replace(/\s+/g, " ").slice(0, 170)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+
+          {recent.length > 0 ? (
+            <>
+              <h3 className={styles.subTitle}>Últimas classificadas</h3>
+              <ul className={styles.liveList}>
+                {recent.map((task) => {
+                  const layer = (task.rawResult as { provider?: { layer?: string } } | null)?.provider?.layer;
+                  const path = [task.question.discipline?.name, task.question.topic?.name, task.question.subtopic?.name].filter(Boolean).join(" › ");
+
+                  return (
+                    <li key={task.id}>
+                      <span className={styles.liveCode}>Q{task.question.publicNumber}</span>
+                      <span className={styles.liveText}>
+                        {task.appliedAt ? path : "Sem classificação segura — fica para sua revisão"}
+                        <small>
+                          {layer === "RULES" ? " · regras" : layer === "SIMILAR" ? " · aprendida" : layer === "LOCAL_AI" ? " · IA local" : layer === "AI" ? " · IA" : ""}
+                          {task.appliedAt ? " · gravada" : ""}
+                        </small>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Configuração</h2>

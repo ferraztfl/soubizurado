@@ -324,3 +324,12 @@
     grid-column: 2;
   }
 }
+
+/* Buttons inside a row keep their own colors (".row a" paints links red, which hid "Treinar agora" on the red button). */
+.row a.primary {
+  color: #ffffff;
+}
+
+.row a.secondary {
+  color: var(--sb-text);
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildWeeks, countStreak, PERFORMANCE_WEEKS, weakestTopics } from "./student-performance";
+import { buildDays, buildWeeks, countStreak, PERFORMANCE_WEEKS, weakestTopics } from "./student-performance";
 
 describe("student performance helpers", () => {
   it("counts consecutive study days ending today or yesterday", () => {
@@ -34,5 +34,16 @@ describe("student performance helpers", () => {
         (item) => item.name,
       ),
     ).toEqual(["bad", "mid"]);
+  });
+});
+
+describe("buildDays", () => {
+  it("returns the last 7 days ending today, oldest first, with zeros for quiet days", () => {
+    const days = buildDays([{ day: "2026-10-01", attempts: 8, correct: 5 }, { day: "2026-09-28", attempts: 2, correct: 2 }], "2026-10-01");
+
+    expect(days.map((day) => day.day)).toEqual(["2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01"]);
+    expect(days[3]).toEqual({ day: "2026-09-28", attempts: 2, correct: 2 });
+    expect(days[4]).toEqual({ day: "2026-09-29", attempts: 0, correct: 0 });
+    expect(days[6]).toEqual({ day: "2026-10-01", attempts: 8, correct: 5 });
   });
 });

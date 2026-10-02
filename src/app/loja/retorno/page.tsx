@@ -61,7 +61,7 @@ export default async function PaymentReturnPage(props: ReturnPageProps) {
           </span>
           <h1>Pagamento em processamento</h1>
           <p>Pix e boleto podem levar alguns minutos (boleto: até 3 dias úteis). Liberamos seu acesso assim que o Mercado Pago confirmar.</p>
-          <Link href="/app/compras" className={styles.buy}>
+          <Link href="/app/assinatura" className={styles.buy}>
             Acompanhar minhas compras
           </Link>
         </>
@@ -80,7 +80,7 @@ export default async function PaymentReturnPage(props: ReturnPageProps) {
         <>
           <h1>Não encontramos este pagamento</h1>
           <p>Se você pagou, o acesso é liberado automaticamente em instantes. Veja em Minhas compras.</p>
-          <Link href="/app/compras" className={styles.buy}>
+          <Link href="/app/assinatura" className={styles.buy}>
             Minhas compras
           </Link>
         </>

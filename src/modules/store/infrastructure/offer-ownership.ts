@@ -1,3 +1,4 @@
+import { isAdminProfile } from "@/modules/courses/infrastructure/course-access";
 import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
 
 /*
@@ -8,7 +9,7 @@ import { getPrismaClient } from "@/shared/infrastructure/database/prisma";
  * earliest end among the grants (null = no end).
  */
 
-export type OfferOwnership = Readonly<{ endsAt: Date | null }>;
+export type OfferOwnership = Readonly<{ endsAt: Date | null; /** Included because the account is an administrator's. */ admin?: boolean }>;
 
 type GrantInput = Readonly<{ kind: string; courseId: string | null }>;
 export type OwnershipOffer = Readonly<{ slug: string; grants: readonly GrantInput[] }>;
@@ -68,6 +69,11 @@ export async function loadOfferOwnership(
   offers: readonly OwnershipOffer[],
   now = new Date(),
 ): Promise<ReadonlyMap<string, OfferOwnership>> {
+  // Administrators have everything open: nothing in the store needs to be bought.
+  if (await isAdminProfile(profileId)) {
+    return new Map(offers.filter((offer) => offer.grants.length > 0).map((offer) => [offer.slug, { endsAt: null, admin: true } as OfferOwnership]));
+  }
+
   const entitlements = await getPrismaClient().entitlement.findMany({
     where: {
       profileId,

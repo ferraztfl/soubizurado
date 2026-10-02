@@ -130,11 +130,11 @@ export async function OfferDetail({ slug, erro, basePath }: Readonly<{ slug: str
         {owned ? (
           <div className={styles.checkoutForm}>
             <p className={styles.owned}>
-              ✓ Você já tem este combo
-              {owned.endsAt ? ` — acesso até ${PROMO_DATE.format(owned.endsAt)}` : " — sem prazo de validade"}
+              {owned.admin ? "✓ Já incluído no seu acesso de administrador" : "✓ Você já tem este combo"}
+              {owned.admin ? "" : owned.endsAt ? ` — acesso até ${PROMO_DATE.format(owned.endsAt)}` : " — sem prazo de validade"}
             </p>
             <p className={styles.payHint}>
-              Quando o prazo terminar, ele volta a ficar disponível para compra aqui.
+              {owned.admin ? "Contas de administrador não precisam comprar nada." : "Quando o prazo terminar, ele volta a ficar disponível para compra aqui."}
             </p>
             <Link href="/app/cursos" className={styles.secondaryBuy}>
               Ir para meus cursos
